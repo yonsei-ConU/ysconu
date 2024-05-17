@@ -1,0 +1,8 @@
+*.db
+*.db-journal
+__pycache__/
+*.txt
+lib/fonts
+lib/sbjb
+lib/utils
+identifier.sqlite
