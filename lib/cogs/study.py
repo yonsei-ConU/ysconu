@@ -109,7 +109,7 @@ class Study(Cog):
             if db.record("SELECT * FROM stopwatch WHERE UserID = ? AND end_time IS NULL", ctx.author.id):
                 await ctx.channel.send("이미 스톱워치가 돌아가고 있어요!")
                 return
-            time_text = (datetime.utcnow() + timedelta(hours=9)).strftime("%Y/%m/%d %H:%M:%S")
+            time_text = (datetime.now() + timedelta(hours=9)).strftime("%Y/%m/%d %H:%M:%S")
             await ctx.channel.send(f"{time_text}\n스톱워치 설정을 완료했어요!")
             if t:
                 db.execute("INSERT INTO stopwatch (UserID, start_time, title) VALUES (?, ?, ?)", ctx.author.id,
@@ -153,14 +153,14 @@ class Study(Cog):
                 embed.add_field(name="중간중간 한 기록들", value=tjfaud, inline=False)
             except:
                 pass
-            final_time = (datetime.utcnow() + timedelta(hours=9)) - datetime.strptime(current[1], "%Y/%m/%d %H:%M:%S")
+            final_time = (datetime.now() + timedelta(hours=9)) - datetime.strptime(current[1], "%Y/%m/%d %H:%M:%S")
             if current[2]:
                 pauses = list(filter(lambda x: records[x] == "p", range(len(records))))
                 for p in pauses:
                     t = datetime.strptime(records[p + 3], "%Y/%m/%d %H:%M:%S") - datetime.strptime(records[p + 1],
                                                                                                    "%Y/%m/%d %H:%M:%S")
                     final_time -= t
-            time_text = (datetime.utcnow() + timedelta(hours=9)).strftime("%Y/%m/%d %H:%M:%S")
+            time_text = (datetime.now() + timedelta(hours=9)).strftime("%Y/%m/%d %H:%M:%S")
             embed.add_field(name="종료된 시각", value=time_text, inline=False)
             embed.add_field(name="측정된 시간", value=str(final_time), inline=False)
             await ctx.channel.send(embed=embed)
@@ -180,11 +180,11 @@ class Study(Cog):
                 await ctx.channel.send("일시정지된 상태에요! 먼저 일시정지를 풀고 기록해 주세요")
                 return
             time_passed = str(
-                (datetime.utcnow() + timedelta(hours=9)) - datetime.strptime(current[1], "%Y/%m/%d %H:%M:%S"))
+                (datetime.now() + timedelta(hours=9)) - datetime.strptime(current[1], "%Y/%m/%d %H:%M:%S"))
             await ctx.channel.send(f"기록을 완료했어요! 현재까지 지난 시간은 {time_passed} (이)에요.")
             if t:
                 records.append(t)
-            records.append((datetime.utcnow() + timedelta(hours=9)).strftime("%Y/%m/%d %H:%M:%S"))
+            records.append((datetime.now() + timedelta(hours=9)).strftime("%Y/%m/%d %H:%M:%S"))
             records = ",".join(records)
             db.execute("UPDATE stopwatch SET records = ? WHERE UserID = ? AND end_time IS NULL", records, ctx.author.id)
             db.commit()
@@ -210,7 +210,7 @@ class Study(Cog):
                 except:
                     records = []
                 records.append("p")
-                records.append((datetime.utcnow() + timedelta(hours=9)).strftime("%Y/%m/%d %H:%M:%S"))
+                records.append((datetime.now() + timedelta(hours=9)).strftime("%Y/%m/%d %H:%M:%S"))
                 records = ",".join(records)
                 db.execute("UPDATE stopwatch SET records = ? WHERE UserID = ? AND end_time IS NULL", records,
                            ctx.author.id)
@@ -222,7 +222,7 @@ class Study(Cog):
                 except:
                     records = []
                 records.append("r")
-                records.append((datetime.utcnow() + timedelta(hours=9)).strftime("%Y/%m/%d %H:%M:%S"))
+                records.append((datetime.now() + timedelta(hours=9)).strftime("%Y/%m/%d %H:%M:%S"))
                 records = ",".join(records)
                 db.execute("UPDATE stopwatch SET records = ? WHERE UserID = ? AND end_time IS NULL", records,
                            ctx.author.id)
@@ -392,7 +392,7 @@ class Study(Cog):
                 embed.add_field(name="할 일", value=args[2])
                 expire_date = args[3] + ((time() + 32400) // 86400)
                 if args[0] == '추가':
-                    expire_text = (datetime.utcnow() + timedelta(hours=9, days=args[3])).strftime("%y년 %m월 %d일")
+                    expire_text = (datetime.now() + timedelta(hours=9, days=args[3])).strftime("%y년 %m월 %d일")
                     embed.add_field(name="기간", value=expire_text)
 
                 else:
@@ -694,7 +694,7 @@ class Study(Cog):
         embed.add_field(name="할 일", value=args[1])
         expire_date = args[2] + ((time() + 32400) // 86400)
         if term == 0:
-            expire_text = (datetime.utcnow() + timedelta(hours=9, days=args[2])).strftime("%y년 %m월 %d일")
+            expire_text = (datetime.now() + timedelta(hours=9, days=args[2])).strftime("%y년 %m월 %d일")
             embed.add_field(name="기간", value=expire_text)
         else:
             embed.add_field(name="기간", value=f'{args[2]}일마다 하는 정기적 할 일')

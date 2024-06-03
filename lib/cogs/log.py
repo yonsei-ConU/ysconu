@@ -70,7 +70,7 @@ class Log(Cog):
         if before.display_name != after.display_name:
             embed = Embed(title=f"{str(after)}이(가) 닉변함",
                           colour=after.colour,
-                          timestamp=datetime.utcnow())
+                          timestamp=datetime.now())
 
             fields = [("Before", before.display_name, False),
                       ("After", after.display_name, False)]
@@ -86,7 +86,7 @@ class Log(Cog):
         elif before.roles != after.roles:
             embed = Embed(title=f"{after}의 역할이 바뀜",
                           colour=after.colour,
-                          timestamp=datetime.utcnow())
+                          timestamp=datetime.now())
 
             if len(before.roles) < len(after.roles):
                 changes = ",".join([r.name for r in (set(after.roles) - set(before.roles))])
@@ -109,7 +109,7 @@ class Log(Cog):
                 embed = Embed(title=f"{str(after.author)} (ID {after.author.id})의 메세지가 수정됨",
                               description=f"메세지가 수정된 채널: <#{after.channel.id}>",
                               colour=after.author.colour,
-                              timestamp=datetime.utcnow())
+                              timestamp=datetime.now())
 
                 if not before.content:
                     fields = [("Before", "없음", False),
@@ -131,7 +131,7 @@ class Log(Cog):
         logchannel = db.record("SELECT log_channel FROM guilds WHERE GuildID = ?", guild.id)
         embed = Embed(title=f"{str(member)} (ID {member.id}) 이(가) 서버에서 차단됨",
                       colour=member.colour,
-                      timestamp=datetime.utcnow())
+                      timestamp=datetime.now())
         try:
             await self.bot.get_channel(logchannel[0]).send(embed=embed)
         except AttributeError:
@@ -144,12 +144,12 @@ class Log(Cog):
             embed = Embed(title=f"새로운 채팅 채널 (ID {channel.id}) 이(가) 생성됨",
                           description=f"채널 이름: {channel.name}\n카테고리: <#{channel.category_id}>\n연령 제한 채널 여부: {channel.is_nsfw()}",
                           colour=0xffd6fe,
-                          timestamp=datetime.utcnow())
+                          timestamp=datetime.now())
         except AttributeError:
             embed = Embed(title=f"새로운 음성 채널 (ID {channel.id}) 이(가) 생성됨",
                           description=f"채널 이름: {channel.name}\n카테고리: <#{channel.category_id}>",
                           colour=0xffd6fe,
-                          timestamp=datetime.utcnow())
+                          timestamp=datetime.now())
         try:
             await self.bot.get_channel(logchannel[0]).send(embed=embed)
         except AttributeError:
@@ -162,12 +162,12 @@ class Log(Cog):
             embed = Embed(title=f"있던 채팅 채널 (ID {channel.id}) 이(가) 삭제됨",
                           description=f"채널 이름: {channel.name}\n카테고리: <#{channel.category_id}>\n연령 제한 채널 여부: {channel.is_nsfw()}",
                           colour=0xffd6fe,
-                          timestamp=datetime.utcnow())
+                          timestamp=datetime.now())
         except AttributeError:
             embed = Embed(title=f"있던 음성 채널 (ID {channel.id}) 이(가) 삭제됨",
                           description=f"채널 이름: {channel.name}\n카테고리: <#{channel.category_id}>",
                           colour=0xffd6fe,
-                          timestamp=datetime.utcnow())
+                          timestamp=datetime.now())
         try:
             await self.bot.get_channel(logchannel[0]).send(embed=embed)
         except AttributeError:
@@ -179,7 +179,7 @@ class Log(Cog):
         embed = Embed(title=f"새로운 역할 (ID {role.id}) 이(가) 생성됨",
                       description=f"역할 이름: {role.name}\n역할 색깔: {role.color}\n온라인 멤버와 구별 표시: {role.hoist}",
                       colour=role.color,
-                      timestamp=datetime.utcnow())
+                      timestamp=datetime.now())
         try:
             await self.bot.get_channel(logchannel[0]).send(embed=embed)
         except AttributeError:
@@ -191,7 +191,7 @@ class Log(Cog):
         embed = Embed(title=f"있던 역할 (ID {role.id}) 이(가) 삭제됨",
                       description=f"역할 이름: {role.name}\n역할 색깔: {role.color}\n온라인 멤버와 구별 표시: {role.hoist}",
                       colour=role.color,
-                      timestamp=datetime.utcnow())
+                      timestamp=datetime.now())
         try:
             await self.bot.get_channel(logchannel[0]).send(embed=embed)
         except AttributeError:
@@ -204,7 +204,7 @@ class Log(Cog):
             embed = Embed(title=f"{str(message.author)} (ID {message.author.id})의 메세지가 삭제됨",
                           description=f"메세지가 삭제된 채널: <#{message.channel.id}>",
                           colour=message.author.colour,
-                          timestamp=datetime.utcnow())
+                          timestamp=datetime.now())
 
             if message.content:
                 embed.add_field(name="내용", value=message.content)
@@ -228,7 +228,7 @@ class Log(Cog):
         logchannel = db.record("SELECT log_channel FROM guilds WHERE GuildID = ?", member.guild.id)
         embed = Embed(title="새로운 멤버가 들어옴",
                       colour=0x00ff00,
-                      timestamp=datetime.utcnow())
+                      timestamp=datetime.now())
         try:
             invites = await member.guild.invites()
         except:
@@ -258,13 +258,13 @@ class Log(Cog):
         logchannel = db.record("SELECT log_channel FROM guilds WHERE GuildID = ?", member.guild.id)
         embed = Embed(title="있던 멤버가 나감",
                       colour=0xff0000,
-                      timestamp=datetime.utcnow())
+                      timestamp=datetime.now())
         inviter = db.record("SELECT invited_by FROM exp WHERE UserID = ? AND GuildID = ?", member.id, member.guild.id)
 
         fields = [("사용자명#태그", member, True),
                   ("남은 서버 멤버 수", member.guild.member_count, True),
                   ("서버에 들어왔던 날짜", member.joined_at, True),
-                  ("서버에 들어온 후 나갈 때까지 지난 시간", datetime.utcnow() - member.joined_at, True)]
+                  ("서버에 들어온 후 나갈 때까지 지난 시간", datetime.now() - member.joined_at, True)]
         try:
             fields.append(("그 사람을 데려왔던 사람", self.bot.get_user(inviter[0]), True))
         except TypeError:

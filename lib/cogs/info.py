@@ -16,7 +16,7 @@ class Info(Cog):
 
         embed = Embed(title="사용자 정보",
                       colour=target.colour,
-                      timestamp=datetime.utcnow())
+                      timestamp=datetime.now())
 
         embed.set_thumbnail(url=target.avatar_url)
 
@@ -30,7 +30,7 @@ class Info(Cog):
                   #  True),
                   ("계정 생성 날짜", target.created_at + timedelta(hours=9), True),
                   ("서버에 들어온 날짜", target.joined_at + timedelta(hours=9), True),
-                  ("들어온 후 지난 시간", datetime.utcnow() - target.joined_at, True),
+                  ("들어온 후 지난 시간", datetime.now() - target.joined_at, True),
                   ("서버 부스트 여부", bool(target.premium_since), True)]
 
         for name, value, inline in fields:
@@ -42,7 +42,7 @@ class Info(Cog):
     async def server_info(self, ctx):
         embed = Embed(title="서버정보",
                       colour=0xffd6fe,
-                      timestamp=datetime.utcnow())
+                      timestamp=datetime.now())
         owner = str(ctx.guild.owner)
 
         embed.set_thumbnail(url=ctx.guild.icon_url)

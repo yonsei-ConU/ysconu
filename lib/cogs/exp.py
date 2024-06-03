@@ -1324,7 +1324,7 @@ class Exp(Cog):
         lvl = int(temp[1])
         xplock = temp[2]
 
-        if datetime.utcnow() > datetime.fromisoformat(xplock):
+        if datetime.now() > datetime.fromisoformat(xplock):
             await self.add_xp(message, xp, lvl)
 
     async def add_xp(self, message, xp, lvl):
@@ -1393,13 +1393,13 @@ class Exp(Cog):
         if guild_type & 1 == 1:
             db.execute(
                 "UPDATE exp SET XP = XP + ?, Level = ?, XPLock = ?, Money = Money + ? WHERE UserID = ? AND GuildID = ?",
-                xp_to_add, new_lvl, (datetime.utcnow() + timedelta(seconds=cool)).isoformat(), xp_to_add,
+                xp_to_add, new_lvl, (datetime.now() + timedelta(seconds=cool)).isoformat(), xp_to_add,
                 message.author.id, message.guild.id)
         else:
             try:
                 db.execute(
                     "UPDATE exp SET XP = XP + ?, Level = ?, XPLock = ? WHERE UserID = ? AND GuildID = ?",
-                    xp_to_add, new_lvl, (datetime.utcnow() + timedelta(seconds=cool)).isoformat(), message.author.id,
+                    xp_to_add, new_lvl, (datetime.now() + timedelta(seconds=cool)).isoformat(), message.author.id,
                     message.guild.id)
             except OverflowError:
                 return

@@ -85,7 +85,7 @@ class Meta(Cog):
         embed = Embed(title="봇 스탯",
                       colour=ctx.author.colour,
                       thumbnail=self.bot.user.avatar_url,
-                      timestamp=datetime.utcnow())
+                      timestamp=datetime.now())
 
         proc = Process()
         with proc.oneshot():

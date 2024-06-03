@@ -38,6 +38,36 @@ class Misc(Cog):
         #         await ctx.send("`커뉴야 업데이트 설정 (방식별/기능별)`")
         #         return
         if not extra1:
+            embed = Embed(color=0xffd6fe, title="커뉴봇 yonsei4 업데이트 (날짜: 2024년 6월 4일)")
+            embed.add_field(name='이번 업데이트의 방향성',
+                            value="은 모르겠고 신기능 아이디어 받는다니까요. 없으면 저야 편한거죠. \N{THUMBS UP SIGN}",
+                            inline=False)
+            embed.add_field(name="1. 새로운 기능",
+                            value="커뉴봇은 더 이상 비슷한 사람들의 집합이 만든 여러 개의 개인용 서버에 들어가 있으려고 하지 않음 (명령어 아님, 개인용 서버 판별 알고리즘이 실험 중에 있지만 정확성이 매우 높다고 판정됨)",
+                            inline=False)
+            embed.add_field(name="2. 개선된 기능",
+                            value="화력코인의 가격 변동 알고리즘을 변경, 보유 화력코인 등의 데이터를 전으로 롤백\ndatetime.utcnow()를 쓰는 모든 명령어에서 사용하는 함수를 datetime.now()로 변경 (눈에 띄는 변경사항은 아마도 없지만 이후 버전에서 봇이 더 안정적이게 됩니다.)\n`커뉴야 계산`명령어가 제대로 작동하기 시작, 몇 가지 함수를 지원",
+                            inline=False)
+            embed.add_field(name="3. 수정된 버그",
+                            value="더 이상 화력코인의 가격이 음수가 되지 않음",
+                            inline=False)
+            embed.add_field(name="4. 삭제된 기능",
+                            value="더미데이터로만 남아있던 몇몇 명령어들을 삭제",
+                            inline=False)
+            embed.set_footer(
+                text="커뉴야 심심해 명령어로 나오는 TMI 개수: 220개 -> 220개\n도전과제 개수: 123개 -> 123개 ()\n이전 업데이트 yonsei3\n다음 업데이트 미출시")
+            await ctx.send(embed=embed)
+        elif extra1 == '코인':
+            embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 코인")
+            embed.add_field(name='yonsei4', value='화력코인의 가격 변동 알고리즘을 변경, 보유 화력코인 등의 데이터를 전으로 롤백\n더 이상 화력코인의 가격이 음수가 되지 않음')
+            embed.add_field(name='yonsei3', value='코인 가격이 0까지 떨어질 확률을 낮춤\n코인의 가격이 이따금씩 제대로 새로고침되지 않던 버그 수정')
+            embed.add_field(name='yonsei1', value='새로운 기능\n\n`커뉴야 코인 그래프` 실험 단계 출시\n\n개선된 기능\n\n화력코인의 변동성을 소폭 감소시킴\n큰 수가 나오는 대부분의 기능에서 수를 쉼표로 구분\n룰렛: 가능한 수의 범위가 1~36임을 더 잘 보이는 곳에 명시, 홀수 또는 짝수에 거는 경우 줄임말을 인식\n블랙잭: 가능한 행동들의 설명을 튜토리얼에만 표시, 판이 끝난 이후 남은 코인을 표시, 판돈의 2배보다 보유 현금이 적을 경우 더블 다운을 할 수 없음\n\n수정된 버그\n\n알맞은 양의 코인을 가지고 있었음에도 판매되지 않던 버그 수정\n화력코인 변화량이 이상하게 표기되던 버그 수정\n지원금: 특정한 경우 지원금이 100000.0처럼 소수점으로 표기되던 버그 수정\n블랙잭: 더블 다운을 해도 카드를 더 뽑을 수 있던 버그 수정, 돈을 잃은 후 남은 돈이 0 이하이면 에러가 나면서 돈 변화가 반영되지 않던 버그 수정', inline=False)
+            await ctx.send(embed=embed)
+        elif extra1 == '계산':
+            embed = Embed(color=0xffd6fe, title='커뉴봇 기능 업데이트 내역: 계산')
+            embed.add_field(name='yonsei4', value='몇 가지 연산들을 지원하도록, 사용할 수 있는 수준으로 명령어 출시')
+            embed.add_field(name='yonsei1', value='매우 실험적인 버전으로 명령어 출시')
+        elif extra1 == 'yonsei3':
             embed = Embed(color=0xffd6fe, title="커뉴봇 yonsei3 업데이트 (날짜: 2024년 5월 13일)")
             embed.add_field(name='이번 업데이트의 방향성',
                             value="은 모르겠고 신기능 아이디어 받습니다.",
@@ -46,16 +76,18 @@ class Misc(Cog):
                             value="뀨 상점에 `출석체크 준비 알림` 추가",
                             inline=False)
             embed.add_field(name="2. 개선된 기능",
-                            value="`커뉴야 코인`에서 코인 가격이 0으로 떨어질 확률을 낮춤 (가격이 0에 가까울 때 오를 확률이 증가한 건 아닙니다.)\n클오클 운영 도우미에서 `지원 관련 무기여 지수`값 결정 알고리즘을 변경 (이 기능은 곧 상용화됩니다.)",
+                            value="`커뉴야 코인`에서 코인 가격이 0으로 떨어질 확률을 낮춤 (가격이 0에 가까울 때 오를 확률이 증가한 건 아닙니다.)\n클오클 운영 도우미에서 "
+                                  "`지원 관련 무기여 지수`값 결정 알고리즘을 변경 (이 기능은 곧 상용화됩니다.)",
                             inline=False)
             embed.add_field(name="3. 수정된 버그",
-                            value="`커뉴야 숫자채널` 명령어가 제대로 작동하지 않던 버그 수정\n코인의 가격이 이따금씩 제대로 새로고침되지 않던 버그 수정\n`커뉴야 날짜차이` 명령어에서 날짜 차이가 0이면 나던 에러 수정\n클오클 습격전 정산에서 클랜을 탈퇴한 사람이 비정상적인 행보를 보일 경우 나던 에러 수정",
+                            value="`커뉴야 숫자채널` 명령어가 제대로 작동하지 않던 버그 수정\n코인의 가격이 이따금씩 제대로 새로고침되지 않던 버그 수정\n`커뉴야 날짜차이` "
+                                  "명령어에서 날짜 차이가 0이면 나던 에러 수정\n클오클 습격전 정산에서 클랜을 탈퇴한 사람이 비정상적인 행보를 보일 경우 나던 에러 수정",
                             inline=False)
             embed.add_field(name="4. 공식서버 전용 업데이트",
                             value="실시간 리더보드의 정보가 이따금씩 제대로 새로고침되지 않던 버그 수정",
                             inline=False)
             embed.set_footer(
-                text="커뉴야 심심해 명령어로 나오는 TMI 개수: 210개 -> 220개\n도전과제 개수: 123개 -> 123개 ()\n이전 업데이트 yonsei2\n다음 업데이트 미출시")
+                text="커뉴야 심심해 명령어로 나오는 TMI 개수: 210개 -> 220개\n도전과제 개수: 123개 -> 123개 ()\n이전 업데이트 yonsei2\n다음 업데이트 yonsei4")
             await ctx.send(embed=embed)
         elif extra1 == '클오클':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 클오클 (관련된 모든 명령어의 업데이트 내역이 여기에 표시됨)")
@@ -64,11 +96,6 @@ class Misc(Cog):
         elif extra1 == '숫자채널':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 숫자채널")
             embed.add_field(name='yonsei3', value='명령어 실행 시 나던 에러를 수정', inline=False)
-            await ctx.send(embed=embed)
-        elif extra1 == '코인':
-            embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 코인")
-            embed.add_field(name='yonsei3', value='코인 가격이 0까지 떨어질 확률을 낮춤\n코인의 가격이 이따금씩 제대로 새로고침되지 않던 버그 수정')
-            embed.add_field(name='yonsei1', value='새로운 기능\n\n`커뉴야 코인 그래프` 실험 단계 출시\n\n개선된 기능\n\n화력코인의 변동성을 소폭 감소시킴\n큰 수가 나오는 대부분의 기능에서 수를 쉼표로 구분\n룰렛: 가능한 수의 범위가 1~36임을 더 잘 보이는 곳에 명시, 홀수 또는 짝수에 거는 경우 줄임말을 인식\n블랙잭: 가능한 행동들의 설명을 튜토리얼에만 표시, 판이 끝난 이후 남은 코인을 표시, 판돈의 2배보다 보유 현금이 적을 경우 더블 다운을 할 수 없음\n\n수정된 버그\n\n알맞은 양의 코인을 가지고 있었음에도 판매되지 않던 버그 수정\n화력코인 변화량이 이상하게 표기되던 버그 수정\n지원금: 특정한 경우 지원금이 100000.0처럼 소수점으로 표기되던 버그 수정\n블랙잭: 더블 다운을 해도 카드를 더 뽑을 수 있던 버그 수정, 돈을 잃은 후 남은 돈이 0 이하이면 에러가 나면서 돈 변화가 반영되지 않던 버그 수정', inline=False)
             await ctx.send(embed=embed)
         elif extra1 == '날짜차이':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 날짜차이")
@@ -227,9 +254,6 @@ class Misc(Cog):
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 알파센타우리")
             embed.add_field(name='yonsei1', value='새로운 기능\n\n(스포방지)\n\n개선된 기능\n\n`ㅋㅇ프로필` 명령어에서 자동 획득 아니 씨밧 부스트에 대한 보너스를 반영\n`ㅋㅇ거래` 명령어에서 거래 품목 개수가 1일 때 추가 거래 품목을 늘리는 거래를 제안할 확률 증가\n\n수정된 버그\n\n`ㅋㅇ프로필` 명령어에서 일부 스탯이 표시되지 않던 버그 수정\n메타벗과 뇌저를 연구해도 `ㅋㅇ우주선`명령어가 제대로 작동하지 않던 버그 수정', inline=False)
             await ctx.send(embed=embed)
-        elif extra1 == '계산':
-            embed = Embed(color=0xffd6fe, title='커뉴봇 기능 업데이트 내역: 계산')
-            embed.add_field(name='yonsei1', value='매우 실험적인 버전으로 명령어 출시')
         elif extra1 == '24_seol':
             embed = Embed(color=0xffd6fe, title="커뉴봇 24_seol 업데이트 (날짜: 2024년 2월 9일)")
             embed.add_field(name='이번 업데이트의 방향성',
@@ -852,6 +876,19 @@ class Misc(Cog):
 
     @Cog.listener()
     async def on_guild_join(self, guild):
+        humans = set(filter(lambda m: not m.bot, guild.members))
+        if len(humans) <= 3:
+            for g in self.bot.guilds:
+                hc = set(filter(lambda m: not m.bot, g.members))
+                if len(humans & hc) >= 2:
+                    if guild.system_channel is not None:
+                        try:
+                            await guild.system_channel.send("커뉴봇은 과하게 많은 수의 개인용 서버에 들어오는 것을 원치 않습니다. 다른 서버들도 봇을 자유롭게 사용할 수 있도록 협조 바랍니다.")
+                        except:
+                            pass
+                    await self.bot.get_channel(817335216133111838).send(f"{guild.name}: 과한 개인 서버로 판별되어 자동으로 나감")
+                    await guild.leave()
+                    return
         await self.bot.get_channel(817335216133111838).send(f"새로운 서버에 들어감\n이름: {guild.name}, 멤버수: {guild.member_count}")
         if guild.system_channel is not None:
             try:

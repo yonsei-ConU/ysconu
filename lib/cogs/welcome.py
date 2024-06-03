@@ -173,13 +173,13 @@ class Welcome(Cog):
         except TypeError:
             pass
         if guild_type & 2 == 2:
-            if lv == 0 or datetime.utcnow() - member.joined_at < timedelta(minutes=10):
+            if lv == 0 or datetime.now() - member.joined_at < timedelta(minutes=10):
                 msg_to_send += f"커뉴봇 들낙 퇴치 시스템에 따라 {str(member)}(이)라는 들낙자를 영구차단 시켰습니다.\n아래는 사유들입니다:"
                 reason = ""
                 if lv == 0:
                     reason += "\n0레벨인 상태에서 나감"
-                if datetime.utcnow() - member.joined_at < timedelta(minutes=10):
-                    time_past_join_1 = datetime.utcnow().strftime("%M분 %S초")
+                if datetime.now() - member.joined_at < timedelta(minutes=10):
+                    time_past_join_1 = datetime.now().strftime("%M분 %S초")
                     time_past_join_2 = member.joined_at.strftime("%M분 %S초")
                     time_past_join_3 = int(time_past_join_1[0:2]) - int(time_past_join_2[0:2])
                     time_past_join_4 = int(time_past_join_1[4:6]) - int(time_past_join_2[4:6])
@@ -194,7 +194,7 @@ class Welcome(Cog):
             punish_log = db.record("SELECT punish_log FROM guilds WHERE GuildID = ?", member.guild.id)
             punish_log = self.bot.get_channel(punish_log[0])
             embed = discord.Embed(color=0xDD2222, title="들낙 퇴치 시스템으로 차단됨",
-                                  description=f"차단된 사람: {str(member)}\n정확한 이유: {reason}", timestamp=datetime.utcnow())
+                                  description=f"차단된 사람: {str(member)}\n정확한 이유: {reason}", timestamp=datetime.now())
             embed.set_thumbnail(url=member.avatar_url)
             try:
                 await punish_log.send(embed=embed)

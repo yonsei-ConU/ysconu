@@ -82,7 +82,7 @@ class Mod(Cog):
                 await target.kick(reason=reason)
                 embed = Embed(title="멤버 추방됨",
                               colour=0xDD2222,
-                              timestamp=datetime.datetime.utcnow())
+                              timestamp=datetime.datetime.now())
                 embed.set_thumbnail(url=target.avatar_url)
                 fields = [("추방된 사람: ", f"{target.name}", False),
                           ("추방한 사람:", message.author.display_name, False),
@@ -165,7 +165,7 @@ class Mod(Cog):
                     await target.ban(reason=reason)
                     embed = Embed(title="멤버 차단됨",
                                   colour=0xDD2222,
-                                  timestamp=datetime.datetime.utcnow())
+                                  timestamp=datetime.datetime.now())
                     embed.set_thumbnail(url=target.avatar_url)
                     fields = [("차단된 멤버", f"{target.name}", False),
                               ("차단한 멤버", ctx.author.display_name, False),
@@ -195,7 +195,7 @@ class Mod(Cog):
                 await ctx.guild.unban(target, reason=reason)
                 embed = Embed(title="멤버 차단 해제됨",
                               colour=0xDD2222,
-                              timestamp=datetime.datetime.utcnow())
+                              timestamp=datetime.datetime.now())
                 embed.set_thumbnail(url=target.avatar_url)
                 fields = [("차단 해제된 멤버", target.name, False),
                           ("차단 해제한 멤버", ctx.author.display_name, False),
@@ -228,7 +228,7 @@ class Mod(Cog):
             with ctx.channel.typing():
                 await ctx.message.delete()
                 deleted = await ctx.channel.purge(limit=limit,
-                                                  after=datetime.datetime.utcnow() - datetime.timedelta(days=14),
+                                                  after=datetime.datetime.now() - datetime.timedelta(days=14),
                                                   check=_check)
 
                 await ctx.send(f"{len(deleted):,} 개의 메세지를 지웠어요.", delete_after=3)
@@ -250,7 +250,7 @@ class Mod(Cog):
             if mute_role not in target.roles:
                 if message.guild.me.top_role.position > target.top_role.position:
                     role_ids = ",".join([str(r.id) for r in target.roles])
-                    end_time = datetime.datetime.utcnow() + datetime.timedelta(seconds=hours) if hours else None
+                    end_time = datetime.datetime.now() + datetime.timedelta(seconds=hours) if hours else None
 
                     db.execute("INSERT INTO mutes VALUES (?, ?, ?, ?)",
                                target.id, role_ids, getattr(end_time, "isoformat", lambda: None)(), message.guild.id)
@@ -259,7 +259,7 @@ class Mod(Cog):
 
                     embed = Embed(title="멤버 뮤트됨",
                                   colour=0xDD2222,
-                                  timestamp=datetime.datetime.utcnow())
+                                  timestamp=datetime.datetime.now())
 
                     embed.set_thumbnail(url=target.avatar_url)
 
@@ -359,7 +359,7 @@ class Mod(Cog):
 
                 embed = Embed(title="멤버 뮤트 해제됨",
                               colour=0xDD2222,
-                              timestamp=datetime.datetime.utcnow())
+                              timestamp=datetime.datetime.now())
 
                 embed.set_thumbnail(url=target.avatar_url)
 
@@ -1634,7 +1634,7 @@ class Mod(Cog):
         punish_log = db.record("SELECT punish_log FROM guilds WHERE GuildID = ?", after.guild.id)
         punish_log = self.bot.get_channel(punish_log[0])
         embed = discord.Embed(color=0xDD2222, title="닉네임 홍보 금지 시스템으로 닉네임이 바뀜",
-                              description=f"닉네임 변경 조치된 유저: {after.mention}", timestamp=datetime.datetime.utcnow())
+                              description=f"닉네임 변경 조치된 유저: {after.mention}", timestamp=datetime.datetime.now())
         embed.set_thumbnail(url=after.avatar_url)
         try:
             await punish_log.send(embed=embed)

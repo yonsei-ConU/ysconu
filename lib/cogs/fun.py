@@ -18,6 +18,8 @@ from discord.ext.commands import command, cooldown
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import make_interp_spline
+from fractions import Fraction
+from decimal import *
 
 from ..bot.__init__ import *
 from ..db import db
@@ -428,6 +430,109 @@ def calc_card_value(values):
         return '', ans
 
 
+operators = ['+', '-', '*', '/', '**', 'mod']
+operator_arity = {'add': 2, 'sub': 2, 'mul': 2, 'div': 2, 'mod': 2, 'pow': 2, 'sqrt': 1, 'ln': 1, 'exp': 1}
+
+
+def div(a, b):
+    try:
+        return Fraction(a) / Fraction(b)
+    except ZeroDivisionError:
+        return ':weary:'
+
+
+operator_functions = {
+    'add': lambda a, b: a + b,
+    'sub': lambda a, b: a - b,
+    'mul': lambda a, b: a * b,
+    'div': div,
+    'mod': lambda a, b: a % b,
+    'pow': lambda a, b: pow(a, b) if (len(str(a)) * len(str(b)) < 1000) else ":weary:",
+    'sqrt': lambda a: a.sqrt(),
+    'ln': lambda a: a.ln(),
+    'exp': lambda a: a.exp(),
+}
+
+
+def infix_to_postfix(expression: str) -> list:
+    stack = []
+    operator_to_internal = {'+': 'add', '-': 'sub', '*': 'mul', '/': 'div', 'mod': 'mod', '**': 'pow', 'sqrt': 'sqrt', 'ln': 'ln', 'exp': 'exp'}
+    precedence = {'add': 1, 'sub': 1, 'mul': 3, 'div': 3, 'mod': 2, 'pow': 4, 'sqrt': 1000, 'ln': 1000, 'exp': 1000}
+    result = []
+
+    def precedence_of(op):
+        return precedence[op] if op in precedence else -1
+
+    def is_operator(c):
+        return c in operator_to_internal
+
+    i = 0
+    while i < len(expression):
+        if expression[i].isdigit() or expression[i] == '.':
+            num = ''
+            while i < len(expression) and (expression[i].isdigit() or expression[i] == '.'):
+                num += expression[i]
+                i += 1
+            result.append(Decimal(num))
+            i -= 1
+        elif expression[i] == '(':
+            stack.append(expression[i])
+        elif expression[i] == ')':
+            while stack and stack[-1] != '(':
+                result.append(stack.pop())
+            stack.pop()  # Remove '(' from stack
+        elif expression[i:i+4] == 'sqrt':
+            stack.append('sqrt')
+            i += 3
+        elif expression[i:i+2] == 'ln':
+            stack.append('ln')
+            i += 1
+        elif expression[i:i+3] == 'exp':
+            stack.append('exp')
+            i += 2
+        elif expression[i:i+3] == 'mod':
+            stack.append('mod')
+            i += 2
+        elif is_operator(expression[i]):
+            op = expression[i]
+            if i + 1 < len(expression) and expression[i:i+2] == '**':  # Handle '**' operator
+                op = '**'
+                i += 1
+            while (stack and stack[-1] != '(' and
+                   precedence_of(operator_to_internal[op]) <= precedence_of(stack[-1])):
+                result.append(stack.pop())
+            stack.append(operator_to_internal[op])
+        i += 1
+
+    while stack:
+        result.append(stack.pop())
+
+    return result
+
+
+def eval_postfix(expression: list):
+    # param `expression` is a result of the function `infix_to_postfix`
+    # param `operator_arity` is a dictionary that defines the number of operands each operator needs
+    stack = []
+    for e in expression:
+        if check_numeric(e):
+            stack.append(e)
+        else:
+            if e not in operator_arity:
+                raise ValueError(f"Unsupported operator: {e}")
+            arity = operator_arity[e]
+            operands = [stack.pop() for _ in range(arity)][::-1]  # Pop operands in reverse order
+            stack.append(operator_functions[e](*operands))
+
+    return stack.pop()
+
+
+def check_numeric(val):
+    try:
+        float(val)
+        return True
+    except ValueError:
+        return False
 # getcontext().prec = 100
 # factorial_inv = [Decimal(1)] * 2
 # tmp = Decimal(1)
@@ -1091,19 +1196,6 @@ class Fun(Cog):
                 db.commit()
         else:
             await ctx.send("`커뉴야 랜덤채팅 <도움/시작/종료/만나지않기>`")
-
-    # @command(name="블랙잭")
-    # async def blackjack(self, ctx, money: Optional[int] = "500"):
-    #     global card_value
-    #     global bj_info
-    #     bj_info[0][0] = ctx.author.id
-    #     bj_start()
-    #     await ctx.channel.send(f"{money}<:treasure:782166234807664650> 을 걸었어.")
-    #     embed = Embed(color=0xffd6fe)
-    #     embed.add_field(name="내 카드", value=f"{bj_info[0][1]} {bj_info[0][2]}")
-    #     embed.add_field(name="상대 카드", value=f"{bj_info[1][1]} {bj_info[1][2]}")
-    #     embed.set_footer(text=f"카드 총합 {card_value[0]} : {card_value[1]}")
-    #     await ctx.send(embed=embed)
 
     @command(name="지건")
     async def slap_member(self, ctx, member: Member, *, reason: Optional[str] = " "):
@@ -3158,7 +3250,7 @@ class Fun(Cog):
                 await grant(ctx, "서두르면 일을 그르친다", "날 바뀌는 걸 1초 남기고 출석체크를 진행하세요")
         if today < ((t + 32400) // 86400):
             self.day_reset()
-        attend_time = (datetime.utcnow() + timedelta(hours=9)).strftime("%H:%M:%S")
+        attend_time = (datetime.now() + timedelta(hours=9)).strftime("%H:%M:%S")
         if attend_time[0:2] != "00" and attend_time[3:] == "00:00":
             l = grant_check("시차 적응 좀 해요", ctx.author.id)
             if l == 1:
@@ -3260,7 +3352,7 @@ class Fun(Cog):
                                today - 1)
         m = self.bot.get_guild(743101101401964647)
         l = ["<@&834406523823587348>"]
-        l.append(datetime.utcnow().strftime("%y/%m/%d"))
+        l.append(datetime.now().strftime("%y/%m/%d"))
         l.append(
             f"총 서버 멤버: **{len(m.members)}** (사람{(p := len(list(filter(lambda t: not t.bot, m.members))))}명 + 봇 {len(m.members) - p})")
         l.append(f"오늘의 서버 멤버 변화: **{today_stat[1]}**")
@@ -3272,7 +3364,7 @@ class Fun(Cog):
         firecoin, yesterday = db.record("SELECT value, value_temp FROM coins WHERE coin_name = '화력코인'")
         delta = fire / yesterday
         delta_ = delta ** 0.55
-        firecoin_ = int(firecoin * delta_) - 8
+        firecoin_ = int(firecoin * delta_) - 3
         db.execute("UPDATE coins SET value = ?, value_temp = ?, value_delta = ? WHERE coin_name = '화력코인'", firecoin_,
                    fire, firecoin_ - yesterday)
         db.commit()
@@ -3758,7 +3850,7 @@ class Fun(Cog):
                 return
         elif activity == "지원금":
             next_help = db.record("SELECT coin_help_time FROM games WHERE USERID = ?", ctx.author.id)[0]
-            if datetime.utcnow() < datetime.fromisoformat(next_help):
+            if datetime.now() < datetime.fromisoformat(next_help):
                 await ctx.send('지원금은 30분에 한 번만 받을 수 있어요!')
                 return
             coin_info = db.records("SELECT coin_name, logam FROM coin_info WHERE UserID = ?", ctx.author.id)
@@ -3776,7 +3868,7 @@ class Fun(Cog):
             cash = math.log10(10 ** cash + help_money)
             db.execute("UPDATE coin_info SET logam = ? WHERE USerID = ? AND coin_name = '현금'", cash, ctx.author.id)
             db.execute("UPDATE games SET coin_help_time = ? WHERE UserID = ?",
-                       (datetime.utcnow() + timedelta(minutes=30)).isoformat(), ctx.author.id)
+                       (datetime.now() + timedelta(minutes=30)).isoformat(), ctx.author.id)
             db.commit()
             await ctx.send(f"지원금을 약 {help_money:,}만큼 받았어요!")
         elif activity == '자산':
@@ -4332,7 +4424,7 @@ class Fun(Cog):
                     "121. 베타 봇이 켜지면 헷갈려하시는 분들이 많던데 베타의 데이터는 본서버의 데이터와는 전혀 달라요.",
                     "122. 우주의 특정 부분에서만 사용 가능하다는 화폐 `아니 씨밧`을 모아 오타를 연구...?",
                     "123. 가끔 서버 사람들이 국기 이모지를 쓰는 경우가 있는데, :flag_za: 와 :flag_az: 는 :zany_face: 를, :flag_er: 은 :weary: 를, :flag_th: 는 :thinking: 을 의미한대요.",
-                    "124. 알파 센타우리를 비롯한 몇몇 채널들의 채널부스트 값은 불 수 없대요.",
+                    "124. 알파 센타우리를 비롯한 몇몇 채널들의 채널부스트 값은 볼 수 없대요.",
                     "125. 도전과제 달성 조건을 찾아보는 잼민이가 있다는데 어떻게 생각하시나요? 지금 당장 이 채널에 얘기해보세요.",
                     "126. 커뉴봇이 아주 띠껍게 말한다면 권한진단 명령어를 제발 좀 사용하세요...",
                     "127. 봇이 짧은 뻘소리를 하는 명령어는 방금 당신이 쓴 심심해도 있지만 공식서버 밖에서 출석체크를 했을 때도 몇 개 되지는 않지만 이런 비슷한 말을 한대요. 이거 말고도 그런 명령어가 하나 더 있다던데 뭘까요?",
@@ -5179,44 +5271,17 @@ class Fun(Cog):
             return
         if expression == '도움':
             await ctx.send(embed=Embed(color=0xffd6fe,
-                                       title='커뉴봇 계산 명령어 도움: ver.pre-alpha (yonsei1)',
-                                       description='다양한 수학 식을 받아서 계산할 수 있도록 하는 프로젝트입니다. 아직은 실험 단계이며 계속 새로운 기능이 추가될 것입니다. 현재는 a+b, a-b, a*b, a/b꼴만 가능합니다.\neval 함수는 사용하지 않아요. 이게 무슨 뜻인지 모르신다면 무시하셔도 좋습니다.'))
+                                       title='커뉴봇 계산 명령어 도움: ver.stable_1 (yonsei4)',
+                                       description='식을 입력받아 계산하는 프로그램입니다.\n'
+                                                   '기본적인 연산자는 +, -, *, /, **, mod가 있으며 각각 덧셈, 뺄셈, 곱셈, 나눗셈, 제곱, 모듈로 연산을 의미합니다.\n'
+                                                   '사용할 수 있는 함수는 현재는 sqrt, exp, ln이 있으며 각각 루트, 자연지수, 자연로그 함수를 의미합니다.\n'
+                                                   '**다만 현재 알 수 없는 이유로 mod 연산자가 굉장히 높은 우선순위로 평가되고 있기 때문에 주의 부탁드립니다. 이후 업데이트에서 곱셈, 나눗셈과 같은 우선순위로 평가되도록 고쳐 보겠습니다.\n'
+                                                   '앞으로 더 많은 함수들과 상수들이 추가될 예정입니다.\n'
+                                                   'eval 함수는 사용하지 않아요. 이게 무슨 뜻인지 모르신다면 무시하셔도 좋습니다.'))
         else:
-            plus = expression.split('+')
-            minus = expression.split('-')
-            times = expression.split('*')
-            divided_by = expression.split('/')
-            if len(plus) == 2:
-                try:
-                    a, b = map(float, plus)
-                    await ctx.send(f'{a + b:,}')
-                except ValueError:
-                    await ctx.send('올바르지 않은 수식이에요!')
-                    return
-            elif len(minus) == 2:
-                try:
-                    a, b = map(float, minus)
-                    await ctx.send(f'{a - b:,}')
-                except ValueError:
-                    await ctx.send('올바르지 않은 수식이에요!')
-                    return
-            elif len(times) == 2:
-                try:
-                    a, b = map(float, times)
-                    await ctx.send(f'{a * b:,}')
-                except ValueError:
-                    await ctx.send('올바르지 않은 수식이에요!')
-                    return
-            elif len(divided_by) == 2:
-                try:
-                    a, b = map(float, divided_by)
-                    await ctx.send(f'{a / b:,.5f}')
-                except:
-                    await ctx.send('올바르지 않은 수식이에요!')
-                    return
-            else:
-                await ctx.send('올바르지 않은 수식이에요!')
-                return
+            rpn = infix_to_postfix(expression)
+            res = eval_postfix(rpn)
+            await ctx.send(f"{ctx.author.mention}\n{res:,.5f}")
 
     @command(name='글자수')
     async def char_length_command(self, ctx, *, s):
