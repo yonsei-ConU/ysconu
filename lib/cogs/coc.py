@@ -59,6 +59,27 @@ def clan_member_refresh(clan_tag):
     return tag_to_name, clan_members
 
 
+def calculate_final_kv(war_kv, raid_kv, donation_kv, ldt, league_dkv, member_time, clan_game_dkv):
+    if ldt > 3000:
+        ldt = 1000
+    elif ldt < -3000:
+        ldt = -1000
+    else:
+        ldt //= 3
+    if member_time < 10 and donation_kv == 2500:
+        donation_kv = 500
+    nal_meok = sum(1 for element in [war_kv, raid_kv, donation_kv] if element >= 2500)
+    kv = 4 * war_kv // 3 + 2 * raid_kv // 3 + 2 * donation_kv // 3 + \
+         league_dkv + ldt + clan_game_dkv
+    if nal_meok:
+        kv += 1500 * nal_meok - 500
+    # if t < 30 and kv > 2000:
+    #     kv = int(newbie_kv(newbie_adjust(t), kv))
+    if kv < 0:
+        kv = 0
+    return kv
+
+
 # with open(r"C:/Users/namon/PycharmProjects/beta_client_temp/lib/utils/coc_auth.txt", "r") as f:
 #     coc_auth_info = f.readlines()
 
@@ -132,7 +153,7 @@ class Coc(Cog):
     #         desc = '이 기능은 클랜 운영 `도우미` 이고 클랜 운영을 대신 해주는 무언가는 아닙니다. 뭐 잘못된 설정으로 인해 엄한 사람을 보내버리는 것보단 낫지 않겠어요?\n\n클랜 컨텐츠와 ' \
     #                '관련된 데이터만 명령어로 수집하고 이런 클랜 컨텐츠들은 어쨌거나 적어도 며칠을 주기로 일어납니다. 그렇기 때문에 명령어를 사용한 지 오래 지나지 않았을 때는 멤버별 무기여 ' \
     #                '지수가 정확하지 않을 수 있습니다. 그러나, 이 정확성은 1주 정도만 지나도 쓸만한 수준이 되며 한 달이 지나면 알고리즘이 추구하는 최대의 정확도를 뽑을 수 있게 됩니다. '
-#
+    #
     #     if check:
     #         embed.add_field(name=str(page), value=desc)
     #     embed.set_footer(text='`커뉴야 뀨 구매 클오클 클랜 운영 도우미`로 구매 가능한 상품이고, 구매하셨다면 여기에 포함된 모든 명령어들을 기간 제한 없이 사용하실 수 있습니다.')
@@ -180,7 +201,8 @@ class Coc(Cog):
                 if 0.1 < attack_score[mem['tag']] < 1:
                     attack_score[mem['tag']] = 1
         members = db.records(
-            "SELECT user_tag, war_ban, war_kv, war_inactive_streak, member_time FROM clash_of_clans WHERE clan_tag = ?", clan_tag)
+            "SELECT user_tag, war_ban, war_kv, war_inactive_streak, member_time FROM clash_of_clans WHERE clan_tag = ?",
+            clan_tag)
         # 공격간사람, 안간사람, 불참한 사람 등등 정산
         to_kick = []
         not_attacked = []
@@ -265,7 +287,9 @@ class Coc(Cog):
                     result_string = ''
                     cnt = 0
             if not check:
-                db.execute("UPDATE clash_of_clans SET war_kv = ?, war_inactive_streak = ? WHERE user_tag = ?", member[2] + kv_delta + kv_delta_past_cap, max(-1, min(7, member[3] + inactive_streak_delta)), member[0])
+                db.execute("UPDATE clash_of_clans SET war_kv = ?, war_inactive_streak = ? WHERE user_tag = ?",
+                           member[2] + kv_delta + kv_delta_past_cap, max(-1, min(7, member[3] + inactive_streak_delta)),
+                           member[0])
         embed = Embed(color=yonseiblue, title='클랜전 정산 완료')
         for i in range(len(result_strings)):
             if i == 0:
@@ -498,28 +522,10 @@ class Coc(Cog):
         league_temp_included = 0
         for i in range(len(member_kv_data)):
             member_kv_data[i] = list(member_kv_data[i])
-            ldt = member_kv_data[i][4]
-            if ldt > 3000:
-                ldt = 1000
-            elif ldt < -3000:
-                ldt = -1000
-            else:
-                ldt //= 3
-            t = member_kv_data[i][6]
-            if t < 10 and member_kv_data[i][3] == 2500:
-                member_kv_data[i][3] = 500
-            nal_meok = sum(1 for element in member_kv_data[i][1:4] if element >= 2500)
-            kv = 4 * member_kv_data[i][1] // 3 + 2 * member_kv_data[i][2] // 3 + 2 * member_kv_data[i][3] // 3 + \
-                 member_kv_data[i][5] + ldt + member_kv_data[i][7]
-            if nal_meok:
-                kv += 1500 * nal_meok - 500
-            # if t < 30 and kv > 2000:
-            #     kv = int(newbie_kv(newbie_adjust(t), kv))
-            if kv < 0:
-                kv = 0
-            member_kv[i] = [kv, tag_to_name[member_kv_data[i][0]], member_kv_data[i][0]]
-            if ldt != 0:
+            if member_kv_data[i][4] != 0:
                 league_temp_included = 1
+            kv = calculate_final_kv(*member_kv_data[i][1:])
+            member_kv[i] = [kv, tag_to_name[member_kv_data[i][0]], member_kv_data[i][0]]
         member_kv = sorted(member_kv, reverse=True)
         result_text = ''
         for i in range(1, min(50, len(member_kv)) + 1):
@@ -547,7 +553,8 @@ class Coc(Cog):
             for vnp in voluntary_no_participate:
                 db.execute("UPDATE clash_of_clans SET league_dkv_temp = 1600 WHERE user_tag = ?", vnp)
             embed = Embed(color=yonseiblue, title='클랜전 리그 불참 요청자 정산 완료')
-            embed.add_field(name='리그전 멤버에서 빠진 사람들 (이들은 리그전이 다 끝난 이후 클랜전 리그 관련 무기여 지수 1600점이 일괄 부여됩니다)', value=','.join([tag_to_name[tag] for tag in voluntary_no_participate]))
+            embed.add_field(name='리그전 멤버에서 빠진 사람들 (이들은 리그전이 다 끝난 이후 클랜전 리그 관련 무기여 지수 1600점이 일괄 부여됩니다)',
+                            value=','.join([tag_to_name[tag] for tag in voluntary_no_participate]))
             await ctx.send(embed=embed)
             if not just_show:
                 db.commit()
@@ -741,7 +748,8 @@ class Coc(Cog):
         tag_to_name, _ = clan_member_refresh(clan_tag)
         clan_game_dkv = defaultdict(lambda: 1200)
         score_sum = 0
-        await ctx.send('클랜 게임 정산은 API로 받을 방법이 없어 수동으로 해야 돼요 ㅠㅠ 이걸 자동으로 받는 방법이 있다면 문의해 주세요!\n지금부터 정확히 여기 나온 대로 입력해주세요!\n첫 번째 줄에는, 만점을 빨리 기록하신 분들에게 약간의 보너스를 줄지를 입력합니다. 준다면 1 아니면 0을 입력해주세요. 다만, 클랜 게임이 끝난 이후 정산하고 계신다면 0을 입력하셔야 합니다.\n두 번째 줄에는 이번 클랜 게임에서 1인당 얻을 수 있는 최대 점수, 모든 보상을 얻기 위해 필요한 클랜 총점을 입력합니다. 보통은 `4000 50000` 일 겁니다.\n세 번째 줄부터는, 보이는 등수대로 `닉네임 점수` 형식으로 입력해주시면 됩니다. 0점인 멤버는 굳이 입력하지 않으셔도 됩니다.\n\n아래는 좋은 예시입니다.\n1\n4000 50000\n으으ㅐ 4000\n으으ㅐ2 4000\n으으ㅐ느느 ㅏ 3000')
+        await ctx.send(
+            '클랜 게임 정산은 API로 받을 방법이 없어 수동으로 해야 돼요 ㅠㅠ 이걸 자동으로 받는 방법이 있다면 문의해 주세요!\n지금부터 정확히 여기 나온 대로 입력해주세요!\n첫 번째 줄에는, 만점을 빨리 기록하신 분들에게 약간의 보너스를 줄지를 입력합니다. 준다면 1 아니면 0을 입력해주세요. 다만, 클랜 게임이 끝난 이후 정산하고 계신다면 0을 입력하셔야 합니다.\n두 번째 줄에는 이번 클랜 게임에서 1인당 얻을 수 있는 최대 점수, 모든 보상을 얻기 위해 필요한 클랜 총점을 입력합니다. 보통은 `4000 50000` 일 겁니다.\n세 번째 줄부터는, 보이는 등수대로 `닉네임 점수` 형식으로 입력해주시면 됩니다. 0점인 멤버는 굳이 입력하지 않으셔도 됩니다.\n\n아래는 좋은 예시입니다.\n1\n4000 50000\n으으ㅐ 4000\n으으ㅐ2 4000\n으으ㅐ느느 ㅏ 3000')
         try:
             response = await self.bot.wait_for(
                 "message",
@@ -758,16 +766,16 @@ class Coc(Cog):
                 try:
                     x = int(data)
                 except ValueError:
-                    await ctx.send(f"{i+1}번째 줄 입력이 잘못됐어요!")
+                    await ctx.send(f"{i + 1}번째 줄 입력이 잘못됐어요!")
                     return
                 if x not in [0, 1]:
-                    await ctx.send(f"{i+1}번째 줄 입력이 잘못됐어요!")
+                    await ctx.send(f"{i + 1}번째 줄 입력이 잘못됐어요!")
                     return
             elif i == 1:
                 try:
                     max_score, max_clan_score = map(int, data.split())
                 except ValueError:
-                    await ctx.send(f"{i+1}번째 줄 입력이 잘못됐어요!")
+                    await ctx.send(f"{i + 1}번째 줄 입력이 잘못됐어요!")
                     return
             else:
                 data = data.split(' ')
@@ -798,7 +806,7 @@ class Coc(Cog):
                         if tag_to_name[tag] == member_name:
                             clan_game_dkv[tag] = member_dkv
                 except ValueError:
-                    await ctx.send(f"{i+1}번째 줄 입력이 잘못됐어요!")
+                    await ctx.send(f"{i + 1}번째 줄 입력이 잘못됐어요!")
                     return
         result_strings = []
         result_string = ''
@@ -823,6 +831,28 @@ class Coc(Cog):
         await ctx.send(embed=embed)
         if not just_show:
             db.commit()
+
+    @command(name='멤버정보')
+    async def clan_member_info(self, ctx, clan_tag: str, user_name: str):
+        tag_to_name, _ = clan_member_refresh(clan_tag)
+        name_to_tag = {tag_to_name[k]: k for k in tag_to_name}
+        if user_name not in name_to_tag:
+            await ctx.send('존재하지 않는 이름이에요!')
+            return
+        user_tag = name_to_tag[user_name]
+        war_kv, raid_kv, donation_kv, league_dkv_temp, league_dkv, member_time, clan_game_dkv = db.record(
+            "SELECT war_kv, raid_kv, donation_kv, league_dkv_temp, league_dkv, member_time, clan_game_dkv FROM clash_of_clans WHERE user_tag = ? AND clan_tag = ?",
+            user_tag, clan_tag)
+        embed = Embed(color=yonseiblue, title=f'멤버 정보: {user_name} (태그 {user_tag})')
+        embed.add_field(name='클랜에 있었던 시간', value=f'{member_time}일')
+        embed.add_field(name='클랜전 관련 무기여 지수 (0~4000)', value=str(war_kv))
+        embed.add_field(name='주말 습격전 관련 무기여 지수 (0~3000)', value=str(raid_kv))
+        embed.add_field(name='지원 관련 무기여 지수 (0~3000)', value=str(donation_kv))
+        embed.add_field(name='클랜전 리그 관련 임시 무기여 지수 (리그전 기간이 아니면 0임)', value=str(league_dkv_temp))
+        embed.add_field(name='클랜전 리그 관련 무기여 지수 (-1500~1600)', value=str(league_dkv))
+        embed.add_field(name='클랜 게임 관련 무기여 지수 (-1500~1500)', value=str(clan_game_dkv))
+        embed.add_field(name='총 무기여 지수 (0~?????)', value=str(calculate_final_kv(war_kv, raid_kv, donation_kv, league_dkv_temp, league_dkv, member_time, clan_game_dkv)))
+        await ctx.send(embed=embed)
 
     @Cog.listener()
     async def on_ready(self):
