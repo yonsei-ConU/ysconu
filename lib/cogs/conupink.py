@@ -17,7 +17,7 @@ level_thresholds = [0,
                     7500, 10000, 12000, 16000, 20000,
                     25000, 30000, 35000, 40000, 45000,
                     50000, 60000, 80000, 100000, 120000,
-                    160000, 200000, 1000000000000000000]
+                    160000, 200000, 300000, 1000000000000000000]
 opacity_costs = [[0],
                  [0] * 2 + [50] * 49 + [100] * 50 + [200] * 154 + [10000],
                  [0] * 2 + list(range(300, 1001, 50)) + [1000] * 32 + list(range(1000, 2000, 5)) + [2000, 2000, 2000,
@@ -34,7 +34,10 @@ opacity_costs = [[0],
                                                                                                             20000,
                                                                                                             300000],
                  [0] * 2 + list(range(10000, 20000, 100)) + [20000] * 26 + [21000, 22000, 23000, 24000] + [
-                     25000] * 18 + list(range(25000, 35001, 100)) + [40000, 40000, 40000, 400000]]
+                     25000] * 18 + list(range(25000, 35001, 100)) + [40000, 40000, 40000, 400000],
+                 [0] * 2 + list(range(500000, 5000000, 500000)) + [5000000] * 39 + list(range(5000000, 10000000, 25000)) + [12345678, 12345678, 12345678, 23456789, 34567890],
+                 [0] * 2 + list(range(8000000, 10000000, 100000)) + list(range(10000000, 20000000, 50000)) + list(range(20000000, 30000000, 400000)) + [30000000] * 7 + [50000000],
+                 [0] * 2 + [77777777] * 252 + [123456789]]
 # for oc in opacity_costs:
 #     print(len(oc), sum(oc))
 SimpleWhite = (255, 255, 255)
@@ -75,11 +78,11 @@ epc_default_upgrade_cost = [20000, 30000, 40000, 50000, 60000, 80000, 100000, 12
                             175000, 180000, 185000, 190000, 195000, 200000, 200000, 200000, 20000, 30000, 50000, 70000,
                             100000]
 preset_name_prefix = ['', 'L', 'P', 'A']
-extend_costs = [0, 0, 0, 30000, 100000, 500000, 2000000]
+extend_costs = [0, 0, 0, 30000, 100000, 500000, 2000000, 100000000, 1000000000, 5000000000]
 pick_upgrade_costs = [[0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000]]
-mineral_KtoE = {'구리': 'Copper', '퓨터': 'Pewter', '철': 'Iron', '은': 'Silver', '금': 'Gold'}
-mineral_EtoK = {'Copper': '구리', 'Pewter': '퓨터', 'Iron': '철', 'Silver': '은', 'Gold': '금'}
-mineral_prices_default = {'Copper': 1500, 'Pewter': 200, 'Iron': 3000, 'Silver': 6000}
+mineral_KtoE = {'구리': 'Copper', '퓨터': 'Pewter', '철': 'Iron', '은': 'Silver', '금': 'Gold', '백금': 'Platinum'}
+mineral_EtoK = {'Copper': '구리', 'Pewter': '퓨터', 'Iron': '철', 'Silver': '은', 'Gold': '금', 'Platinum': '백금'}
+mineral_prices_default = {'Copper': 1000, 'Pewter': 200, 'Iron': 2500, 'Silver': 5000, 'Gold': 8000, 'Platinum': 10000}
 premium_boosted = dict()
 
 
@@ -114,6 +117,7 @@ def make_tutorial_embed(username):
 
 
 def calculate_total_bonus_from_colors(im, default_bonuses):
+    default_bonuses = loads(default_bonuses)
     w, h = im.size
     base_values = [[defaultdict(int) for __ in range(w // SIZE_OF_ONE_TILE)] for _ in range(h // SIZE_OF_ONE_TILE)]
     multipliers = [[1] * (w // SIZE_OF_ONE_TILE) for _ in range(h // SIZE_OF_ONE_TILE)]
@@ -136,7 +140,7 @@ def calculate_total_bonus_from_colors(im, default_bonuses):
             elif col == Ivory:
                 ivory = 1
             elif col == SimpleBlack:
-                base_values[x][y]['money_per_hour_add'] += 7500
+                base_values[x][y]['money_per_hour_add'] += 5000
             elif col == SimpleRed:
                 nx = x + 1
                 if 0 <= nx < w // SIZE_OF_ONE_TILE:
@@ -146,7 +150,7 @@ def calculate_total_bonus_from_colors(im, default_bonuses):
             elif col == CobaltBlue:
                 base_values[x][y]['money_per_command_add'] += [200, 350, 500, 700, 850, 1000][w // SIZE_OF_ONE_TILE - 3]
             elif col == RaisinBlack:
-                base_values[x][y]['money_per_hour_mult1'] += 0.25
+                base_values[x][y]['money_per_hour_mult1'] += 0.2
             elif col == ClassicCopper:
                 base_values[x][y]['Copper_per_command'] += 0.4
             elif col == DullCopper:
@@ -258,7 +262,6 @@ def check_valid_coordinate(uid, preset, x, y):
 
 
 def f(im, ctx, preset, embed, default_bonuses):
-    default_bonuses = loads(default_bonuses)
     total_bonus = calculate_total_bonus_from_colors(im, default_bonuses)
     im.save(u := rf"C:\Users\namon\PycharmProjects\discordbot\lib\images\{ctx.author.id}_{preset}.png")
     bonus_string = ''
@@ -467,14 +470,11 @@ class ConUPink(Cog):
             embed.add_field(name='​',
                             value='아직은 도감을 확인해도 변했다는 게 보이지 않을 거에요. 하지만 효과 자체는 정상적으로 작동하기 때문에 버그제보를 하지 않으셔도 돼요! (이후 업데이트에서 도감이 리워크되면 정상적으로 효과가 보일 거에요)')
         elif actual_lvl == 22:
-            embed.add_field(name='레벨업 보상', value='기간 한정 도전 과제 `커뉴핑크 초기 개척자` 달성, (업데이트 이후)새로운 색깔 TidalWave 해금')
+            embed.add_field(name='레벨업 보상', value='새로운 색깔 TidalWave 해금')
+        elif actual_lvl == 23:
+            embed.add_field(name='레벨업 보상', value='기존 7*7을 넘어서, 10*10까지의 확장이 가능해짐')
             embed.add_field(name='​',
-                            value='커뉴핑크의 첫 버전에서 준비된 컨텐츠는 여기까지에요. 나중의 업데이트에서 지금 선보이는 컨텐츠보다도 더 많은 컨텐츠들을 출시할 예정인 만큼, '
-                                  '많은 관심 부탁드립니다!\n또한 이제부터 커맨드를 너무 많이 사용하게 된다면 다음 업데이트 진행 이후 너무 많은 컨텐츠가 한 번에 열리는 일이 '
-                                  '일어날 수도 있어요. 그래도 상관없다면 계속 진행하셔도 무방하지만, 그게 안 좋다고 생각하시면 플레이 속도를 많이 늦춰 주세요.')
-            l = grant_check("커뉴핑크 초기 개척자", ctx.author.id)
-            if l == 1:
-                await grant(ctx, "커뉴핑크 초기 개척자", "커뉴핑크의 초기 버전에서 22레벨을 달성하세요. 열정적인 플레이어이시네요!")
+                            value='난이도가 어려워지는 시작점이 이곳 23레벨입니다.')
         await ctx.send(embed=embed)
         return actual_lvl
 
@@ -706,7 +706,7 @@ class ConUPink(Cog):
                 embed.add_field(name='Ivory 0xfffff0',
                                 value='`커뉴야 커뉴핑크`명령어 실행당 획득 돈 1000 증가, 그러나 여러 칸을 이 색으로 칠해도 한 칸에만 칠한 것으로 간주',
                                 inline=False)
-                embed.add_field(name='SimpleBlack 0x000000', value='시간당 획득 돈 7500 증가', inline=False)
+                embed.add_field(name='SimpleBlack 0x000000', value='시간당 획득 돈 5000 증가', inline=False)
             if exp_level >= 5:
                 embed.add_field(name='SimpleRed 0xff0000', value='바로 오른쪽 칸이 자신을 부스트하며 제약조건이 없는 경우, 그 칸의 효과를 2.5배로 만듦',
                                 inline=False)
@@ -717,7 +717,7 @@ class ConUPink(Cog):
                 embed.add_field(name='CobaltBlue 0x0d4abc',
                                 value='현재 프리셋의 크기 (얼마나 확장했는지)에 따라 `커뉴야 커뉴핑크`명령어 실행당 획득 돈 증가 (3×3일 경우 300, 4×4일 경우 500, 5×5일 경우 1200, ...)',
                                 inline=False)
-                embed.add_field(name='RaisinBlack 0x212027', value='시간당 획득 돈 25%p 증가 (레이어 1)', inline=False)
+                embed.add_field(name='RaisinBlack 0x212027', value='시간당 획득 돈 20%p 증가 (레이어 1)', inline=False)
             if exp_level >= 10:
                 embed.add_field(name='ClassicCopper 0xce7c56', value='`커뉴야 커뉴핑크`명령어 실행당 구리 획득량 기댓값 0.4 증가',
                                 inline=False)
@@ -840,7 +840,7 @@ class ConUPink(Cog):
                         await ctx.send('구매 완료!')
                         return
             if exp_level >= 11:
-                if args == ['애교']:
+                if args == ('애교',):
                     if ctx.author.id in premium_boosted:
                         await ctx.send('이미 부스터 적용 중이에요. 나중에 다시 구매해 주세요!')
                         return
@@ -851,7 +851,7 @@ class ConUPink(Cog):
                     if p == 1:
                         premium_boosted[ctx.author.id] = time() + 300
                     return
-                if args == ['애교2']:
+                if args == ('애교2',):
                     if ctx.author.id in premium_boosted:
                         await ctx.send('이미 부스터 적용 중이에요. 나중에 다시 구매해 주세요!')
                         return
@@ -1099,6 +1099,9 @@ class ConUPink(Cog):
             if money < extend_costs[w]:
                 await ctx.send(f'돈을 {extend_costs[w]}만큼 모아야 확장할 수 있어요!')
                 return
+            if w == 7 and exp_level < 23:
+                await ctx.send("아직은 이렇게 크게까지 확장할 수 없어요! 경험치 레벨을 올려서 더 넓게 확장할 수 있는 권한을 부여받으세요")
+                return
             await ctx.send(
                 f'{w}×{w}에서 {w + 1}×{w + 1}으로 확장하려고 해요. 가격은 {extend_costs[w]}에요. `확장`이라고 다시 한 번 말해 칸을 확장하세요.')
             try:
@@ -1329,6 +1332,23 @@ class ConUPink(Cog):
             await ctx.send(embed=embed, file=File(u))
             db.execute("UPDATE conupink_user_info SET scary_cube = ? WHERE UserID = ?", scary_cube, ctx.author.id)
             db.commit()
+
+        elif activity == '리더보드':
+            score_info = db.records(
+                "SELECT UserID, total_exp FROM conupink_user_info ORDER BY total_exp DESC LIMIT 10")
+            tjfaud = ""
+            ids = []
+            scores = []
+            for uid, score in score_info:
+                ids.append(uid)
+                scores.append(score)
+            for uid in ids:
+                a = ids.index(uid)
+                b = scores[a]
+                c = scores.index(b) + 1
+                tjfaud += '\n' * (c != 1) + f"{c}. {self.bot.get_user(uid)} (총 경험치 {b})"
+            embed = Embed(color=0xffd6fe, title=f"커뉴핑크 경험치 랭킹", description=tjfaud)
+            await ctx.send(embed=embed)
 
         else:
             await ctx.send('존재하지 않는 기능이에요!')

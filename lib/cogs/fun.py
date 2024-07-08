@@ -10,7 +10,6 @@ from typing import Optional
 import json
 from datetime import datetime, timedelta
 import os
-# from decimal import Decimal, getcontext
 from PIL import Image
 from discord import Member, Embed, DMChannel, File
 from discord.ext.commands import Cog, BucketType, max_concurrency
@@ -276,6 +275,24 @@ class vertex:
 신창 = vertex('신창', {'1': 'P177'})
 
 
+getcontext().prec = 200
+factorial_inv = [Decimal(1)] * 2
+tmp = Decimal(1)
+pi = Decimal("3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679")
+γ = Decimal(
+    "0.5772156649015328606065120900824024310421593359399235988057672348848677267776646709369470632917467495"
+)
+
+ln2 = Decimal(
+    '0.6931471805599453094172321214581765680755001343602552541206800094933936219696947156058633269964186875420014810205706857336855202'
+)
+
+
+for i in range(2, 51):
+    tmp /= Decimal(i)
+    factorial_inv.append(tmp)
+
+
 def simulate_quiz(time, num):
     result = []
     for i in range(time):
@@ -430,8 +447,8 @@ def calc_card_value(values):
         return '', ans
 
 
-operators = ['+', '-', '*', '/', '**', 'mod']
-operator_arity = {'add': 2, 'sub': 2, 'mul': 2, 'div': 2, 'mod': 2, 'pow': 2, 'sqrt': 1, 'ln': 1, 'exp': 1}
+operators = ['+', '-', '*', '/', '**', '%']
+operator_arity = {'add': 2, 'sub': 2, 'mul': 2, 'div': 2, 'mod': 2, 'pow': 2, 'sqrt': 1, 'ln': 1, 'exp': 1, 'sin': 1, 'cos': 1, 'tan': 1, 'harmonic': 1}
 
 
 def div(a, b):
@@ -439,6 +456,60 @@ def div(a, b):
         return Fraction(a) / Fraction(b)
     except ZeroDivisionError:
         return ':weary:'
+
+
+def twopi_mod(x):
+    if isinstance(x, Fraction):
+        x = Decimal(x.numerator) / Decimal(x.denominator)
+    x %= pi
+    if x < -pi:
+        x += 2 * pi
+    elif x > pi:
+        x -= 2 * pi
+    return x
+
+
+def sin(x):
+    x = twopi_mod(x)
+    r = Decimal(0)
+    sgn_tmp = Decimal(1)
+    for power in range(1, 51, 2):
+        r += sgn_tmp * (x ** Decimal(power)) * factorial_inv[power]
+        sgn_tmp *= -1
+    return r
+
+
+def cos(x):
+    x = twopi_mod(x)
+    r = Decimal(1)
+    sgn_tmp = Decimal(-1)
+    for power in range(2, 52, 2):
+        r += sgn_tmp * (x ** Decimal(power)) * factorial_inv[power]
+        sgn_tmp *= -1
+    return r
+
+
+def tan(x):
+    try:
+        return sin(x) / cos(x)
+    except ZeroDivisionError:
+        return ':weary:'
+
+
+def harmonic(n):
+    try:
+        if n == int(n):
+            n = int(n)
+    except ValueError:
+        return
+    if n < 1000:
+        r = Decimal("0")
+        for i in range(1, n + 1):
+            r += Decimal("1") / Decimal(str(i))
+        return r
+    else:
+        return Decimal(n).ln() + γ + (Decimal(1) / Decimal(2 * n)) - (
+            Decimal(1) / Decimal(12 * n * n))
 
 
 operator_functions = {
@@ -451,13 +522,17 @@ operator_functions = {
     'sqrt': lambda a: a.sqrt(),
     'ln': lambda a: a.ln(),
     'exp': lambda a: a.exp(),
+    'sin': sin,
+    'cos': cos,
+    'tan': tan,
+    'harmonic': harmonic,
 }
 
 
 def infix_to_postfix(expression: str) -> list:
     stack = []
-    operator_to_internal = {'+': 'add', '-': 'sub', '*': 'mul', '/': 'div', 'mod': 'mod', '**': 'pow', 'sqrt': 'sqrt', 'ln': 'ln', 'exp': 'exp'}
-    precedence = {'add': 1, 'sub': 1, 'mul': 3, 'div': 3, 'mod': 2, 'pow': 4, 'sqrt': 1000, 'ln': 1000, 'exp': 1000}
+    operator_to_internal = {'+': 'add', '-': 'sub', '*': 'mul', '/': 'div', '%': 'mod', '**': 'pow', 'sqrt': 'sqrt', 'ln': 'ln', 'exp': 'exp', 'sin': 'sin', 'cos': 'cos', 'tan': 'tan', 'harmonic': 'harmonic'}
+    precedence = {'add': 1, 'sub': 1, 'mul': 3, 'div': 3, 'mod': 2, 'pow': 4, 'sqrt': 1000, 'ln': 1000, 'exp': 1000, 'sin': 1000, 'cos': 1000, 'tan': 1000, 'harmonic': 1000}
     result = []
 
     def precedence_of(op):
@@ -468,13 +543,20 @@ def infix_to_postfix(expression: str) -> list:
 
     i = 0
     while i < len(expression):
-        if expression[i].isdigit() or expression[i] == '.':
-            num = ''
-            while i < len(expression) and (expression[i].isdigit() or expression[i] == '.'):
-                num += expression[i]
+        if expression[i].isdigit() or expression[i] == '.' or expression[i:i+2] == 'pi' or expression[i:i+5] == 'gamma':
+            if expression[i:i+2] == 'pi':
+                result.append(pi)
                 i += 1
-            result.append(Decimal(num))
-            i -= 1
+            elif expression[i:i+5] == 'gamma':
+                result.append(γ)
+                i += 1
+            else:
+                num = ''
+                while i < len(expression) and (expression[i].isdigit() or expression[i] == '.'):
+                    num += expression[i]
+                    i += 1
+                result.append(Decimal(num))
+                i -= 1
         elif expression[i] == '(':
             stack.append(expression[i])
         elif expression[i] == ')':
@@ -493,6 +575,18 @@ def infix_to_postfix(expression: str) -> list:
         elif expression[i:i+3] == 'mod':
             stack.append('mod')
             i += 2
+        elif expression[i:i+3] == 'sin':
+            stack.append('sin')
+            i += 2
+        elif expression[i:i+3] == 'cos':
+            stack.append('cos')
+            i += 2
+        elif expression[i:i+3] == 'tan':
+            stack.append('tan')
+            i += 2
+        elif expression[i:i+8] == 'harmonic':
+            stack.append('harmonic')
+            i += 7
         elif is_operator(expression[i]):
             op = expression[i]
             if i + 1 < len(expression) and expression[i:i+2] == '**':  # Handle '**' operator
@@ -533,6 +627,49 @@ def check_numeric(val):
         return True
     except ValueError:
         return False
+
+
+def next_palindrome(n):
+    n = str(n)
+    if int(n) < 10:
+        if int(n) == 9:
+            p = 11
+        else:
+            p = int(n) + 1
+    else:
+        l = len(n)
+        p = n[:l // 2]
+        if l % 2:
+            c = n[l // 2]
+        else:
+            c = '-1'
+        s = n[math.ceil(l / 2):]
+
+        if n == n[::-1]:
+            s = str(int(s) + 1)
+
+        if c == '-1':
+            if int(s) >= int(p[::-1]):
+                p = str(int(p) + 1)
+            p = p + p[::-1]
+            if l != len(p):
+                p = list(p)
+                p.remove('0')
+                p = ''.join(p)
+        else:
+            pc = int(p + c)
+            if int(s) >= int(p[::-1]):
+                pc = str(pc + 1)
+            else:
+                pc = str(pc)
+            p = pc[:len(pc) - 1]
+            c = pc[-1]
+            p = p + c + p[::-1]
+            if l != len(p):
+                p = list(p)
+                p.remove('0')
+                p = ''.join(p)
+    return Decimal(p)
 # getcontext().prec = 100
 # factorial_inv = [Decimal(1)] * 2
 # tmp = Decimal(1)
@@ -2879,49 +3016,6 @@ class Fun(Cog):
             return
         await ctx.send(str(ctx.author) + ":" + content.replace("🥴", "😩"))
 
-    @command(name="추천인")
-    async def recommendation(self, ctx, activity: str, code: Optional[str]):
-        if activity == "발급":
-            maybe_made_code = db.record("SELECT code FROM recommend WHERE holder = ?", ctx.author.id)
-            if maybe_made_code:
-                await ctx.send(f"이미 코드가 있어요! 현재 코드는 {maybe_made_code[0]}이에요.")
-            else:
-                re_code = ""
-                for i in range(10):
-                    re_code += choice(
-                        ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "a", "b", "c", "A", "B", "q", "w", "e", "r",
-                         "t",
-                         "y", "u", "i", "o", "p", "s", "d", "f", "g", "h", "j", "k", "l", "z", "x", "v", "n", "m", "Q",
-                         "W",
-                         "E", "R", "T", "Y", "U", "I", "O", "P", "S", "D", "F", "G", "H", "J", "K", "L", "Z", "X", "C",
-                         "V",
-                         "N", "M"])
-                await ctx.send(f"코드를 생성했어요! 다른 사람들에게 추천인 코드가 {re_code}라고 알려주면 돼요.")
-                db.execute("INSERT INTO recommend (holder, code) VALUES (?, ?)", ctx.author.id, re_code)
-                db.commit()
-        elif activity == "조회":
-            re_code = db.record("SELECT code FROM recommend WHERE holder = ?", ctx.author.id)
-            if re_code:
-                await ctx.send(f"현재 코드는 {re_code[0]}이에요!")
-            else:
-                await ctx.send("추천인 코드를 가지고 있지 않아요! `커뉴야 추천인 발급` 으로 코드를 만드세요.")
-        elif activity == "사용":
-            if not ctx.author.guild_permissions.value & 8:
-                await ctx.send("추천인 코드는 관리자만 사용할 수 있어요!")
-                return
-            if not code:
-                await ctx.send("쓸 코드도 같이 입력해 주세요!")
-                return
-            code_to_use = db.records("SELECT * FROM recommend WHERE code = ?", code)
-            if not code_to_use:
-                await ctx.send("해당 코드는 존재하지 않아요!")
-                return
-            channel_to_send = self.bot.get_channel(823393077376581654)
-            await channel_to_send.send(
-                f"추천인 코드가 사용됨\n사용한 사람: {str(ctx.author)}\n사용된 코드: {code}, 그 코드의 주인은 {code_to_use[0]}\n사용된 서버: {ctx.guild.id} ({ctx.guild.name})\n서버 순인원: {len(list(filter(lambda m: not m.bot, ctx.guild.members)))}")
-            await ctx.send("코드 사용을 완료했어요! 명령어 두번쓴다고 두번 카운트되는거 아니니까 또 쓰진 마세요")
-        else:
-            await ctx.send("올바른 사용법: `커뉴야 추천인 <발급/조회/사용>`")
 
     @command(name="랜덤숫자", aliases=["주사위"])
     async def pick_random_number(self, ctx, n1: int, n2: Optional[int]):
@@ -3250,7 +3344,7 @@ class Fun(Cog):
                 await grant(ctx, "서두르면 일을 그르친다", "날 바뀌는 걸 1초 남기고 출석체크를 진행하세요")
         if today < ((t + 32400) // 86400):
             self.day_reset()
-        attend_time = (datetime.now() + timedelta(hours=9)).strftime("%H:%M:%S")
+        attend_time = (datetime.now()).strftime("%H:%M:%S")
         if attend_time[0:2] != "00" and attend_time[3:] == "00:00":
             l = grant_check("시차 적응 좀 해요", ctx.author.id)
             if l == 1:
@@ -4520,7 +4614,17 @@ class Fun(Cog):
                     "217. 대학교에 오시면 동아리를 꼭 하나 들어가시는 걸 추천드릴게요. 개발자는 낭만 있는 천체관측 동아리에 들어갔어요!",
                     "218. 심심해처럼 오랫동안 기록하는 컨텐츠는 일종의 나이테에요. 대학 추가합격 기원이나 대학 생활이나 그런 얘기가 대표적이죠.",
                     "219. 이 TMI가 작성되는 버전에서는 `커뉴야 계산` 명령어가 정말 별볼일 없지만 이 명령어를 언젠가 성능 높은 계산기로 만드는 게 목표에요.",
-                    "220. 2023년 만우절에는 하루에 진짜같은 가짜 잡소리 여러 개가 올라왔대요. 만우절 이벤트는 해마다 속는 사람이 계속 나와요..."]
+                    "220. 2023년 만우절에는 하루에 진짜같은 가짜 잡소리 여러 개가 올라왔대요. 만우절 이벤트는 해마다 속는 사람이 계속 나와요...",
+                    "221. 대학교에 오시면 이런 거 그만 하고 제발 놀러 나가세요...",
+                    "222. 어떨 때는 커뉴봇이 동시에 2개의 기계에서 돌아가기도 한대요. 222. 어떨 때는 커뉴봇이 동시에 2개의 기계에서 돌아가기도 한대요.",
+                    "223. 아마도 연세6이나 연세7 업데이트는 정말로 슬래시 커맨드를 새로 지원하게 될 가능성이 있어요.",
+                    "224. 오랫동안 골치아픈 이슈 중 하나는 무언가를 실시간으로 만드는 거에요. 생각보다 구현이 쉽지 않나 봐요.",
+                    "225. 오타가 있어도 제보하지 말아 주세요. 만약 이것보다 낮은 번호의 TMI가 반대 내용을 말하고 있다면 무시하세요.",
+                    "226. 프로그래밍 과외 (특히 파이썬) 받으실 분 구합니다. 시간이 지날수록 제 몸값은 오르므로 지금이 가장 싸요.",
+                    "227. 방학에도 하루에 8시간씩 공부하는 대학 새내기가 있다는데요?",
+                    "228. TMI가 n번까지 있을 때 모든 TMI를 한 번씩 보기 위해서 명령어를 쳐야 하는 횟수의 기댓값은 n(1+1/2+...+1/n)이에요. 지금은 230개의 TMI가 있고 저 값은 1384 정도에요.",
+                    "229. 228번 TMI에 나오는 공식은 기댓값의 선형성으로 어렵지 않게 증명할 수 있어요.",
+                    "230. 여기서 나오는 TMI들이 말하는 시점은 비선형적이에요. 이 기능이 4차원이라고 할 수 있겠네요."]
         embed = Embed(color=0xffd6fe, title="TMI를 말해드릴게요... 번호는 만든 순서임...",)
         seen = db.record("SELECT tmi FROM games WHERE UserID = ?", ctx.author.id)[0]
         if extra == '리스트':
@@ -5265,23 +5369,36 @@ class Fun(Cog):
             await ctx.send(f'{m} = **{result}**')
 
     @command(name='계산')
+    @cooldown(1, 5, BucketType.user)
     async def conu_calculator(self, ctx, *, expression: Optional[str] = ''):
         if not expression:
             await ctx.send("`커뉴야 계산 (계산식)`\n이 명령어를 처음 사용하신다면 `커뉴야 계산 도움`을 먼저 확인해보시는 것을 권장드립니다")
             return
         if expression == '도움':
             await ctx.send(embed=Embed(color=0xffd6fe,
-                                       title='커뉴봇 계산 명령어 도움: ver.stable_1 (yonsei4)',
+                                       title='커뉴봇 계산 명령어 도움: ver.stable_2 (yonsei5)',
                                        description='식을 입력받아 계산하는 프로그램입니다.\n'
-                                                   '기본적인 연산자는 +, -, *, /, **, mod가 있으며 각각 덧셈, 뺄셈, 곱셈, 나눗셈, 제곱, 모듈로 연산을 의미합니다.\n'
-                                                   '사용할 수 있는 함수는 현재는 sqrt, exp, ln이 있으며 각각 루트, 자연지수, 자연로그 함수를 의미합니다.\n'
-                                                   '**다만 현재 알 수 없는 이유로 mod 연산자가 굉장히 높은 우선순위로 평가되고 있기 때문에 주의 부탁드립니다. 이후 업데이트에서 곱셈, 나눗셈과 같은 우선순위로 평가되도록 고쳐 보겠습니다.\n'
+                                                   '기본적인 연산자는 +, -, *, /, **, %가 있으며 각각 덧셈, 뺄셈, 곱셈, 나눗셈, 제곱, 모듈로 연산을 의미합니다.\n'
+                                                   '사용할 수 있는 함수는 현재는 sqrt, exp, ln, sin, cos, tan, harmonic이 있으며 각각 루트, 자연지수, 자연로그, 사인, 코사인, 탄젠트, 조화급수를 의미합니다.\n'
+                                                   '사용할 수 있는 상수는 pi, gamma가 있으며 각각 원주율, 오일러-마스케로니 상수를 의미합니다.\n'
+                                                   'e의 경우 파싱 과정에서 어려움을 겪고 있어서 지금은 추가되지 않은 상태고 나중에 추가될 예정입니다. e가 필요하시면 exp(1)을 사용해주세요.\n'
                                                    '앞으로 더 많은 함수들과 상수들이 추가될 예정입니다.\n'
+                                                   '명령어에 관한 설정들을 바꾸고 싶다면 `커뉴야 계산 설정`\n'
                                                    'eval 함수는 사용하지 않아요. 이게 무슨 뜻인지 모르신다면 무시하셔도 좋습니다.'))
+        elif expression.startswith('설정'):
+            user_setting = db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0]
+            if expression == '설정':
+                await ctx.send(embed=Embed(color=0xffd6fe,
+                                           title='계산 명령어 설정',
+                                           description=f'나눗셈 등으로 답이 유리수일 때 **{["분수", "소수"][user_setting & 131072 != 0]}**로 표시\n'
+                                           f'게산 결과의 정밀도 ****'))
         else:
             rpn = infix_to_postfix(expression)
             res = eval_postfix(rpn)
-            await ctx.send(f"{ctx.author.mention}\n{res:,.5f}")
+            if isinstance(res, Fraction):
+                await ctx.send(f"{ctx.author.mention}\n{res}")
+            else:
+                await ctx.send(f"{ctx.author.mention}\n{res:,.5f}")
 
     @command(name='글자수')
     async def char_length_command(self, ctx, *, s):
@@ -5297,51 +5414,14 @@ class Fun(Cog):
                 f'{ctx.author.mention} 공백 및 줄바꿈 포함 {len(s)}자, 공백 및 줄바꿈 제외 {len(s) - s.count(" ") - s.count(bsn)}자')
 
     @command(name='다음거울수')
-    async def next_pallindrome(self, ctx, n: str):
+    async def next_palindrome_command(self, ctx, n: str):
         if not n.isdigit():
             await ctx.send('자연수로만 입력해 주세요.')
             return
         if len(n) > 1800:
             await ctx.send('입력으로는 1800자리까지의 자연수만 가능해요!')
             return
-        if int(n) < 10:
-            if int(n) == 9:
-                p = 11
-            else:
-                p = int(n) + 1
-        else:
-            l = len(n)
-            p = n[:l // 2]
-            if l % 2:
-                c = n[l // 2]
-            else:
-                c = '-1'
-            s = n[math.ceil(l / 2):]
-
-            if n == n[::-1]:
-                s = str(int(s) + 1)
-
-            if c == '-1':
-                if int(s) >= int(p[::-1]):
-                    p = str(int(p) + 1)
-                p = p + p[::-1]
-                if l != len(p):
-                    p = list(p)
-                    p.remove('0')
-                    p = ''.join(p)
-            else:
-                pc = int(p + c)
-                if int(s) >= int(p[::-1]):
-                    pc = str(pc + 1)
-                else:
-                    pc = str(pc)
-                p = pc[:len(pc) - 1]
-                c = pc[-1]
-                p = p + c + p[::-1]
-                if l != len(p):
-                    p = list(p)
-                    p.remove('0')
-                    p = ''.join(p)
+        p = next_palindrome(n)
         if n == n[::-1]:
             txt = f'주어진 수는 거울수이고, '
         else:

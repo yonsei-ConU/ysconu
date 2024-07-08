@@ -36,7 +36,7 @@ class Talk(Cog):
 
     @command(name="서버시간", aliases=["서버시각", "서버시계"])
     async def time(self, ctx):
-        await ctx.send((datetime.now() + timedelta(hours=9)).strftime("지금은 %Y년 %m월 %d일 %H시 %M분 %S초에요!"))
+        await ctx.send((datetime.now()).strftime("지금은 %Y년 %m월 %d일 %H시 %M분 %S초에요!"))
 
     @command(name="언더테일")
     async def wa_sans(self, ctx):

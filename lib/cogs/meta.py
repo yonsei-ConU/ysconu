@@ -118,15 +118,16 @@ class Meta(Cog):
             for channel_to_send in count_channels:
                 try:
                     await self.bot.get_channel(channel_to_send[0]).send(
-                        f"{channel_to_send[1]} 봇이 잠시 동안 오프라인이 될 거에요. 그 동안은 잠시 숫자를 세지 말아 주세요!")
+                        f"봇이 잠시 동안 오프라인이 될 거에요. 그 동안은 잠시 숫자를 세지 말아 주세요!")
                 except AttributeError:
                     db.execute("DELETE FROM channels WHERE ChannelID = ?", channel_to_send[0])
+                except:
+                    continue
             with open("./data/banlist.txt", "w", encoding="utf-8") as f:
                 f.writelines([f"{item}\n" for item in self.bot.banlist])
             db.commit()
 
             db.commit()
-            self.bot.scheduler.shutdown()
             await self.bot.logout()
         else:
             await ctx.send("ㅈㄹ")

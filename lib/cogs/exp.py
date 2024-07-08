@@ -1858,8 +1858,24 @@ class Exp(Cog):
                 tjfaud += '\n' * (c != 1) + f"{c}. {self.bot.get_user(uid)} (달성한 도전 과제 {b}개)"
             embed = Embed(color=0xffd6fe, title=f"전체 도전과제 랭킹", description=tjfaud)
             await ctx.send(embed=embed)
+        elif jong_mok == '커뉴핑크':
+            score_info = db.records(
+                "SELECT UserID, total_exp FROM conupink_user_info ORDER BY total_exp DESC LIMIT 10")
+            tjfaud = ""
+            ids = []
+            scores = []
+            for uid, score in score_info:
+                ids.append(uid)
+                scores.append(score)
+            for uid in ids:
+                a = ids.index(uid)
+                b = scores[a]
+                c = scores.index(b) + 1
+                tjfaud += '\n' * (c != 1) + f"{c}. {self.bot.get_user(uid)} (총 경험치 {b})"
+            embed = Embed(color=0xffd6fe, title=f"커뉴핑크 경험치 랭킹", description=tjfaud)
+            await ctx.send(embed=embed)
         else:
-            await ctx.send("경험치(또는 빈칸), 돈, 경부, 서버강화, 잡초키우기, 우주탐험, 퀴즈, 오목, 도전과제")
+            await ctx.send("경험치(또는 빈칸), 돈, 경부, 서버강화, 잡초키우기, 우주탐험, 퀴즈, 오목, 도전과제, 커뉴핑크")
 
     @command(name="경험치부스트", aliases=["경부"])
     async def display_exp_boost(self, ctx, *, target: Optional[Member]):

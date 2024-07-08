@@ -38,15 +38,70 @@ class Misc(Cog):
         #         await ctx.send("`커뉴야 업데이트 설정 (방식별/기능별)`")
         #         return
         if not extra1:
+            embed = Embed(color=0xffd6fe, title="커뉴봇 yonsei5 업데이트 (날짜: 2024년 7월 8일)")
+            embed.add_field(name='이번 업데이트의 방향성',
+                            value="functionality",
+                            inline=False)
+            embed.add_field(name="1. 새로운 기능",
+                            value="클오클 클랜 운영 도우미 아래의 `커뉴야 멤버정보` 추가, 이 기능 집합은 늦어도 yonsei8 버전에 상용화됩니다.\n커뉴핑크의 23레벨 컨텐츠 추가",
+                            inline=False)
+            embed.add_field(name="2. 개선된 기능",
+                            value="`커뉴야 계산`에서 mod 연산자의 표기를 %로 바꿈 (언젠가는 다시 mod로 되돌릴 예정)\n`커뉴야 계산`에서 함수 sin, cos, tan, harmonic, 상수 pi, gamma 추가",
+                            inline=False)
+            embed.add_field(name="3. 수정된 버그",
+                            value="시간에 관련된 기능들 중 표시되는 시간이 직전 업데이트 이후에 9시간의 차이가 생기던 버그 수정\n`커뉴야 계산`에서 mod 연산자가 의도되지 않게 높은 우선순위를 가지던 버그 수정\n사람 인원이 정확히 1명인 서버를 커뉴봇이 과한 개인 서버로 판별하지 못하던 버그 수정\n업데이트 대비 점검 등으로 봇이 꺼질 때 숫자채널들에 메세지가 제대로 전달되지 않던 버그 수정\n도전과제 `눈치게임 개고수`가 잘못 처리되던 버그 수정, 이걸로 원래 얻었어야 할 도전과제를 얻지 못한 사람(들)에게 소급해서 지급\n`커뉴야 커뉴핑크 광산`에서 백금이 포함되는 행동을 하면 나던 에러 수정\n`커뉴야 커뉴핑크 광산`에서 광석이 판매되지 않던 버그 수정\n`커뉴야 커뉴핑크 상점`에서 애교 부스터가 구매되지 않던 버그 수정",
+                            inline=False)
+            embed.add_field(name="4. 삭제된 기능",
+                            value="언젠가 출시되었지만 195일에 1회라는 경악스러운 사용 빈도를 가지고 있던 명령어 하나를 삭제 ( 뭔지 알아맞혀 보세요 :) )",
+                            inline=False)
+            embed.set_footer(
+                text="커뉴야 심심해 명령어로 나오는 TMI 개수: 220개 -> 230개\n도전과제 개수: 123개 -> 123개 ()\n이전 업데이트 yonsei4\n다음 업데이트 미출시")
+            await ctx.send(embed=embed)
+        elif extra1 == '리더보드':
+            embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 리더보드")
+            embed.add_field(name='yonsei5', value='커뉴야 리더보드 커뉴핑크` 추가')
+            await ctx.send(embed=embed)
+        elif extra1 == '커뉴핑크':
+            embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 커뉴핑크")
+            embed.add_field(name='yonsei5', value='# 신기능\n`커뉴야 커뉴핑크 리더보드 경험치` 추가 (현재는 리더보드 까지만 쳐야 함), 23레벨의 컨텐츠 추가\n# 밸런스 조절\n검은 계통 색들을 전반적으로 너프\n# 버그 수정\n커뉴핑크 광산에서 백금이 포함된 행동을 하면 나던 에러, 광석 판매가 되지 않던 버그 수정, 커뉴핑크 상점에서 애교 부스터가 구매되지 않던 버그 수정')
+            embed.add_field(name='yonsei2', value='# 밸런스 조절\nSimpleGreen의 경험치 추가량 5 -> 3으로 **너프**\n# 버그 수정\n명령어 실행당 경험치를 상수로 더하는 색의 효과가 적용되지 않던 버그 수정')
+            embed.add_field(name='yonsei1', value='명령어 출시', inline=False)
+            await ctx.send(embed=embed)
+        elif extra1 == '클오클':
+            embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 클오클 (관련된 모든 명령어의 업데이트 내역이 여기에 표시됨)")
+            embed.add_field(name='yonsei5', value='유틸성 명령어인 `멤버정보`를 추가', inline=False)
+            embed.add_field(name='yonsei3', value='지원 관련 무기여 지수 결정 알고리즘을 변경', inline=False)
+            await ctx.send(embed=embed)
+        elif extra1 == '도전과제':
+            embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 도전과제")
+            embed.add_field(name='yonsei5', value='도전과제 `눈치게임 개고수` 관련된 버그 수정', inline=False)
+            embed.add_field(name='yonsei1', value='도전과제 개수가 122개까지 증가, `코인 대부호`가 조건을 만족함에도 달성되지 않던 버그 수정, `명령어의 신`이 서로 다른 255개의 명령어만 사용해도 달성되던 버그 수정', inline=False)
+            await ctx.send(embed=embed)
+        elif extra1 == '계산':
+            embed = Embed(color=0xffd6fe, title='커뉴봇 기능 업데이트 내역: 계산')
+            embed.add_field(name='yonsei5', value='mod 연산자의 표기를 임시로 %로 바꾸고, 함수 sin, cos, tan, harmonic, 상수 pi, gamma 추가\nmod 연산자가 의도되지 않게 높은 우선순위를 가지던 버그 수정')
+            embed.add_field(name='yonsei4', value='몇 가지 연산들을 지원하도록, 사용할 수 있는 수준으로 명령어 출시')
+            embed.add_field(name='yonsei1', value='매우 실험적인 버전으로 명령어 출시')
+        elif extra1 == '추천인':
+            l = grant_check("과거를 보는 자", ctx.author.id)
+            if l == 1:
+                await grant(ctx, "과거를 보는 자", "연세 버전이나 그 이후 버전에서 삭제된 명령어의 업데이트 내역을 확인하세요")
+            embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 추천인")
+            embed.add_field(name='yonsei5', value='명령어 삭제')
+            await ctx.send(embed=embed)
+        elif extra1 == 'yonsei4':
             embed = Embed(color=0xffd6fe, title="커뉴봇 yonsei4 업데이트 (날짜: 2024년 6월 4일)")
             embed.add_field(name='이번 업데이트의 방향성',
                             value="은 모르겠고 신기능 아이디어 받는다니까요. 없으면 저야 편한거죠. \N{THUMBS UP SIGN}",
                             inline=False)
             embed.add_field(name="1. 새로운 기능",
-                            value="커뉴봇은 더 이상 비슷한 사람들의 집합이 만든 여러 개의 개인용 서버에 들어가 있으려고 하지 않음 (명령어 아님, 개인용 서버 판별 알고리즘이 실험 중에 있지만 정확성이 매우 높다고 판정됨)",
+                            value="커뉴봇은 더 이상 비슷한 사람들의 집합이 만든 여러 개의 개인용 서버에 들어가 있으려고 하지 않음 (명령어 아님, 개인용 서버 판별 알고리즘이 실험 "
+                                  "중에 있지만 정확성이 매우 높다고 판정됨)",
                             inline=False)
             embed.add_field(name="2. 개선된 기능",
-                            value="화력코인의 가격 변동 알고리즘을 변경, 보유 화력코인 등의 데이터를 전으로 롤백\ndatetime.utcnow()를 쓰는 모든 명령어에서 사용하는 함수를 datetime.now()로 변경 (눈에 띄는 변경사항은 아마도 없지만 이후 버전에서 봇이 더 안정적이게 됩니다.)\n`커뉴야 계산`명령어가 제대로 작동하기 시작, 몇 가지 함수를 지원",
+                            value="화력코인의 가격 변동 알고리즘을 변경, 보유 화력코인 등의 데이터를 전으로 롤백\ndatetime.utcnow()를 쓰는 모든 명령어에서 사용하는 "
+                                  "함수를 datetime.now()로 변경 (눈에 띄는 변경사항은 아마도 없지만 이후 버전에서 봇이 더 안정적이게 됩니다.)\n`커뉴야 계산`명령어가 "
+                                  "제대로 작동하기 시작, 몇 가지 함수를 지원",
                             inline=False)
             embed.add_field(name="3. 수정된 버그",
                             value="더 이상 화력코인의 가격이 음수가 되지 않음",
@@ -55,7 +110,7 @@ class Misc(Cog):
                             value="더미데이터로만 남아있던 몇몇 명령어들을 삭제",
                             inline=False)
             embed.set_footer(
-                text="커뉴야 심심해 명령어로 나오는 TMI 개수: 220개 -> 220개\n도전과제 개수: 123개 -> 123개 ()\n이전 업데이트 yonsei3\n다음 업데이트 미출시")
+                text="커뉴야 심심해 명령어로 나오는 TMI 개수: 220개 -> 220개\n도전과제 개수: 123개 -> 123개 ()\n이전 업데이트 yonsei3\n다음 업데이트 yonsei5")
             await ctx.send(embed=embed)
         elif extra1 == '코인':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 코인")
@@ -63,10 +118,6 @@ class Misc(Cog):
             embed.add_field(name='yonsei3', value='코인 가격이 0까지 떨어질 확률을 낮춤\n코인의 가격이 이따금씩 제대로 새로고침되지 않던 버그 수정')
             embed.add_field(name='yonsei1', value='새로운 기능\n\n`커뉴야 코인 그래프` 실험 단계 출시\n\n개선된 기능\n\n화력코인의 변동성을 소폭 감소시킴\n큰 수가 나오는 대부분의 기능에서 수를 쉼표로 구분\n룰렛: 가능한 수의 범위가 1~36임을 더 잘 보이는 곳에 명시, 홀수 또는 짝수에 거는 경우 줄임말을 인식\n블랙잭: 가능한 행동들의 설명을 튜토리얼에만 표시, 판이 끝난 이후 남은 코인을 표시, 판돈의 2배보다 보유 현금이 적을 경우 더블 다운을 할 수 없음\n\n수정된 버그\n\n알맞은 양의 코인을 가지고 있었음에도 판매되지 않던 버그 수정\n화력코인 변화량이 이상하게 표기되던 버그 수정\n지원금: 특정한 경우 지원금이 100000.0처럼 소수점으로 표기되던 버그 수정\n블랙잭: 더블 다운을 해도 카드를 더 뽑을 수 있던 버그 수정, 돈을 잃은 후 남은 돈이 0 이하이면 에러가 나면서 돈 변화가 반영되지 않던 버그 수정', inline=False)
             await ctx.send(embed=embed)
-        elif extra1 == '계산':
-            embed = Embed(color=0xffd6fe, title='커뉴봇 기능 업데이트 내역: 계산')
-            embed.add_field(name='yonsei4', value='몇 가지 연산들을 지원하도록, 사용할 수 있는 수준으로 명령어 출시')
-            embed.add_field(name='yonsei1', value='매우 실험적인 버전으로 명령어 출시')
         elif extra1 == 'yonsei3':
             embed = Embed(color=0xffd6fe, title="커뉴봇 yonsei3 업데이트 (날짜: 2024년 5월 13일)")
             embed.add_field(name='이번 업데이트의 방향성',
@@ -88,10 +139,6 @@ class Misc(Cog):
                             inline=False)
             embed.set_footer(
                 text="커뉴야 심심해 명령어로 나오는 TMI 개수: 210개 -> 220개\n도전과제 개수: 123개 -> 123개 ()\n이전 업데이트 yonsei2\n다음 업데이트 yonsei4")
-            await ctx.send(embed=embed)
-        elif extra1 == '클오클':
-            embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 클오클 (관련된 모든 명령어의 업데이트 내역이 여기에 표시됨)")
-            embed.add_field(name='yonsei3', value='지원 관련 무기여 지수 결정 알고리즘을 변경', inline=False)
             await ctx.send(embed=embed)
         elif extra1 == '숫자채널':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 숫자채널")
@@ -123,11 +170,6 @@ class Misc(Cog):
                 text="커뉴야 심심해 명령어로 나오는 TMI 개수: 210개 -> 210개\n도전과제 개수: 122개 -> 123개 (추가된 도전과제: 과거를 보는 자(6p))\n이전 업데이트 "
                      "yonsei1\n다음 업데이트 yonsei3\n이 업데이트 또는 이후 업데이트에서 밸런스 조절이라는 말이 있다면 명령어별 세부 업데이트 내역에 자세한 내용이 실어집니다.")
             await ctx.send(embed=embed)
-        elif extra1 == '커뉴핑크':
-            embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 커뉴핑크")
-            embed.add_field(name='yonsei2', value='# 밸런스 조절\nSimpleGreen의 경험치 추가량 5 -> 3으로 **너프**\n# 버그 수정\n명령어 실행당 경험치를 상수로 더하는 색의 효과가 적용되지 않던 버그 수정')
-            embed.add_field(name='yonsei1', value='명령어 출시', inline=False)
-            await ctx.send(embed=embed)
         elif extra1 == '소수판정':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 소수판정")
             embed.add_field(name='yonsei2', value='가능한 입력값의 범위를 10의 1900제곱까지에서 10의 1980제곱까지로 상향')
@@ -137,7 +179,10 @@ class Misc(Cog):
             embed.add_field(name='yonsei2', value='가능한 입력값의 범위를 10의 1500제곱-1까지에서 10의 1800제곱-1까지로 상향')
             await ctx.send(embed=embed)
         elif extra1 == '봇메세지무시':
-            embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 다음거울수")
+            l = grant_check("과거를 보는 자", ctx.author.id)
+            if l == 1:
+                await grant(ctx, "과거를 보는 자", "연세 버전이나 그 이후 버전에서 삭제된 명령어의 업데이트 내역을 확인하세요")
+            embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 봇메세지무시")
             embed.add_field(name='yonsei2', value='명령어 삭제')
             await ctx.send(embed=embed)
         elif extra1 == 'yonsei1':
@@ -229,10 +274,6 @@ class Misc(Cog):
         elif extra1 == '지분':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 지분")
             embed.add_field(name='yonsei1', value='모든 사람이 같은 횟수만큼 명령어를 사용했을 때 지분 순위가 비정상적으로 표시되던 버그 수정', inline=False)
-            await ctx.send(embed=embed)
-        elif extra1 == '도전과제':
-            embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 도전과제")
-            embed.add_field(name='yonsei1', value='도전과제 개수가 122개까지 증가, `코인 대부호`가 조건을 만족함에도 달성되지 않던 버그 수정, `명령어의 신`이 서로 다른 255개의 명령어만 사용해도 달성되던 버그 수정', inline=False)
             await ctx.send(embed=embed)
         elif extra1 == '로그채널':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 로그채널")
@@ -807,14 +848,14 @@ class Misc(Cog):
 
     @command(name="없뎃")
     async def no_update(self, ctx):
-        await ctx.send("없뎃: since 2024-3-18")
+        await ctx.send("없뎃: since 2024-7-8")
 
     @command(name="나중업뎃")
     async def future_updates(self, ctx):
         l = grant_check("업뎃을 기대하시는 거에요?", ctx.author.id)
         if l == 1:
             await grant(ctx, "업뎃을 기대하시는 거에요?", "2024년이나 그 이후에 `커뉴야 나중업뎃` 명령어를 실행하세요.\n그런데, 업데이트를 원하시면 새로운 기능을 제안해 보시는 게 어떨까요?")
-        await ctx.send("예정된 나중 업데이트 내용(바로 다음 업데이트라는 보장은 없음)\n뀨 상점에 `클오클 클랜 운영 도우미`, `레벨역할 최대치 증가`, `초대역할 기능 해금` 추가\nCOC 운영 알고리즘에서 클랜 컨텐츠만을 반영하면 중복값이 발생하므로 공격 성공 횟수나 홀 대비 트로피 개수 등으로 총점을 약간씩 변경\n고질병이던 쿨타임 이슈 해결\n`커뉴야 투표`, `커뉴야 계산` 명령어 추가")
+        await ctx.send("예정된 나중 업데이트 내용(바로 다음 업데이트라는 보장은 없음)\n뀨 상점에 `클오클 클랜 운영 도우미`, `레벨역할 최대치 증가`, `초대역할 기능 해금` 추가\n타이머 등 여러 명령어에 실시간 기능을 구현\n슬래시 커맨드 전부 지원\n여태 모은 총 돈을 기준으로 하는 커뉴핑크 리더보드")
 
     @command(name="정지먹여")
     async def addban_command(self, ctx, target: Optional[int]):
@@ -880,7 +921,7 @@ class Misc(Cog):
         if len(humans) <= 3:
             for g in self.bot.guilds:
                 hc = set(filter(lambda m: not m.bot, g.members))
-                if len(humans & hc) >= 2:
+                if len(humans & hc) >= 2 or humans == hc:
                     if guild.system_channel is not None:
                         try:
                             await guild.system_channel.send("커뉴봇은 과하게 많은 수의 개인용 서버에 들어오는 것을 원치 않습니다. 다른 서버들도 봇을 자유롭게 사용할 수 있도록 협조 바랍니다.")

@@ -669,7 +669,7 @@ class Alpha(Cog):
             await ctx.send(embed=embed)
         else:
             if rate * 2000 > quarkgen_speed:
-                await ctx.send("아직은 쿼크 생산량을 초과할 정도로 많은 전력을 생산할 수 없어요! yonsei2~yonsei3 정도에 추가할 예정인 기능이에요.")
+                await ctx.send("아직은 쿼크 생산량을 초과할 정도로 많은 전력을 생산할 수 없어요! yonsei6 업데이트에서 만나요.")
                 return
                 # await ctx.send("이 정도로 많은 전력을 생산한다면 쿼크가 부족해질 수도 있어요. 그래도 이만큼의 전력을 생산하고 싶으시면 `설정`이라고 말해주세요.")
                 # try:

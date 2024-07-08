@@ -1737,7 +1737,7 @@ class Mod(Cog):
             if current_count == 1001:
                 l = grant_check("눈치게임 개고수", message.author.id)
                 if l == 1:
-                    await grant(message, "눈치게임 고수", "미자르에서 1000을 세세요. 이런!")
+                    await grant(message, "눈치게임 개고수", "미자르에서 1000을 세세요. 이런!")
         if channel_type & 1 == 1:
             if message.author.bot and servertype & 8 == 8:
                 return
