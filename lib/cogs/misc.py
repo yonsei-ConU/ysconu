@@ -38,6 +38,33 @@ class Misc(Cog):
         #         await ctx.send("`커뉴야 업데이트 설정 (방식별/기능별)`")
         #         return
         if not extra1:
+            embed = Embed(color=0xffd6fe, title="커뉴봇 yonsei6 업데이트 (날짜: 2024년 7월 8일)")
+            embed.add_field(name='이번 업데이트의 방향성',
+                            value="functionality",
+                            inline=False)
+            embed.add_field(name="1. 새로운 기능",
+                            value="",
+                            inline=False)
+            embed.add_field(name="2. 개선된 기능",
+                            value="",
+                            inline=False)
+            embed.add_field(name="3. 수정된 버그",
+                            value="커뉴핑크에 있었던 오타 수정",
+                            inline=False)
+            embed.add_field(name="4. 삭제된 기능",
+                            value="",
+                            inline=False)
+            embed.set_footer(
+                text="커뉴야 심심해 명령어로 나오는 TMI 개수: 220개 -> 230개\n도전과제 개수: 123개 -> 123개 ()\n이전 업데이트 yonsei4\n다음 업데이트 미출시")
+            await ctx.send(embed=embed)
+        elif extra1 == '커뉴핑크':
+            embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 커뉴핑크")
+            embed.add_field(name='yonsei6', value='도감에서 나타났던 오타 수정')
+            embed.add_field(name='yonsei5', value='# 신기능\n`커뉴야 커뉴핑크 리더보드 경험치` 추가 (현재는 리더보드 까지만 쳐야 함), 23레벨의 컨텐츠 추가\n# 밸런스 조절\n검은 계통 색들을 전반적으로 너프\n# 버그 수정\n커뉴핑크 광산에서 백금이 포함된 행동을 하면 나던 에러, 광석 판매가 되지 않던 버그 수정, 커뉴핑크 상점에서 애교 부스터가 구매되지 않던 버그 수정')
+            embed.add_field(name='yonsei2', value='# 밸런스 조절\nSimpleGreen의 경험치 추가량 5 -> 3으로 **너프**\n# 버그 수정\n명령어 실행당 경험치를 상수로 더하는 색의 효과가 적용되지 않던 버그 수정')
+            embed.add_field(name='yonsei1', value='명령어 출시', inline=False)
+            await ctx.send(embed=embed)
+        elif extra1 == 'yonsei5':
             embed = Embed(color=0xffd6fe, title="커뉴봇 yonsei5 업데이트 (날짜: 2024년 7월 8일)")
             embed.add_field(name='이번 업데이트의 방향성',
                             value="functionality",
@@ -46,26 +73,25 @@ class Misc(Cog):
                             value="클오클 클랜 운영 도우미 아래의 `커뉴야 멤버정보` 추가, 이 기능 집합은 늦어도 yonsei8 버전에 상용화됩니다.\n커뉴핑크의 23레벨 컨텐츠 추가",
                             inline=False)
             embed.add_field(name="2. 개선된 기능",
-                            value="`커뉴야 계산`에서 mod 연산자의 표기를 %로 바꿈 (언젠가는 다시 mod로 되돌릴 예정)\n`커뉴야 계산`에서 함수 sin, cos, tan, harmonic, 상수 pi, gamma 추가",
+                            value="`커뉴야 계산`에서 mod 연산자의 표기를 %로 바꿈 (언젠가는 다시 mod로 되돌릴 예정)\n`커뉴야 계산`에서 함수 sin, cos, tan, "
+                                  "harmonic, 상수 pi, gamma 추가",
                             inline=False)
             embed.add_field(name="3. 수정된 버그",
-                            value="시간에 관련된 기능들 중 표시되는 시간이 직전 업데이트 이후에 9시간의 차이가 생기던 버그 수정\n`커뉴야 계산`에서 mod 연산자가 의도되지 않게 높은 우선순위를 가지던 버그 수정\n사람 인원이 정확히 1명인 서버를 커뉴봇이 과한 개인 서버로 판별하지 못하던 버그 수정\n업데이트 대비 점검 등으로 봇이 꺼질 때 숫자채널들에 메세지가 제대로 전달되지 않던 버그 수정\n도전과제 `눈치게임 개고수`가 잘못 처리되던 버그 수정, 이걸로 원래 얻었어야 할 도전과제를 얻지 못한 사람(들)에게 소급해서 지급\n`커뉴야 커뉴핑크 광산`에서 백금이 포함되는 행동을 하면 나던 에러 수정\n`커뉴야 커뉴핑크 광산`에서 광석이 판매되지 않던 버그 수정\n`커뉴야 커뉴핑크 상점`에서 애교 부스터가 구매되지 않던 버그 수정",
+                            value="시간에 관련된 기능들 중 표시되는 시간이 직전 업데이트 이후에 9시간의 차이가 생기던 버그 수정\n`커뉴야 계산`에서 mod 연산자가 의도되지 않게 "
+                                  "높은 우선순위를 가지던 버그 수정\n사람 인원이 정확히 1명인 서버를 커뉴봇이 과한 개인 서버로 판별하지 못하던 버그 수정\n업데이트 대비 점검 "
+                                  "등으로 봇이 꺼질 때 숫자채널들에 메세지가 제대로 전달되지 않던 버그 수정\n도전과제 `눈치게임 개고수`가 잘못 처리되던 버그 수정, "
+                                  "이걸로 원래 얻었어야 할 도전과제를 얻지 못한 사람(들)에게 소급해서 지급\n`커뉴야 커뉴핑크 광산`에서 백금이 포함되는 행동을 하면 나던 에러 "
+                                  "수정\n`커뉴야 커뉴핑크 광산`에서 광석이 판매되지 않던 버그 수정\n`커뉴야 커뉴핑크 상점`에서 애교 부스터가 구매되지 않던 버그 수정",
                             inline=False)
             embed.add_field(name="4. 삭제된 기능",
                             value="언젠가 출시되었지만 195일에 1회라는 경악스러운 사용 빈도를 가지고 있던 명령어 하나를 삭제 ( 뭔지 알아맞혀 보세요 :) )",
                             inline=False)
             embed.set_footer(
-                text="커뉴야 심심해 명령어로 나오는 TMI 개수: 220개 -> 230개\n도전과제 개수: 123개 -> 123개 ()\n이전 업데이트 yonsei4\n다음 업데이트 미출시")
+                text="커뉴야 심심해 명령어로 나오는 TMI 개수: 220개 -> 230개\n도전과제 개수: 123개 -> 123개 ()\n이전 업데이트 yonsei4\n다음 업데이트 yonsei6")
             await ctx.send(embed=embed)
         elif extra1 == '리더보드':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 리더보드")
             embed.add_field(name='yonsei5', value='커뉴야 리더보드 커뉴핑크` 추가')
-            await ctx.send(embed=embed)
-        elif extra1 == '커뉴핑크':
-            embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 커뉴핑크")
-            embed.add_field(name='yonsei5', value='# 신기능\n`커뉴야 커뉴핑크 리더보드 경험치` 추가 (현재는 리더보드 까지만 쳐야 함), 23레벨의 컨텐츠 추가\n# 밸런스 조절\n검은 계통 색들을 전반적으로 너프\n# 버그 수정\n커뉴핑크 광산에서 백금이 포함된 행동을 하면 나던 에러, 광석 판매가 되지 않던 버그 수정, 커뉴핑크 상점에서 애교 부스터가 구매되지 않던 버그 수정')
-            embed.add_field(name='yonsei2', value='# 밸런스 조절\nSimpleGreen의 경험치 추가량 5 -> 3으로 **너프**\n# 버그 수정\n명령어 실행당 경험치를 상수로 더하는 색의 효과가 적용되지 않던 버그 수정')
-            embed.add_field(name='yonsei1', value='명령어 출시', inline=False)
             await ctx.send(embed=embed)
         elif extra1 == '클오클':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 클오클 (관련된 모든 명령어의 업데이트 내역이 여기에 표시됨)")

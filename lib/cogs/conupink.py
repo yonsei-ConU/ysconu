@@ -753,7 +753,7 @@ class ConUPink(Cog):
                 embed.add_field(name='EarthYellow 0xffb257',
                                 value='모든 광물의 판매 가격 25% 증가, 그러나 여러 칸을 이 색으로 칠해도 한 칸에만 칠한 것으로 간주', inline=False)
                 embed.add_field(name='PastelPink 0xfe5779',
-                                value='`커뉴야 커뉴핑크`명령어 실행당 획득 돈 5%p 감소 (레이어 1), `커뉴야 커뉴핑크`명령어 실행당 획득 돈 5%p 증가 (레어이 3)',
+                                value='`커뉴야 커뉴핑크`명령어 실행당 획득 돈 5%p 감소 (레이어 1), `커뉴야 커뉴핑크`명령어 실행당 획득 돈 5%p 증가 (레이어 3)',
                                 inline=False)
             await ctx.send(embed=embed)
 
