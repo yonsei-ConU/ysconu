@@ -10,6 +10,8 @@ from discord import Embed, File
 from discord.ext.commands import Cog, BucketType, command, cooldown
 from .achieve import grant_check, grant
 from ..db import db
+from discord.app_commands import command as slash, choices, Choice
+from ..utils.send import send
 
 # 원래 3,칸 불투명도 가격 = [0] * 2 + [15000] * 47 + list(range(15000, 20001, 100)) + [20000] * 49 + list(range(20000, 25001, 100)) + list(range(25200, 30001, 200)) + [30000] * 25 + [40000, 40000, 40000, 40000, 100000]
 level_thresholds = [0,
@@ -308,20 +310,20 @@ class ConUPink(Cog):
 
     async def purchase_kkyu(self, ctx, kkyu, item, cost, tjfaud):
         if kkyu < cost:
-            await ctx.send("이 아이템을 살 만큼의 뀨를 가지고 있지 않습니다.")
+            await send(ctx, "이 아이템을 살 만큼의 뀨를 가지고 있지 않습니다.")
             return 0
         embed = Embed(color=0x00b2ff, title=f"{item} 을(를) 구매합니다.")
         embed.add_field(name="아이템 정보",
                         value=tjfaud,
                         inline=False)
         embed.add_field(name="차감되는 뀨 정보", value=f"{kkyu} -> {kkyu - cost}")
-        await ctx.send(f"{item} 을(를) 구매하려고 합니다. `구매`라고 입력해서 구매를 확정지으세요", embed=embed)
+        await send(ctx, f"{item} 을(를) 구매하려고 합니다. `구매`라고 입력해서 구매를 확정지으세요", embed=embed)
         msg = await self.bot.wait_for(
             "message",
             check=lambda message: message.author == ctx.author and ctx.channel == message.channel
         )
         if msg.content == "구매":
-            await ctx.send("구매 완료! 구매해 주셔서 감사합니다.")
+            await send(ctx, "구매 완료! 구매해 주셔서 감사합니다.")
             await self.bot.get_channel(823393077376581654).send(f"{ctx.author.id} 님이 뀨 아이템 {item}을 구매하셨습니다.")
             kkyu -= cost
             db.execute("UPDATE games SET kkyu = ? WHERE UserID = ?", kkyu, ctx.author.id)
@@ -415,7 +417,7 @@ class ConUPink(Cog):
             db.commit()
         elif actual_lvl == 13:
             embed.add_field(name='레벨업 보상', value='상점에서 프리셋과 특정한 색깔 물감 사용권을 판매하기 시작')
-            await ctx.send(
+            await send(ctx, 
                 '`커뉴야 커뉴핑크 도감`과 관련된 기술적 문제로 인해 현재 25개가 넘는 색깔을 등록할 수 없는 상태에요. 도감 명령어를 우선 리워크하고 yonsei3이나 yonsei4버전 정도에 오시면 상점에 물감 사용권이 정말로 올라와 있을 거에요. 죄송해요 ㅠㅠ')
         elif actual_lvl == 14:
             embed.add_field(name='레벨업 보상', value='새로운 색깔 SimpleYellow, SimpleGreen, SimpleMagenta 해금')
@@ -475,7 +477,7 @@ class ConUPink(Cog):
             embed.add_field(name='레벨업 보상', value='기존 7*7을 넘어서, 10*10까지의 확장이 가능해짐')
             embed.add_field(name='​',
                             value='난이도가 어려워지는 시작점이 이곳 23레벨입니다.')
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
         return actual_lvl
 
     @command(name='커뉴핑크', aliases=['커핑'])
@@ -489,7 +491,7 @@ class ConUPink(Cog):
             db.execute("INSERT INTO conupink_user_info (USERID, default_bonuses) VALUES (?, ?)", ctx.author.id,
                        '{"money_per_command": 10, "exp_per_command": 5}')
             db.commit()
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
             return
 
         if activity == '돈벌기':
@@ -520,7 +522,7 @@ class ConUPink(Cog):
                         mineral_gain_text.append(f'{mineral_EtoK[mineral_name]}: {per_command}')
                         db.execute("UPDATE conupink_mine_info SET amount = amount + ? WHERE UserID = ?", per_command,
                                    ctx.author.id)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
             db.execute(
                 "UPDATE conupink_user_info SET money = money + ?, net_money = net_money + ?, total_exp = total_exp + ?, exp_level = ? WHERE USERID = ?",
                 int(money_delta), int(money_delta), int(exp_delta), cur_level, ctx.author.id)
@@ -555,7 +557,7 @@ class ConUPink(Cog):
             if level >= 16:
                 help_text += '\n`커뉴야 커뉴핑크 큐브`: 가지고 있는 큐브 정보를 확인합니다.\n`커뉴야 커뉴핑크 강화 x y`: 왼쪽에서 x번째, 위에서 y번째 칸을 강화합니다.'
             embed.add_field(name='​', value=help_text)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
 
         elif activity == '프로필':
             embed = Embed(color=0xffd6fe, title=ctx.author.name)
@@ -571,7 +573,7 @@ class ConUPink(Cog):
                                 bool(money_per_hour)))
             embed.add_field(name='경험치 획득량', value=f'`커뉴야 커뉴핑크` 1회 실행 당 {exp_per_command}')
             embed.set_footer(text='값이 정수면 그대로 받아들이시면 되고, 정수가 아니면 정수부분 + (소수부분 확률로 1 추가) 라고 받아들이시면 됩니다.')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
 
         elif activity == '색깔':
             level = db.record("SELECT exp_level FROM conupink_user_info WHERE USERID = ?", ctx.author.id)[0]
@@ -587,18 +589,18 @@ class ConUPink(Cog):
                 await ctx.channel.send(embed=embed, file=File(u))
             else:
                 preset = db.record("SELECT current_preset FROM conupink_user_info WHERE USERID = ?", ctx.author.id)[0]
-                await ctx.send(
+                await send(ctx, 
                     file=File(rf'C:\Users\namon\PycharmProjects\discordbot\lib\images\{ctx.author.id}_{preset}.png'))
 
         elif activity == '튜토리얼':
             if os.path.exists(
                     os.path.join(r'C:\Users\namon\PycharmProjects\discordbot\lib\images', f'{ctx.author.id}_1.png')):
                 if not args or args[0] == '색깔':
-                    await ctx.send(embed=make_tutorial_embed(ctx.author.name))
+                    await send(ctx, embed=make_tutorial_embed(ctx.author.name))
                 elif args[0] == '레이어':
                     embed = Embed(color=0xffd6fe, title='커뉴핑크 레이어 시스템 튜토리얼',
                                   description='**+1%p** 와 같은 보너스를 **곱연산** 보너스라고 합니다.\n\n예를 들어, 명령어 실행당 획득 돈이 10인 상태에서 MintCream으로 색칠된 칸 하나에 의해 +16%p 보너스를 얻으면 최종 계산 결과 명령어 실행당 획득 돈은 11.6입니다.\n\n**레이어**는 여러 가지 곱연산 보너스를 동시에 받고 있을 때 그것들을 어떤 순서로 계산할지 알려줍니다.\n\nMintCream은 **레이어 1**의 보너스를 주기 때문에, 만약 MintCream을 세 칸에 칠했다면 그때의 명령어 실행당 획득 돈은 10 × (1 + 0.16) × (1 + 0.16) × (1 + 0.16) = 약 15.6**이 아니고** 10 × (1 + 0.16 + 0.16 + 0.16) = 14.8이 됩니다.\n\n만약 이 상태에서 어떻게든 **레이어 2**의 보너스 10%p를 받게 된다면, 그때의 명령어 실행당 획득 돈은 10 × (1 + 0.16 + 0.16 + 0.16) × (1 + 0.1) = 약 16.3이 됩니다.\n\n다른 레이어의 보너스들이 있다면 그것도 비슷하게 적용됩니다.\n\n그렇다면 명령어 실행당 획득 돈이 10 × (1 + 0.16) × (1 + 0.16) × (1 + 0.16)으로 계산된다면 어떤 보너스를 받고 있을까요?\n\n||레이어 1,2,3에 각각 +16%p를 받고 있다||는 대답이 나오셨다면, 잘 이해하신 겁니다!')
-                    await ctx.send(embed=embed)
+                    await send(ctx, embed=embed)
 
         elif activity == '칸정보':
             if not os.path.exists(
@@ -607,7 +609,7 @@ class ConUPink(Cog):
             try:
                 x, y = map(int, args)
             except:
-                await ctx.send("`커뉴야 커뉴핑크 칸정보 x y`")
+                await send(ctx, "`커뉴야 커뉴핑크 칸정보 x y`")
                 return
             preset = db.record("SELECT current_preset FROM conupink_user_info WHERE USERID = ?", ctx.author.id)[0]
             with Image.open(
@@ -617,7 +619,7 @@ class ConUPink(Cog):
                 color = find_color_from_pixel_value(red, green, blue)
                 embed = Embed(color=red * 0x10000 + green * 0x100 + blue, title=ctx.author.name)
                 embed.add_field(name=f'({x}, {y})칸 정보', value=f'색깔: {color}, 불투명도 레벨: {opacity}')
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
 
         elif activity == '업글':
             if not os.path.exists(
@@ -638,17 +640,17 @@ class ConUPink(Cog):
                     y = 0
                     z = 1
             else:
-                await ctx.send("`커뉴야 커뉴핑크 업글 x y (z)`")
+                await send(ctx, "`커뉴야 커뉴핑크 업글 x y (z)`")
                 return
             preset = db.record("SELECT current_preset FROm conupink_user_info WHERE UserID = ?", ctx.author.id)[0]
             if not check_valid_coordinate(ctx.author.id, preset, x, y):
-                await ctx.send("올바르지 않은 값을 입력했어요!")
+                await send(ctx, "올바르지 않은 값을 입력했어요!")
                 return
             cost_scale = opacity_costs[max(x, y)]
             im = Image.open(rf'C:\Users\namon\PycharmProjects\discordbot\lib\images\{ctx.author.id}_{preset}.png')
             red, green, blue, opacity = im.getpixel((SIZE_OF_ONE_TILE * (x - 1) + 1, SIZE_OF_ONE_TILE * (y - 1) + 1))
             if opacity == 255:
-                await ctx.send("이 칸은 이미 불투명도 업그레이드를 완료했어요!")
+                await send(ctx, "이 칸은 이미 불투명도 업그레이드를 완료했어요!")
                 return
             elif opacity + z > 255:
                 z = 255 - opacity
@@ -656,7 +658,7 @@ class ConUPink(Cog):
             money, default_bonuses = db.record("SELECT money, default_bonuses FROM conupink_user_info WHERE USERID = ?",
                                                ctx.author.id)
             if money < total_cost:
-                await ctx.send(f"업그레이드를 위한 돈이 부족해요! 원하시는 만큼 업그레이드하기 위해서는 돈이 {total_cost}만큼 필요해요.")
+                await send(ctx, f"업그레이드를 위한 돈이 부족해요! 원하시는 만큼 업그레이드하기 위해서는 돈이 {total_cost}만큼 필요해요.")
                 return
             new_opacity = opacity + z
             embed = Embed(color=red * 0x10000 + green * 0x100 + blue, title=ctx.author.name)
@@ -667,7 +669,7 @@ class ConUPink(Cog):
             draw.rectangle(((SIZE_OF_ONE_TILE * (x - 1), (SIZE_OF_ONE_TILE * (y - 1))),
                             (SIZE_OF_ONE_TILE * x - 1, SIZE_OF_ONE_TILE * y - 1)), (red, green, blue, new_opacity))
             u, embed = f(im, ctx, preset, embed, default_bonuses)
-            await ctx.send(embed=embed, file=File(u))
+            await send(ctx, embed=embed, file=File(u))
             db.commit()
             if x == y == 1 and opacity + z == 255:
                 embed = Embed(color=0xffffff, title=ctx.author.name)
@@ -678,7 +680,7 @@ class ConUPink(Cog):
                                                                   'color`라는 명령어가 해금됐어요. 이 명령어는 왼쪽에서 x번째, 위에서 y번째에 위치한 '
                                                                   '칸을 color 색으로 칠하는 명령어에요. 칠해진 색을 바꾸면 원래 색이 가진 효과를 더 '
                                                                   '이상 얻지 못하게 되기 때문에 신중히 결정하셔야 돼요!')
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
                 db.execute("UPDATE conupink_user_info SET progress = 1 WHERE USERID = ?", ctx.author.id)
                 db.commit()
 
@@ -693,7 +695,7 @@ class ConUPink(Cog):
                 embed.add_field(name='특정한 색깔만 보기', value='`커뉴야 커뉴핑크 도감 (색이름)`을 입력하면, 잠금해제된 색깔에 한해 해당 색깔에 대한 자세한 정보를 알려줍니다.')
                 embed.add_field(name='비슷한 색깔들을 보기', value='`커뉴야 커뉴핑크 도감 (색종류)`를 입력하면, 잠금해제된 색깔에 한해 해당 카테고리의 색깔 목록을 알려줍니다. 예시로, `초록`, `밝은` 등을 색종류에 넣을 수 있습니다.')
                 embed.set_footer(text='다른 검색 필터 아이디어 받아요')
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
             elif args[0] == '밝은':
                 col_name, val, coloring_cost, unlock_level, misc, unlock_currency, description, effect = db.record("SELECT col_name, val, coloring_cost, unlock_level, misc, unlock_currency, description, effect FROM colors WHERE col_name = ?", args[0])
 '''
@@ -755,7 +757,7 @@ class ConUPink(Cog):
                 embed.add_field(name='PastelPink 0xfe5779',
                                 value='`커뉴야 커뉴핑크`명령어 실행당 획득 돈 5%p 감소 (레이어 1), `커뉴야 커뉴핑크`명령어 실행당 획득 돈 5%p 증가 (레이어 3)',
                                 inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
 
         elif activity == '상점':
             progress, exp_level, kkyu_preset_amount = db.record(
@@ -789,11 +791,11 @@ class ConUPink(Cog):
             if exp_level >= 21:
                 embed.add_field(name='다음 프리셋',
                                 value='2번부터 5번까지는 250000, 6번부터 10번까지는 1500000의 돈을 내면 `커뉴야 커뉴핑크 구매 프리셋 (2~10)`으로 다음 프리셋을 구매할 수 있어요.')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
 
         elif activity == '구매':
             if not args:
-                await ctx.send('`커뉴야 커뉴핑크 구매 (구매할아이템)`')
+                await send(ctx, '`커뉴야 커뉴핑크 구매 (구매할아이템)`')
                 return
             cur_stat = db.record("SELECT * FROM conupink_user_info WHERE USERID = ?", ctx.author.id)
             _, money, progress, net_money, money_per_command, money_per_hour, exp_level, total_exp, exp_per_command, current_preset, kkyu_preset_amount, last_gained, mpc_default_level, epc_default_level, default_bonuses, pick_level, scary_cube, red_cube, purple_cube, crimson_cube, blue_cube, cyan_cube, sunset_cube, cute_cube = cur_stat
@@ -803,46 +805,46 @@ class ConUPink(Cog):
                 default_bonuses = loads(default_bonuses)
                 if args[0] == '기본돈' or (len(args) == 5 and ' '.join(args) == '명령어 실행당 기본 돈 증가'):
                     if mpc_default_level >= 45:
-                        await ctx.send('현재 버전에서 설정된 최대 레벨을 달성했어요!')
+                        await send(ctx, '현재 버전에서 설정된 최대 레벨을 달성했어요!')
                         return
                     elif (mpc_default_level >= 10 and exp_level < 11) or (mpc_default_level >= 20 and exp_level < 18):
-                        await ctx.send('경험치 레벨을 더 올려서 이 업그레이드를 계속하세요!')
+                        await send(ctx, '경험치 레벨을 더 올려서 이 업그레이드를 계속하세요!')
                         return
                     else:
                         cost = mpc_default_upgrade_cost[mpc_default_level]
                         if money < cost:
-                            await ctx.send(f'해당 업그레이드를 하려면 돈이 {cost}만큼 필요해요!')
+                            await send(ctx, f'해당 업그레이드를 하려면 돈이 {cost}만큼 필요해요!')
                             return
                         default_bonuses['money_per_command'] += 2
                         db.execute(
                             "UPDATE conupink_user_info SET mpc_default_level = mpc_default_level + 1, money = money - ?, default_bonuses = ?, money_per_command = money_per_command + 2 WHERE UserID = ?",
                             cost, dumps(default_bonuses), ctx.author.id)
                         db.commit()
-                        await ctx.send('구매 완료!')
+                        await send(ctx, '구매 완료!')
                         return
                 if args[0] == '기본경험치' or (len(args) == 5 and ' '.join(args) == '명령어 실행당 기본 경험치 증가'):
                     if epc_default_level >= 25:
-                        await ctx.send('현재 버전에서 설정된 최대 레벨을 달성했어요!')
+                        await send(ctx, '현재 버전에서 설정된 최대 레벨을 달성했어요!')
                         return
                     elif (epc_default_level >= 10 and exp_level < 11) or (epc_default_level >= 20 and exp_level < 18):
-                        await ctx.send('경험치 레벨을 더 올려서 이 업그레이드를 계속하세요!')
+                        await send(ctx, '경험치 레벨을 더 올려서 이 업그레이드를 계속하세요!')
                         return
                     else:
                         cost = epc_default_upgrade_cost[epc_default_level]
                         if money < cost:
-                            await ctx.send(f'해당 업그레이드를 하려면 돈이 {cost}만큼 필요해요!')
+                            await send(ctx, f'해당 업그레이드를 하려면 돈이 {cost}만큼 필요해요!')
                             return
                         default_bonuses['exp_per_command'] += 1
                         db.execute(
                             "UPDATE conupink_user_info SET epc_default_level = epc_default_level + 1, money = money - ?, default_bonuses = ?, exp_per_command = exp_per_command + 1 WHERE UserID = ?",
                             cost, dumps(default_bonuses), ctx.author.id)
                         db.commit()
-                        await ctx.send('구매 완료!')
+                        await send(ctx, '구매 완료!')
                         return
             if exp_level >= 11:
                 if args == ('애교',):
                     if ctx.author.id in premium_boosted:
-                        await ctx.send('이미 부스터 적용 중이에요. 나중에 다시 구매해 주세요!')
+                        await send(ctx, '이미 부스터 적용 중이에요. 나중에 다시 구매해 주세요!')
                         return
                     p = await self.purchase_kkyu(ctx,
                                                  db.record("SELECT kkyu FROM games WHERE UserID = ?", ctx.author.id)[0],
@@ -853,7 +855,7 @@ class ConUPink(Cog):
                     return
                 if args == ('애교2',):
                     if ctx.author.id in premium_boosted:
-                        await ctx.send('이미 부스터 적용 중이에요. 나중에 다시 구매해 주세요!')
+                        await send(ctx, '이미 부스터 적용 중이에요. 나중에 다시 구매해 주세요!')
                         return
                     p = await self.purchase_kkyu(ctx,
                                                  db.record("SELECT kkyu FROM games WHERE UserID = ?", ctx.author.id)[0],
@@ -893,26 +895,26 @@ class ConUPink(Cog):
                 if len(args) == 2 and args[0] == '프리셋' and args[1].isdigit():
                     preset_number = int(args[1])
                     if preset_number > 10:
-                        await ctx.send('구매할 수 없는 프리셋 번호에요!')
+                        await send(ctx, '구매할 수 없는 프리셋 번호에요!')
                         return
                     elif preset_number > 5 and exp_level < 21:
-                        await ctx.send('경험치 레벨을 21까지 높여야 해당 프리셋을 구매할 수 있어요!')
+                        await send(ctx, '경험치 레벨을 21까지 높여야 해당 프리셋을 구매할 수 있어요!')
                         return
                     if preset_number < 5:
                         cost = 200000
                     else:
                         cost = 1500000
                     if money < cost:
-                        await ctx.send('프리셋 구매를 위한 돈이 부족해요!')
+                        await send(ctx, '프리셋 구매를 위한 돈이 부족해요!')
                         return
                     make_new_preset(ctx.author.id, preset_number)
-                    await ctx.send('새로운 프리셋을 만들었어요!')
+                    await send(ctx, '새로운 프리셋을 만들었어요!')
                     db.execute("UPDATE conupink_user_info SET money = money - ? WHERE UserID = ?", cost, ctx.author.id)
                     db.commit()
                     return
             target_color = db.record("SELECT * FROM colors WHERE col_name = ?", args[0])
             if not target_color:
-                await ctx.send("올바르지 않은 색 이름이에요!")
+                await send(ctx, "올바르지 않은 색 이름이에요!")
                 return
             col_name, val, coloring_cost, unlock_level, misc, unlock_currency, description, effect = target_color
             money, level = db.record("SELECT money, exp_level FROM conupink_user_info WHERE USERID = ?", ctx.author.id)
@@ -924,7 +926,7 @@ class ConUPink(Cog):
                 db.execute("INSERT INTO conupink_color_info (UserID, col_name) VALUES (?, ?)", ctx.author.id, col_name)
                 exponent = [0]
             coloring_cost *= (2 ** exponent[0])
-            await ctx.send(
+            await send(ctx, 
                 f'{col_name} 물감을 구매하려고 해요. 현재 1, 2, 3개를 구매하기 위한 가격은 각각 {to_visual_currency_name[unlock_currency]} {coloring_cost}, {coloring_cost * 3}, {coloring_cost * 7} 이에요. 아이템을 몇 개 구매할지 입력해주세요.')
             try:
                 amount = await self.bot.wait_for(
@@ -934,13 +936,13 @@ class ConUPink(Cog):
                         message: message.author == ctx.author and ctx.channel == message.channel and message.content.isdigit()
                 )
             except asyncio.TimeoutError:
-                await ctx.send("구매하지 않기로 했어요.")
+                await send(ctx, "구매하지 않기로 했어요.")
                 return
             amount = int(amount.content)
             coloring_cost *= 2 ** amount - 1
             if unlock_currency == 'Money':
                 if coloring_cost > money:
-                    await ctx.send(
+                    await send(ctx, 
                         f'돈이 부족해요! 해당 아이템을 구매하려면 {to_visual_currency_name[unlock_currency]} {coloring_cost}만큼이 필요해요.')
                     return
                 else:
@@ -949,24 +951,24 @@ class ConUPink(Cog):
             db.execute("UPDATE conupink_color_info SET available = available + ? WHERE UserID = ? AND col_name = ?",
                        amount, ctx.author.id, col_name)
             db.commit()
-            await ctx.send('구매 완료!')
+            await send(ctx, '구매 완료!')
 
         elif activity == '색칠':
             if not os.path.exists(
                     os.path.join(r'C:\Users\namon\PycharmProjects\discordbot\lib\images', f'{ctx.author.id}_1.png')):
                 return
             if len(args) != 3:
-                await ctx.send("`커뉴야 커뉴핑크 색칠 x y color`")
+                await send(ctx, "`커뉴야 커뉴핑크 색칠 x y color`")
                 return
             try:
                 x, y = map(int, args[:2])
             except ValueError:
-                await ctx.send("잘못된 값이 입력됐어요!")
+                await send(ctx, "잘못된 값이 입력됐어요!")
                 return
             preset, default_bonuses = db.record(
                 "SELECT current_preset, default_bonuses FROM conupink_user_info WHERE UserID = ?", ctx.author.id)
             if not check_valid_coordinate(ctx.author.id, preset, x, y):
-                await ctx.send("올바르지 않은 좌표를 입력했어요!")
+                await send(ctx, "올바르지 않은 좌표를 입력했어요!")
                 return
             col_name = args[2]
             available = db.record("SELECT available FROM conupink_color_info WHERE UserID = ? AND col_name = ?",
@@ -974,7 +976,7 @@ class ConUPink(Cog):
             im = Image.open(rf'C:\Users\namon\PycharmProjects\discordbot\lib\images\{ctx.author.id}_{preset}.png')
             if preset > 3000000:
                 if not available:
-                    await ctx.send('아무리 A번 프리셋이라도 여태까지 물감을 구매한 적 없는 색을 칠할 수는 없어요...')
+                    await send(ctx, '아무리 A번 프리셋이라도 여태까지 물감을 구매한 적 없는 색을 칠할 수는 없어요...')
                     return
                 draw = ImageDraw.Draw(im, 'RGBA')
                 red, green, blue = eval(col_name)
@@ -984,14 +986,14 @@ class ConUPink(Cog):
                 embed.add_field(name='색칠 완료', value=f'({x}, {y}) 칸을 {col_name}으로 칠했어요!')
                 embed.add_field(name='보너스', value='A번 프리셋을 장착한 상태이기 때문에, 이 프리셋을 장착하기 직전에 장착했던 프리셋의 보너스를 받고 있어요.')
                 im.save(u := rf"C:\Users\namon\PycharmProjects\discordbot\lib\images\{ctx.author.id}_{preset}.png")
-                await ctx.send(embed=embed, file=File(u))
+                await send(ctx, embed=embed, file=File(u))
             if not available or available[0] == 0:
-                await ctx.send(f'물감이 없어요! `커뉴야 커뉴핑크 구매 {args[2]}`로 물감을 구매해주세요. 물론 존재하는 색이라면...')
+                await send(ctx, f'물감이 없어요! `커뉴야 커뉴핑크 구매 {args[2]}`로 물감을 구매해주세요. 물론 존재하는 색이라면...')
                 return
             red, green, blue, opacity = im.getpixel(
                 (SIZE_OF_ONE_TILE * (x - 1) + 1, SIZE_OF_ONE_TILE * (y - 1) + 1))
             if opacity != 255:
-                await ctx.send('색칠할 수 없는 칸이에요! 우선 이 칸의 불투명도를 255까지 업그레이드하고 나서 색칠하셔야 돼요.')
+                await send(ctx, '색칠할 수 없는 칸이에요! 우선 이 칸의 불투명도를 255까지 업그레이드하고 나서 색칠하셔야 돼요.')
             before_color = find_color_from_pixel_value(red, green, blue)
             draw = ImageDraw.Draw(im, 'RGBA')
             red, green, blue = eval(col_name)
@@ -1000,7 +1002,7 @@ class ConUPink(Cog):
             embed = Embed(color=0x10000 * red + 0x100 * green + blue, title=ctx.author.name)
             embed.add_field(name='색칠 완료', value=f'({x}, {y}) 칸을 {col_name}으로 칠했어요!')
             u, embed = f(im, ctx, preset, embed, default_bonuses)
-            await ctx.send(embed=embed, file=File(u))
+            await send(ctx, embed=embed, file=File(u))
             db.execute(
                 "UPDATE conupink_color_info SET available = available - 1, used = used + 1 WHERE UserID = ? AND col_name = ?",
                 ctx.author.id, col_name)
@@ -1028,7 +1030,7 @@ class ConUPink(Cog):
                 fields.append(field)
             for field in fields:
                 embed.add_field(name='​', value=field)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
 
         elif activity == '획득':
             cur_stat = db.record("SELECT * FROM conupink_user_info WHERE USERID = ?", ctx.author.id)
@@ -1039,7 +1041,7 @@ class ConUPink(Cog):
                 "SELECT mineral_name, per_hour FROM conupink_mine_info WHERE UserID = ? AND per_hour != 0",
                 ctx.author.id)
             if money_per_hour == 0 and not mineral_info:
-                await ctx.send('아무것도 획득할 게 없어요...')
+                await send(ctx, '아무것도 획득할 게 없어요...')
                 return
             cur_time = int(time()) // 60
             if not last_gained:
@@ -1064,20 +1066,20 @@ class ConUPink(Cog):
                     db.execute(
                         "UPDATE conupink_mine_info SET amount = amount + ? WHERE userID = ? AND mineral_name = ?", d,
                         ctx.author.id, mineral)
-            await ctx.send(f'{moneydelta}만큼의 돈을 획득했어요! {mineral_gains}')
+            await send(ctx, f'{moneydelta}만큼의 돈을 획득했어요! {mineral_gains}')
             db.execute(
                 "UPDATE conupink_user_info SET money = money + ?, net_money = net_money + ?, last_gained = ? WHERE UserID = ?",
                 moneydelta, moneydelta, cur_time, ctx.author.id)
             db.commit()
 
         elif activity == '확장':
-            await ctx.send('만약 에러가 난다면 현재 버전에서 설정된 최대까지 확장했다는 뜻이에요!')
+            await send(ctx, '만약 에러가 난다면 현재 버전에서 설정된 최대까지 확장했다는 뜻이에요!')
             cur_stat = db.record("SELECT * FROM conupink_user_info WHERE USERID = ?", ctx.author.id)
             _, money, progress, net_money, money_per_command, money_per_hour, exp_level, total_exp, exp_per_command, current_preset, kkyu_preset_amount, last_gained, mpc_default_level, epc_default_level, default_bonuses, pick_level, scary_cube, red_cube, purple_cube, crimson_cube, blue_cube, cyan_cube, sunset_cube, cute_cube = cur_stat
             if exp_level < 6:
                 return
             if current_preset > 3000000:
-                await ctx.send('A번 프리셋 확장은 구현 중이에요 ㅠㅠ yonsei4 업데이트에서 봅시다!')
+                await send(ctx, 'A번 프리셋 확장은 구현 중이에요 ㅠㅠ yonsei4 업데이트에서 봅시다!')
                 return
             im = Image.open(
                 rf'C:\Users\namon\PycharmProjects\discordbot\lib\images\{ctx.author.id}_{current_preset}.png')
@@ -1094,15 +1096,15 @@ class ConUPink(Cog):
                         check = 0
                         break
             if not check:
-                await ctx.send('현재 프리셋의 **모든** 칸의 불투명도를 255레벨까지 올려야 확장이 가능해요!')
+                await send(ctx, '현재 프리셋의 **모든** 칸의 불투명도를 255레벨까지 올려야 확장이 가능해요!')
                 return
             if money < extend_costs[w]:
-                await ctx.send(f'돈을 {extend_costs[w]}만큼 모아야 확장할 수 있어요!')
+                await send(ctx, f'돈을 {extend_costs[w]}만큼 모아야 확장할 수 있어요!')
                 return
             if w == 7 and exp_level < 23:
-                await ctx.send("아직은 이렇게 크게까지 확장할 수 없어요! 경험치 레벨을 올려서 더 넓게 확장할 수 있는 권한을 부여받으세요")
+                await send(ctx, "아직은 이렇게 크게까지 확장할 수 없어요! 경험치 레벨을 올려서 더 넓게 확장할 수 있는 권한을 부여받으세요")
                 return
-            await ctx.send(
+            await send(ctx, 
                 f'{w}×{w}에서 {w + 1}×{w + 1}으로 확장하려고 해요. 가격은 {extend_costs[w]}에요. `확장`이라고 다시 한 번 말해 칸을 확장하세요.')
             try:
                 _ = await self.bot.wait_for(
@@ -1112,7 +1114,7 @@ class ConUPink(Cog):
                         message: message.author == ctx.author and ctx.channel == message.channel and message.content == '확장'
                 )
             except asyncio.TimeoutError:
-                await ctx.send("확장하지 않기로 했어요.")
+                await send(ctx, "확장하지 않기로 했어요.")
                 return
             initial_image = Image.open(rf'C:\Users\namon\PycharmProjects\discordbot\lib\images\initial_image.png')
             im_temp = initial_image.resize((SIZE_OF_ONE_TILE * (w + 1), SIZE_OF_ONE_TILE * (w + 1)))
@@ -1128,7 +1130,7 @@ class ConUPink(Cog):
                 u := rf"C:\Users\namon\PycharmProjects\discordbot\lib\images\{ctx.author.id}_{current_preset}.png")
             db.execute("UPDATE conupink_user_info SET money = money - ? WHERE UserID = ?", extend_costs[w],
                        ctx.author.id)
-            await ctx.send(embed=embed, file=File(u))
+            await send(ctx, embed=embed, file=File(u))
 
         elif activity == '프리셋':
             cur_stat = db.record("SELECT * FROM conupink_user_info WHERE USERID = ?", ctx.author.id)
@@ -1138,7 +1140,7 @@ class ConUPink(Cog):
             if not args:
                 current_preset = \
                     db.record("SELECT current_preset FROM conupink_user_info WHERE UserID = ?", ctx.author.id)[0]
-                await ctx.send(
+                await send(ctx, 
                     f'현재 {str(ctx.author)}님이 사용 중인 프리셋은 {preset_name_prefix[current_preset // 1000000]}{current_preset % 1000000}번이에요!\n\n새로운 프리셋을 사용하면 맨 처음 사진을 하나 더 받게 돼요. 그곳에다가 다른 조합으로 색을 칠할 수 있게 되는 거죠!')
             else:
                 preset = args[0]
@@ -1149,18 +1151,18 @@ class ConUPink(Cog):
                         preset[0] = preset[0].upper()
                         next_preset = 1000000 * preset_name_prefix.index(preset[0]) + int(preset[1:])
                 except TypeError:
-                    await ctx.send('올바르지 않은 프리셋 이름이에요!')
+                    await send(ctx, '올바르지 않은 프리셋 이름이에요!')
                     return
                 if not os.path.exists(
                         os.path.join(r'C:\Users\namon\PycharmProjects\discordbot\lib\images',
                                      f'{ctx.author.id}_{next_preset}.png')):
-                    await ctx.send('해금하지 못한 프리셋이에요!')
+                    await send(ctx, '해금하지 못한 프리셋이에요!')
                     return
                 im = Image.open(
                     rf'C:\Users\namon\PycharmProjects\discordbot\lib\images\{ctx.author.id}_{next_preset}.png')
                 embed = Embed(color=0xffd6fe, title=ctx.author.name, description='프리셋 변경 완료')
                 u, embed = f(im, ctx, next_preset, embed, default_bonuses)
-                await ctx.send(embed=embed, file=File(u))
+                await send(ctx, embed=embed, file=File(u))
                 db.execute("UPDATE conupink_user_info SET current_preset = ? WHERE UserID = ?", next_preset,
                            ctx.author.id)
 
@@ -1179,7 +1181,7 @@ class ConUPink(Cog):
                      mineral_name, amount, per_hour in mineral_info]))
                 embed.set_footer(
                     text='`커뉴야 커뉴핑크 광산`: 이 화면을 표시합니다.\n`커뉴야 커뉴핑크 광산 업글 (곡괭이)`: 특정 곡괭이를 업그레이드합니다.\n`커뉴야 커뉴핑크 광산 확장`: 퓨터를 이용해 광산을 더 넓혀 새로운 광물을 캘 수 있게 됩니다.\n`커뉴야 커뉴핑크 광산 판매 (광물) (개수)`: 광물을 판매해 돈을 얻습니다.\n자동으로 캐지는 광물은 `커뉴야 커뉴핑크 획득`으로 획득하세요')
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
                 return
             activity = args[0]
             mineral_info_dict = dict()
@@ -1188,25 +1190,25 @@ class ConUPink(Cog):
 
             if activity == '업글':
                 if len(args) == 1:
-                    await ctx.send('`커뉴야 커뉴핑크 광산 업글 (곡괭이)`')
+                    await send(ctx, '`커뉴야 커뉴핑크 광산 업글 (곡괭이)`')
                     return
                 pick_level = db.record("SELECT pick_level FROM conupink_user_info WHERE UserID = ?", ctx.author.id)[0]
                 pick_levels, _, materials = pick_level_to_info(pick_level)
                 if args[1] not in materials:
                     if args[1] not in ['구리', '철', '은', '금', '백금']:
-                        await ctx.send('올바르지 않은 곡괭이에요!')
+                        await send(ctx, '올바르지 않은 곡괭이에요!')
                         return
                 else:
-                    await ctx.send('새로운 곡괭이를 만드는 것은 업데이트를 기다려 주세요 ㅠㅠ')
+                    await send(ctx, '새로운 곡괭이를 만드는 것은 업데이트를 기다려 주세요 ㅠㅠ')
                     return
                 material_id = materials.index(args[1])
                 if pick_levels[material_id] == 9:
-                    await ctx.send('이 곡괭이는 이미 최대 레벨이에요!')
+                    await send(ctx, '이 곡괭이는 이미 최대 레벨이에요!')
                     return
                 else:
                     cost = pick_upgrade_costs[material_id][pick_levels[material_id]]
                     if mineral_info_dict[args[1]] < cost:
-                        await ctx.send(f'광물이 부족해요! 곡괭이 업그레이드를 위해서는 {args[1]} {cost}개가 필요해요.')
+                        await send(ctx, f'광물이 부족해요! 곡괭이 업그레이드를 위해서는 {args[1]} {cost}개가 필요해요.')
                         return
                     db.execute(
                         "UPDATE conupink_mine_info SET per_hour_default = per_hour_default + 10, per_hour = per_hour + 10, amount = amount - ? WHERE UserID = ? AND mineral_name = ?",
@@ -1217,39 +1219,39 @@ class ConUPink(Cog):
                     db.execute("UPDATE conupink_user_info SET pick_level = pick_level + ? WHERE UserID = ?",
                                10 ** material_id, ctx.author.id)
                     db.commit()
-                    await ctx.send('업그레이드 완료!')
+                    await send(ctx, '업그레이드 완료!')
 
             elif activity == '확장':
                 if len(mineral_info_dict) == 1:
-                    await ctx.send('우선 광물 "퓨터"를 모아야 돼요! 퓨터는 12레벨이 된 이후에 획득할 수 있게 돼요.')
+                    await send(ctx, '우선 광물 "퓨터"를 모아야 돼요! 퓨터는 12레벨이 된 이후에 획득할 수 있게 돼요.')
                     return
                 mine_extend_costs = [0, 0, 1800, 5000, 10000, 1000000000]
                 cost = mine_extend_costs[len(mineral_info_dict)]
                 if mineral_info_dict['Pewter'] < cost:
-                    await ctx.send(f'광물이 부족해요! 확장을 위해서는 퓨터 {cost}개가 필요해요.')
+                    await send(ctx, f'광물이 부족해요! 확장을 위해서는 퓨터 {cost}개가 필요해요.')
                     return
                 new_mineral = ['구리', '철', '은', '금', '백금'][len(mineral_info_dict)]
                 embed = Embed(color=0xce7c56, title=ctx.author.name,
                               description=f'광산을 더 뚫어, {new_mineral}이 나오는 광맥을 발견했어요!')
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
                 db.execute("INSERT INTO conupink_mine_info (UserID, mineral_name) VALUES (?, ?)", ctx.author.id,
                            ['Copper', 'Iron', 'Silver', 'Gold', 'Platinum'][len(mineral_info_dict)])
                 db.commit()
 
             elif activity == '판매':
                 if len(args) < 3 or not args[2].isdigit():
-                    await ctx.send('`커뉴야 커뉴핑크 광산 판매 (광물) (개수)`')
+                    await send(ctx, '`커뉴야 커뉴핑크 광산 판매 (광물) (개수)`')
                     return
                 mineral_amount = db.record(
                     "SELECT amount FROM conupink_mine_info WHERE UserID = ? AND mineral_name = ?", ctx.author.id,
                     mineral_KtoE[args[1]])
                 if not mineral_amount:
-                    await ctx.send('올바르지 않은 광물 이름이에요!')
+                    await send(ctx, '올바르지 않은 광물 이름이에요!')
                     return
                 mineral_amount = mineral_amount[0]
                 sell_amount = int(args[2])
                 if mineral_amount < sell_amount:
-                    await ctx.send('그만큼의 광물을 가지고 있지 않아요!')
+                    await send(ctx, '그만큼의 광물을 가지고 있지 않아요!')
                     return
                 current_preset, default_bonuses = db.record(
                     "SELECT current_preset, default_bonuses FROM conupink_user_info WHERE UserID = ?", ctx.author.id)
@@ -1261,7 +1263,7 @@ class ConUPink(Cog):
                 else:
                     multiplier = 1
                 money_delta = int(sell_amount * mineral_prices_default[mineral_KtoE[args[1]]] * multiplier)
-                await ctx.send(f'{args[1]} {sell_amount}개를 팔아 돈을 {money_delta}만큼 얻었어요!')
+                await send(ctx, f'{args[1]} {sell_amount}개를 팔아 돈을 {money_delta}만큼 얻었어요!')
                 db.execute("UPDATE conupink_mine_info SET amount = amount - ? WHERE UserID = ? AND mineral_name = ?",
                            sell_amount, ctx.author.id, mineral_KtoE[args[1]])
                 db.execute(
@@ -1277,7 +1279,7 @@ class ConUPink(Cog):
             embed = Embed(color=0xa02103, title=ctx.author.name, description='큐브 시스템 βeta')
             embed.add_field(name='무서운 큐브 보유량', value=str(scary_cube))
             embed.set_footer(text='`커뉴야 커뉴핑크 강화 x y`를 사용하면 해당 칸에 다른 색을 칠하기 전까지 큐브를 사용해 그 칸을 강화할 수 있어요!')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
 
         elif activity == '강화':
             exp_level, current_preset, default_bonuses, scary_cube = db.record(
@@ -1290,7 +1292,7 @@ class ConUPink(Cog):
             try:
                 x, y = map(int, args)
             except:
-                await ctx.send("`커뉴야 커뉴핑크 강화 x y`")
+                await send(ctx, "`커뉴야 커뉴핑크 강화 x y`")
                 return
             red, green, blue, opacity = im.getpixel(
                 (SIZE_OF_ONE_TILE * (x - 1) + 1, SIZE_OF_ONE_TILE * (y - 1) + 1))
@@ -1298,7 +1300,7 @@ class ConUPink(Cog):
             red_, green_, blue_, opacity_ = im.getpixel(
                 (SIZE_OF_ONE_TILE * (x - 1) + 1, SIZE_OF_ONE_TILE * (y - 1) + 2))
             if blue_ != blue:
-                await ctx.send('이미 강화되어 있는 칸이에요! 다행히도 이후 버전에서는 같은 색깔을 여러 번 강화할 수 있게 될 거에요.')
+                await send(ctx, '이미 강화되어 있는 칸이에요! 다행히도 이후 버전에서는 같은 색깔을 여러 번 강화할 수 있게 될 거에요.')
                 return
             embed = Embed(color=red * 0x10000 + green * 0x100 + blue, title=ctx.author.name,
                           description='칸을 강화하려고 합니다. 가격이나 효과를 잘 보고 결정하세요!')
@@ -1307,10 +1309,10 @@ class ConUPink(Cog):
                 embed.add_field(name='효과', value='명령어 실행당 획득 돈 **250 증가** -> **275 증가**')
                 cost_deduct = lambda c: c - 5
             else:
-                await ctx.send('업데이트로 더 많은 강화 요소가 추가될 예정이에요!')
+                await send(ctx, '업데이트로 더 많은 강화 요소가 추가될 예정이에요!')
                 return
             embed.set_footer(text='`강화`라고 입력해 칸을 강화하세요')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
             try:
                 _ = await self.bot.wait_for(
                     "message",
@@ -1318,18 +1320,18 @@ class ConUPink(Cog):
                     check=lambda message: message.author.id == ctx.author.id and message.content == '강화'
                 )
             except asyncio.TimeoutError:
-                await ctx.send('칸을 강화하지 않기로 했어요.')
+                await send(ctx, '칸을 강화하지 않기로 했어요.')
                 return
             scary_cube = cost_deduct(scary_cube)
             if scary_cube < 0:
-                await ctx.send('그만큼의 큐브를 가지고 있지 않아요!')
+                await send(ctx, '그만큼의 큐브를 가지고 있지 않아요!')
                 return
             draw = ImageDraw.Draw(im, 'RGBA')
             draw.point((SIZE_OF_ONE_TILE * (x - 1) + 1, SIZE_OF_ONE_TILE * (y - 1) + 2),
                        (red, green, blue - 1, opacity))
             embed = Embed(color=red * 0x10000 + green * 0x100 + blue, title=ctx.author.name, description='강화 완료')
             u, embed = f(im, ctx, current_preset, embed, default_bonuses)
-            await ctx.send(embed=embed, file=File(u))
+            await send(ctx, embed=embed, file=File(u))
             db.execute("UPDATE conupink_user_info SET scary_cube = ? WHERE UserID = ?", scary_cube, ctx.author.id)
             db.commit()
 
@@ -1348,17 +1350,17 @@ class ConUPink(Cog):
                 c = scores.index(b) + 1
                 tjfaud += '\n' * (c != 1) + f"{c}. {self.bot.get_user(uid)} (총 경험치 {b})"
             embed = Embed(color=0xffd6fe, title=f"커뉴핑크 경험치 랭킹", description=tjfaud)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
 
         else:
-            await ctx.send('존재하지 않는 기능이에요!')
+            await send(ctx, '존재하지 않는 기능이에요!')
             return
 
     @Cog.listener()
     async def on_ready(self):
         if not self.bot.ready:
-            self.bot.cogs_ready.ready_up("conupink")
+            print('("conupink")')
 
 
-def setup(bot):
-    bot.add_cog(ConUPink(bot))
+async def setup(bot):
+    await bot.add_cog(ConUPink(bot))

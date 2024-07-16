@@ -9,6 +9,8 @@ from ..db import db
 import asyncio
 
 from re import compile
+from discord.app_commands import command as slash, choices, Choice
+from ..utils.send import send
 
 
 class Log(Cog):
@@ -18,7 +20,7 @@ class Log(Cog):
     @Cog.listener()
     async def on_ready(self):
         if not self.bot.ready:
-            self.bot.cogs_ready.ready_up("log")
+            print('("log")')
 
     @command(name="로그채널")
     @has_permissions(administrator=True)
@@ -27,16 +29,16 @@ class Log(Cog):
         lv = lv[0]
         if activity == "조회":
             if not lv or lv == 1:
-                await ctx.send(f"현재 {ctx.guild.name}의 로그 채널이 없어요!")
+                await send(ctx, f"현재 {ctx.guild.name}의 로그 채널이 없어요!")
                 return
             else:
-                await ctx.send(f"현재 {ctx.guild.name}의 로그 채널은 <#{lv}>(이)에요!")
+                await send(ctx, f"현재 {ctx.guild.name}의 로그 채널은 <#{lv}>(이)에요!")
                 return
         elif activity == "초기화":
-            await ctx.send(f"{ctx.guild.name}애서 로그 기능을 껐어요!")
+            await send(ctx, f"{ctx.guild.name}애서 로그 기능을 껐어요!")
             ch = 1
         elif activity == "설정":
-            await ctx.send("어느 채널을 로그 채널로 설정할 건가요?")
+            await send(ctx, "어느 채널을 로그 채널로 설정할 건가요?")
             try:
                 msg = await self.bot.wait_for(
                     "message",
@@ -44,20 +46,20 @@ class Log(Cog):
                     check=lambda message: message.author == ctx.author and ctx.channel == message.channel
                 )
             except asyncio.TimeoutError:
-                await ctx.send("로그 채널을 설정하지 않기로 했어요.")
+                await send(ctx, "로그 채널을 설정하지 않기로 했어요.")
                 return
             check = compile("<#[0-9]{18,19}>")
             c = check.match(msg.content)
             if not c:
-                await ctx.send("올바르지 않은 형식이에요!")
+                await send(ctx, "올바르지 않은 형식이에요!")
                 return
             if msg.content[21].isdigit():
                 ch = msg.content[2:21]
             else:
                 ch = msg.content[2:20]
-            await ctx.send(f"이제 {ctx.guild.name}의 로그 채널은 <#{ch}>(이)에요!")
+            await send(ctx, f"이제 {ctx.guild.name}의 로그 채널은 <#{ch}>(이)에요!")
         else:
-            await ctx.send("`커뉴야 로그채널 <조회/설정/초기화>`")
+            await send(ctx, "`커뉴야 로그채널 <조회/설정/초기화>`")
             return
         db.execute("UPDATE guilds SET log_channel = ? WHERE GuildID = ?", ch, ctx.guild.id)
         db.commit()
@@ -280,5 +282,5 @@ class Log(Cog):
             pass
 
 
-def setup(bot):
-    bot.add_cog(Log(bot))
+async def setup(bot):
+    await bot.add_cog(Log(bot))

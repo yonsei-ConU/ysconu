@@ -14,8 +14,8 @@ import math
 from .achieve import grant_check, grant
 from ..db import db
 
-global today
-global first_place
+from discord.app_commands import command as slash, choices, Choice
+from ..utils.send import send
 
 today = ((time.time() + 32400) // 86400)
 first_place = ""
@@ -1337,7 +1337,7 @@ class Exp(Cog):
                 message.guild.id)
         except TypeError:
             if not message.is_system():
-                db.execute("INSERT INTO guilds (GuildID) VALUES (message.guild.id)")
+                db.execute("INSERT INTO guilds (GuildID) VALUES (?)", message.guild.id)
                 db.commit()
             min_xp, max_xp, guild_type, levelup_channel, cool, levelup_message = 13, 36, 0, 0, 60, "​"
         if channelboost is not None:
@@ -1429,13 +1429,13 @@ class Exp(Cog):
                     break
             if tjfaud == "":
                 tjfaud = "선택하신 페이지에는 역할이 없는 것 같아요!"
-            await ctx.send(
+            await send(ctx, 
                 embed=Embed(color=ctx.author.color, title=f"{ctx.guild.name}의 레벨업 보상 역할 목록", description=tjfaud))
         elif activity == "추가":
             if not ctx.author.guild_permissions.value & 8:
-                await ctx.send("이 명령어를 실행할 권한이 없어요!")
+                await send(ctx, "이 명령어를 실행할 권한이 없어요!")
                 return
-            await ctx.send("몇 레벨에 도달하면 역할을 주게 만들까요?")
+            await send(ctx, "몇 레벨에 도달하면 역할을 주게 만들까요?")
             try:
                 msg1 = await self.bot.wait_for(
                     "message",
@@ -1447,9 +1447,9 @@ class Exp(Cog):
                 finally:
                     pass
             except asyncio.TimeoutError:
-                await ctx.send("레벨업 역할을 추가하지 않기로 했어요.")
+                await send(ctx, "레벨업 역할을 추가하지 않기로 했어요.")
                 return
-            await ctx.send(f"{lvl}레벨에 도달하면 어느 역할을 주게 만들 건가요?\n**역할 멘션의 형태로 입력해 주세요!**")
+            await send(ctx, f"{lvl}레벨에 도달하면 어느 역할을 주게 만들 건가요?\n**역할 멘션의 형태로 입력해 주세요!**")
             try:
                 msg2 = await self.bot.wait_for(
                     "message",
@@ -1459,24 +1459,24 @@ class Exp(Cog):
                 rolecheck = re.compile("<@&[0-9]{18,19}>")
                 matchcheck = rolecheck.match(msg2.content)
                 if not matchcheck:
-                    await ctx.send("역할 멘션의 형태로 보내 주세요!")
+                    await send(ctx, "역할 멘션의 형태로 보내 주세요!")
                     return
                 if msg2.content[22].isdigit():
                     role = int(msg2.content[3:22])
                 else:
                     role = int(msg2.content[3:21])
             except asyncio.TimeoutError:
-                await ctx.send("레벨업 역할을 추가하지 않기로 했어요.")
+                await send(ctx, "레벨업 역할을 추가하지 않기로 했어요.")
                 return
             db.execute("INSERT INTO roles (RoleID, GuildID, role_type, role_info) VALUES (?, ?, 1, ?)", role,
                        ctx.guild.id, lvl)
-            await ctx.send(f"{ctx.guild.name}에서는 이제부터 {lvl}레벨에 도달하면 {ctx.guild.get_role(role).mention} 역할을 받아요!")
+            await send(ctx, f"{ctx.guild.name}에서는 이제부터 {lvl}레벨에 도달하면 {ctx.guild.get_role(role).mention} 역할을 받아요!")
             db.commit()
         elif activity == "삭제":
             if not ctx.author.guild_permissions.value & 8:
-                await ctx.send("이 명령어를 실행할 권한이 없어요!")
+                await send(ctx, "이 명령어를 실행할 권한이 없어요!")
                 return
-            await ctx.send("어떤 레벨역할을 삭제할 건가요?\n역할 자체가 지워지지는 않아요")
+            await send(ctx, "어떤 레벨역할을 삭제할 건가요?\n역할 자체가 지워지지는 않아요")
             try:
                 msg = await self.bot.wait_for(
                     "message",
@@ -1485,20 +1485,20 @@ class Exp(Cog):
                 )
                 role = int(msg.content[3:21])
             except asyncio.TimeoutError:
-                await ctx.send("레벨업 역할을 삭제하지 않기로 했어요.")
+                await send(ctx, "레벨업 역할을 삭제하지 않기로 했어요.")
                 return
             roles = db.records("SELECT RoleID FROM roles WHERE GuildID = ? AND role_type = 1", ctx.guild.id)
             for role_to_check in roles:
                 if role_to_check[0] == role:
                     break
             else:
-                await ctx.send(f"그 역할은 레벨업 역할에 포함되어 있지 않아요!")
+                await send(ctx, f"그 역할은 레벨업 역할에 포함되어 있지 않아요!")
                 return
             db.execute("DELETE FROM roles WHERE RoleID = ?", role)
-            await ctx.send("해당 레벨역할을 삭제했어요. 역할 자체가 지워진 건 아니에요!")
+            await send(ctx, "해당 레벨역할을 삭제했어요. 역할 자체가 지워진 건 아니에요!")
             db.commit()
         else:
-            await ctx.send("`커뉴야 레벨역할 <목록/추가/삭제>")
+            await send(ctx, "`커뉴야 레벨역할 <목록/추가/삭제>")
 
     @command(name="레벨업채널")
     @has_permissions(administrator=True)
@@ -1507,19 +1507,19 @@ class Exp(Cog):
         lv = lv[0]
         if activity == "조회":
             if lv == 1:
-                await ctx.send(f"현재 {ctx.guild.name}의 레벨업 알림 채널이 없어요!")
+                await send(ctx, f"현재 {ctx.guild.name}의 레벨업 알림 채널이 없어요!")
                 return
             elif lv != 0:
-                await ctx.send(f"현재 {ctx.guild.name}의 레벨업 알림 채널은 <#{lv}>(이)에요!")
+                await send(ctx, f"현재 {ctx.guild.name}의 레벨업 알림 채널은 <#{lv}>(이)에요!")
                 return
             else:
-                await ctx.send(f"현재 {ctx.guild.name}에서는 레벨업을 해도 알림이 표시되지 않아요!")
+                await send(ctx, f"현재 {ctx.guild.name}에서는 레벨업을 해도 알림이 표시되지 않아요!")
                 return
         elif activity == "초기화":
-            await ctx.send(f"이제 {ctx.guild.name}의 레벨업 알림 채널이 없고 메세지가 보내진 채널에 알림이 와요!")
+            await send(ctx, f"이제 {ctx.guild.name}의 레벨업 알림 채널이 없고 메세지가 보내진 채널에 알림이 와요!")
             ch = 1
         elif activity == "설정":
-            await ctx.send("어느 채널을 레벨업 채널로 설정할 건가요?")
+            await send(ctx, "어느 채널을 레벨업 채널로 설정할 건가요?")
             try:
                 msg = await self.bot.wait_for(
                     "message",
@@ -1528,14 +1528,14 @@ class Exp(Cog):
                 )
                 ch = msg.content[2:20]
             except asyncio.TimeoutError:
-                await ctx.send("레벨업 채널을 설정하지 않기로 했어요.")
+                await send(ctx, "레벨업 채널을 설정하지 않기로 했어요.")
                 return
-            await ctx.send(f"이제 {ctx.guild.name}의 레벨업 알림 채널은 <#{msg.content[2:20]}>(이)에요!")
+            await send(ctx, f"이제 {ctx.guild.name}의 레벨업 알림 채널은 <#{msg.content[2:20]}>(이)에요!")
         elif activity == "끔":
-            await ctx.send(f"이제 {ctx.guild.name}에서는 레벨업을 해도 알림이 표시되지 않아요!")
+            await send(ctx, f"이제 {ctx.guild.name}에서는 레벨업을 해도 알림이 표시되지 않아요!")
             ch = 0
         else:
-            await ctx.send("`커뉴야 레벨업채널 <조회/설정/초기화>`")
+            await send(ctx, "`커뉴야 레벨업채널 <조회/설정/초기화>`")
             return
         db.execute("UPDATE guilds SET levelup_channel = ? WHERE GuildID = ?", ch, ctx.guild.id)
         db.commit()
@@ -1545,9 +1545,9 @@ class Exp(Cog):
     async def exp_range(self, ctx, activity: Optional[str] = "조회"):
         minexp, maxexp = db.record("SELECT min_xp, max_xp FROM guilds WHERE GuildID = ?", ctx.guild.id)
         if activity == "조회":
-            await ctx.send(f"현재 {ctx.guild.name}에서는 {minexp} 부터 {maxexp} 까지의 경험치를 얻을 수 있어요!")
+            await send(ctx, f"현재 {ctx.guild.name}에서는 {minexp} 부터 {maxexp} 까지의 경험치를 얻을 수 있어요!")
         elif activity == "설정":
-            await ctx.send("설정할 최소 경험치를 말해 주세요!")
+            await send(ctx, "설정할 최소 경험치를 말해 주세요!")
             try:
                 minmsg = await self.bot.wait_for(
                     "message",
@@ -1556,9 +1556,9 @@ class Exp(Cog):
                 )
                 newmin = int(minmsg.content)
             except asyncio.TimeoutError:
-                await ctx.send("경험치 범위를 설정하지 않기로 했어요..")
+                await send(ctx, "경험치 범위를 설정하지 않기로 했어요..")
                 return
-            await ctx.send("설정할 최대 경험치를 말해 주세요!")
+            await send(ctx, "설정할 최대 경험치를 말해 주세요!")
             try:
                 maxmsg = await self.bot.wait_for(
                     "message",
@@ -1567,23 +1567,23 @@ class Exp(Cog):
                 )
                 newmax = int(maxmsg.content)
             except asyncio.TimeoutError:
-                await ctx.send("경험치 범위를 설정하지 않기로 했어요..")
+                await send(ctx, "경험치 범위를 설정하지 않기로 했어요..")
                 return
             if newmin > newmax:
-                await ctx.send("설정하려는 최소 경험치가 설정하려는 최대 경험치보다 커요! 최소 경험치를 더 작게 설정해 주세요.")
+                await send(ctx, "설정하려는 최소 경험치가 설정하려는 최대 경험치보다 커요! 최소 경험치를 더 작게 설정해 주세요.")
                 return
             if newmin < 0:
-                await ctx.send("최소 경험치를 0 이상으로 설정해 주세요!")
+                await send(ctx, "최소 경험치를 0 이상으로 설정해 주세요!")
                 return
             try:
                 db.execute("UPDATE guilds SET min_xp = ?, max_xp = ? WHERE GuildID = ?", newmin, newmax, ctx.guild.id)
                 db.commit()
             except OverflowError:
-                await ctx.send("설정하려는 경험치의 양이 너무 커요! 좀 더 작게 설정해 주세요")
+                await send(ctx, "설정하려는 경험치의 양이 너무 커요! 좀 더 작게 설정해 주세요")
                 return
-            await ctx.send(f"경험치범위 설정을 완료했어요! 이제 {ctx.guild.name}에서는 챗을 칠 때마다 {newmin}부터 {newmax}까지의 경험치를 얻을 수 있어요!")
+            await send(ctx, f"경험치범위 설정을 완료했어요! 이제 {ctx.guild.name}에서는 챗을 칠 때마다 {newmin}부터 {newmax}까지의 경험치를 얻을 수 있어요!")
         else:
-            await ctx.send("`커뉴야 경험치범위 <조회/설정>`")
+            await send(ctx, "`커뉴야 경험치범위 <조회/설정>`")
 
     @command(name="경험치쿨타임", aliases=["경험치쿨탐", "경험치쿨", "경쿨"])
     @has_permissions(administrator=True)
@@ -1591,9 +1591,9 @@ class Exp(Cog):
         cool = db.record("SELECT XPcool FROM Guilds WHERE GuildID = ?", ctx.guild.id)
         cool = cool[0]
         if activity == "조회":
-            await ctx.send(f"현재 {ctx.guild.name}에서는 {cool}초에 한 번만 경험치를 받을 수 있어요!")
+            await send(ctx, f"현재 {ctx.guild.name}에서는 {cool}초에 한 번만 경험치를 받을 수 있어요!")
         elif activity == "설정":
-            await ctx.send("설정할 경험치 쿨타임을 말해 주세요!")
+            await send(ctx, "설정할 경험치 쿨타임을 말해 주세요!")
             try:
                 msg = await self.bot.wait_for(
                     "message",
@@ -1601,21 +1601,21 @@ class Exp(Cog):
                     check=lambda message: message.author == ctx.author and ctx.channel == message.channel
                 )
             except asyncio.TimeoutError:
-                await ctx.send("경험치 쿨타임 변경을 취소했어요.")
+                await send(ctx, "경험치 쿨타임 변경을 취소했어요.")
                 return
             try:
                 newcool = int(msg.content)
             except ValueError:
-                await ctx.send("숫자로만 입력해 주세요! (초 단위로)")
+                await send(ctx, "숫자로만 입력해 주세요! (초 단위로)")
                 return
             if newcool < 1:
-                await ctx.send("경험치 쿨타임은 자연수로만 설정할 수 있어요!")
+                await send(ctx, "경험치 쿨타임은 자연수로만 설정할 수 있어요!")
                 return
             db.execute("UPDATE guilds SET XPcool = ? WHERE GuildID = ?", newcool, ctx.guild.id)
             db.commit()
-            await ctx.send(f"경험치 쿨타임 변경을 완료했어요! 이제 {ctx.guild.name}에서는 {newcool}초에 한 번만 경험치를 받을 수 있어요!")
+            await send(ctx, f"경험치 쿨타임 변경을 완료했어요! 이제 {ctx.guild.name}에서는 {newcool}초에 한 번만 경험치를 받을 수 있어요!")
         else:
-            await ctx.send("`커뉴야 경쿨 <조회/설정>`")
+            await send(ctx, "`커뉴야 경쿨 <조회/설정>`")
 
     @command(name="30렙색")
     async def lv_30_color(self, ctx):
@@ -1626,12 +1626,12 @@ class Exp(Cog):
             lv_30_role = ctx.guild.get_role(769923258022887494)
             if lv_30_role in ctx.author.roles:
                 await ctx.author.remove_roles(lv_30_role)
-                await ctx.send("30레벨 색 장착 해제 성공!")
+                await send(ctx, "30레벨 색 장착 해제 성공!")
             else:
                 await ctx.author.add_roles(lv_30_role)
-                await ctx.send("30레벨 색 장착 성공!")
+                await send(ctx, "30레벨 색 장착 성공!")
         else:
-            await ctx.send("30레벨 이상만 쓸 수 있는 색이야.")
+            await send(ctx, "30레벨 이상만 쓸 수 있는 색이야.")
 
     @command(name="60렙색")
     async def lv_60_color(self, ctx):
@@ -1642,12 +1642,12 @@ class Exp(Cog):
             lv_30_role = ctx.guild.get_role(765570766951284786)
             if lv_30_role in ctx.author.roles:
                 await ctx.author.remove_roles(lv_30_role)
-                await ctx.send("60레벨 색 장착 해제 성공!")
+                await send(ctx, "60레벨 색 장착 해제 성공!")
             else:
                 await ctx.author.add_roles(lv_30_role)
-                await ctx.send("60레벨 색 장착 성공!")
+                await send(ctx, "60레벨 색 장착 성공!")
         else:
-            await ctx.send("60레벨 이상만 쓸 수 있는 색이야.")
+            await send(ctx, "60레벨 이상만 쓸 수 있는 색이야.")
 
     @command(name="90렙색")
     async def lv_90_color(self, ctx):
@@ -1658,12 +1658,12 @@ class Exp(Cog):
             lv_30_role = ctx.guild.get_role(765570878573641728)
             if lv_30_role in ctx.author.roles:
                 await ctx.author.remove_roles(lv_30_role)
-                await ctx.send("90레벨 색 장착 해제 성공!")
+                await send(ctx, "90레벨 색 장착 해제 성공!")
             else:
                 await ctx.author.add_roles(lv_30_role)
-                await ctx.send("90레벨 색 장착 성공!")
+                await send(ctx, "90레벨 색 장착 성공!")
         else:
-            await ctx.send("90레벨 이상만 쓸 수 있는 색이야.")
+            await send(ctx, "90레벨 이상만 쓸 수 있는 색이야.")
 
     @command(name="150렙색")
     async def lv_150_color(self, ctx):
@@ -1674,12 +1674,12 @@ class Exp(Cog):
             lv_30_role = ctx.guild.get_role(788294915267625001)
             if lv_30_role in ctx.author.roles:
                 await ctx.author.remove_roles(lv_30_role)
-                await ctx.send("150레벨 색 장착 해제 성공!")
+                await send(ctx, "150레벨 색 장착 해제 성공!")
             else:
                 await ctx.author.add_roles(lv_30_role)
-                await ctx.send("150레벨 색 장착 성공!")
+                await send(ctx, "150레벨 색 장착 성공!")
         else:
-            await ctx.send("150레벨 이상만 쓸 수 있는 색이야.")
+            await send(ctx, "150레벨 이상만 쓸 수 있는 색이야.")
 
     @command(name="레벨", aliases=["렙"])
     @cooldown(2, 1, BucketType.user)
@@ -1712,10 +1712,10 @@ class Exp(Cog):
             #                           ctx.guild.id)
             #     next_rank_delta = next_rank[0] - now_exp
             #     embed.add_field(name="등수 상승까지 더 필요한 경험치", value=f"{next_rank_delta:,}")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
 
         else:
-            await ctx.send("0렙, 꼴등")
+            await send(ctx, "0렙, 꼴등")
 
     @command(name="돈")
     async def display_money(self, ctx, *, target: Optional[Member]):
@@ -1731,7 +1731,7 @@ class Exp(Cog):
             embed.add_field(name=f"{target.display_name} 의 돈 정보", value="​", inline=False)
             embed.add_field(name="가진 돈", value=f"{money:,}<:treasure:811456823248027648>", inline=True)
             embed.set_thumbnail(url=target.avatar_url)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
 
             if target == ctx.author and money >= 1000000:
                 l = grant_check("공식서버 만수르", ctx.author.id)
@@ -1757,7 +1757,7 @@ class Exp(Cog):
                 now_people += 1
             if tjfaud == "":
                 tjfaud = "선택하신 페이지에는 사람이 없는 것 같아요!"
-            await ctx.send(embed=Embed(color=0x00ff7f, title="잡초키우기 랭킹!", description=tjfaud))
+            await send(ctx, embed=Embed(color=0x00ff7f, title="잡초키우기 랭킹!", description=tjfaud))
         elif jong_mok in ["우주탐험", "우탐"]:
             records = db.records(
                 "SELECT UserID, explore_level FROM games WHERE explore_level != 0 ORDER BY explore_level DESC LIMIT ?, ?",
@@ -1769,7 +1769,7 @@ class Exp(Cog):
                 now_people += 1
             if tjfaud == "":
                 tjfaud = "선택하신 페이지에는 사람이 없는 것 같아요!"
-            await ctx.send(embed=Embed(color=0x4849c3, title="우주탐험 랭킹!", description=tjfaud))
+            await send(ctx, embed=Embed(color=0x4849c3, title="우주탐험 랭킹!", description=tjfaud))
         elif jong_mok in ["묵찌빠", "묵"]:
             records = db.records(
                 "SELECT UserID, mook_chi_pa_mmr FROM games WHERE mook_chi_pa_mmr != 4000 ORDER BY mook_chi_pa_mmr DESC LIMIT ?, ?",
@@ -1782,7 +1782,7 @@ class Exp(Cog):
                 now_people += 1
             if tjfaud == "":
                 tjfaud = "선택하신 페이지에는 사람이 없는 것 같아요!"
-            await ctx.send(embed=Embed(color=ctx.author.color, title="묵찌빠 랭킹!", description=tjfaud))
+            await send(ctx, embed=Embed(color=ctx.author.color, title="묵찌빠 랭킹!", description=tjfaud))
             return
         elif jong_mok in ["서버강화", "섭강"]:
             records = db.records(
@@ -1795,7 +1795,7 @@ class Exp(Cog):
                 now_servers += 1
             if tjfaud == "":
                 tjfaud = "선택하신 페이지에는 서버가 없는 것 같아요!"
-            await ctx.send(embed=Embed(color=ctx.author.color, title="강화 랭킹!", description=tjfaud))
+            await send(ctx, embed=Embed(color=ctx.author.color, title="강화 랭킹!", description=tjfaud))
         elif jong_mok == "돈":
             records = db.records("SELECT UserID, Money FROM exp WHERE GuildID = ? ORDER BY Money DESC LIMIT ?, ?",
                                  ctx.guild.id, 10 * pg - 10, 10)
@@ -1806,7 +1806,7 @@ class Exp(Cog):
                 now_people += 1
             if tjfaud == "":
                 tjfaud = "선택하신 페이지에는 사람이 없는 것 같아요!"
-            await ctx.send(embed=Embed(color=ctx.author.color, title="돈 랭킹!", description=tjfaud))
+            await send(ctx, embed=Embed(color=ctx.author.color, title="돈 랭킹!", description=tjfaud))
         elif jong_mok == "경부":
             records = db.records("SELECT UserID, XPBoost FROM exp WHERE GuildID = ? ORDER BY XPBoost DESC LIMIT ?, ?",
                                  ctx.guild.id, 10 * pg - 10, 10)
@@ -1817,7 +1817,7 @@ class Exp(Cog):
                 now_people += 1
             if tjfaud == "":
                 tjfaud = "선택하신 페이지에는 사람이 없는 것 같아요!"
-            await ctx.send(embed=Embed(color=ctx.author.color, title="경험치 부스트 랭킹!", description=tjfaud))
+            await send(ctx, embed=Embed(color=ctx.author.color, title="경험치 부스트 랭킹!", description=tjfaud))
         elif jong_mok == "퀴즈":
             records = db.records(
                 "SELECT UserID, quiz_mmr FROM games WHERE quiz_mmr != 0 ORDER BY quiz_mmr DESC LIMIT ?, ?",
@@ -1829,7 +1829,7 @@ class Exp(Cog):
                 now_people += 1
             if tjfaud == "":
                 tjfaud = "선택하신 페이지에는 사람이 없는 것 같아요!"
-            await ctx.send(embed=Embed(color=0x4849c3, title="퀴즈 랭킹!", description=tjfaud))
+            await send(ctx, embed=Embed(color=0x4849c3, title="퀴즈 랭킹!", description=tjfaud))
         elif jong_mok == "오목":
             records = db.records(
                 "SELECT UserID, omok_mmr FROM games WHERE omok_mmr != 0 ORDER BY omok_mmr DESC LIMIT ?, ?",
@@ -1841,7 +1841,7 @@ class Exp(Cog):
                 now_people += 1
             if tjfaud == "":
                 tjfaud = "선택하신 페이지에는 사람이 없는 것 같아요!"
-            await ctx.send(embed=Embed(color=0x4849c3, title="오목 랭킹!", description=tjfaud))
+            await send(ctx, embed=Embed(color=0x4849c3, title="오목 랭킹!", description=tjfaud))
         elif jong_mok == '도전과제':
             score_info = db.records(
                 "SELECT * FROM (SELECT UserID, count(name) as n FROM achievement_progress GROUP BY UserID) ORDER BY n DESC LIMIT 10")
@@ -1857,7 +1857,7 @@ class Exp(Cog):
                 c = scores.index(b) + 1
                 tjfaud += '\n' * (c != 1) + f"{c}. {self.bot.get_user(uid)} (달성한 도전 과제 {b}개)"
             embed = Embed(color=0xffd6fe, title=f"전체 도전과제 랭킹", description=tjfaud)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif jong_mok == '커뉴핑크':
             score_info = db.records(
                 "SELECT UserID, total_exp FROM conupink_user_info ORDER BY total_exp DESC LIMIT 10")
@@ -1873,9 +1873,9 @@ class Exp(Cog):
                 c = scores.index(b) + 1
                 tjfaud += '\n' * (c != 1) + f"{c}. {self.bot.get_user(uid)} (총 경험치 {b})"
             embed = Embed(color=0xffd6fe, title=f"커뉴핑크 경험치 랭킹", description=tjfaud)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         else:
-            await ctx.send("경험치(또는 빈칸), 돈, 경부, 서버강화, 잡초키우기, 우주탐험, 퀴즈, 오목, 도전과제, 커뉴핑크")
+            await send(ctx, "경험치(또는 빈칸), 돈, 경부, 서버강화, 잡초키우기, 우주탐험, 퀴즈, 오목, 도전과제, 커뉴핑크")
 
     @command(name="경험치부스트", aliases=["경부"])
     async def display_exp_boost(self, ctx, *, target: Optional[Member]):
@@ -1899,16 +1899,16 @@ class Exp(Cog):
             for item in items:
                 embed.add_field(name=item[0],
                                 value=f"가격: {item[2]}\n팔기로 한 사람: {self.bot.get_user(item[1])}\n남은 재고: {'무제한' if item[3] == -1 else item[3]}")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif activity == "등록":
             current = db.records("SELECT name FROM items WHERE created_by = ?", ctx.author.id)
             if len(current) == 3:
-                await ctx.send("한 번에 팔 수 있는 아이템 개수가 최대에 도달했어요!")
+                await send(ctx, "한 번에 팔 수 있는 아이템 개수가 최대에 도달했어요!")
                 return
             if item:
                 msg1 = item
             else:
-                await ctx.send("팔 아이템 이름을 말해주세요! (최대 32글자)")
+                await send(ctx, "팔 아이템 이름을 말해주세요! (최대 32글자)")
                 try:
                     msg1 = await self.bot.wait_for(
                         "message",
@@ -1916,17 +1916,17 @@ class Exp(Cog):
                         check=lambda message: message.author == ctx.author and ctx.channel == message.channel
                     )
                 except asyncio.TimeoutError:
-                    await ctx.send("아이템 등록을 취소했어요.")
+                    await send(ctx, "아이템 등록을 취소했어요.")
                     return
                 msg1 = msg1.content
             if len(msg1) > 32:
-                await ctx.send("아이템 이름이 너무 길어요!")
+                await send(ctx, "아이템 이름이 너무 길어요!")
                 return
             for tem in current:
                 if tem[0] == msg1:
-                    await ctx.send("아이템명이 중복돼요!")
+                    await send(ctx, "아이템명이 중복돼요!")
                     return
-            await ctx.send("아이템의 설명을 적어 주세요!")
+            await send(ctx, "아이템의 설명을 적어 주세요!")
             try:
                 msg2 = await self.bot.wait_for(
                     "message",
@@ -1934,13 +1934,13 @@ class Exp(Cog):
                     check=lambda message: message.author == ctx.author and ctx.channel == message.channel
                 )
             except asyncio.TimeoutError:
-                await ctx.send("아이템 등록을 취소했어요.")
+                await send(ctx, "아이템 등록을 취소했어요.")
                 return
             msg2 = msg2.content
             if len(msg2) > 255:
-                await ctx.send("아이템 설명이 너무 길어요!")
+                await send(ctx, "아이템 설명이 너무 길어요!")
                 return
-            await ctx.send(
+            await send(ctx, 
                 "아이템의 가격을 정해 주세요!다음과 같은 입력들을 인식해요:\n10000: 10000의 가격으로 판매합니다.\n10000+1000: 처음에는 10000으로 팔고 한 번 팔릴 때마다 가격을 1000씩 증가시킵니다.\n10000*2: 처음에는 10000으로 팔고 한 번 팔릴 때마다 가격을 2배씩 증가시킵니다. (만약 정수가 나오지 않으면 반올림합니다.)")
             try:
                 msg5 = await self.bot.wait_for(
@@ -1949,7 +1949,7 @@ class Exp(Cog):
                     check=lambda message: message.author == ctx.author and ctx.channel == message.channel
                 )
             except asyncio.TimeoutError:
-                await ctx.send("아이템 등록을 취소했어요.")
+                await send(ctx, "아이템 등록을 취소했어요.")
                 return
             try:
                 msg3 = str(int(msg5.content))
@@ -1959,9 +1959,9 @@ class Exp(Cog):
                 if plus.match(msg5.content) or multi.match(msg5.content):
                     msg3 = msg5.content
                 else:
-                    await ctx.send("올바르지 않은 입력 방식이에요!")
+                    await send(ctx, "올바르지 않은 입력 방식이에요!")
                     return
-            await ctx.send("아이템을 몇 개나 팔 건지 결정해 주세요! (-1을 입력해 무제한으로 설정)")
+            await send(ctx, "아이템을 몇 개나 팔 건지 결정해 주세요! (-1을 입력해 무제한으로 설정)")
             try:
                 msg4 = await self.bot.wait_for(
                     "message",
@@ -1969,25 +1969,25 @@ class Exp(Cog):
                     check=lambda message: message.author == ctx.author and ctx.channel == message.channel
                 )
             except asyncio.TimeoutError:
-                await ctx.send("아이템 등록을 취소했어요.")
+                await send(ctx, "아이템 등록을 취소했어요.")
                 return
             try:
                 msg4 = int(msg4.content)
             except TypeError:
-                await ctx.send("올바르지 않은 입력 방식이에요!")
+                await send(ctx, "올바르지 않은 입력 방식이에요!")
                 return
             if msg4 == 0 or msg4 < -1:
-                await ctx.send("올바르지 않은 입력 방식이에요!")
+                await send(ctx, "올바르지 않은 입력 방식이에요!")
                 return
             db.execute("INSERT INTO items (name, description, created_by, cost, amount) VALUES (?, ?, ?, ?, ?)", msg1,
                        msg2, ctx.author.id, msg3, msg4)
             db.commit()
-            await ctx.send("등록을 완료했어요!")
+            await send(ctx, "등록을 완료했어요!")
         elif activity == "삭제":
             if item:
                 msg4 = item
             else:
-                await ctx.send("삭제할 아이템 이름을 말해 주세요!")
+                await send(ctx, "삭제할 아이템 이름을 말해 주세요!")
                 try:
                     msg4 = await self.bot.wait_for(
                         "message",
@@ -1996,22 +1996,22 @@ class Exp(Cog):
                     )
                     msg4 = msg4.content
                 except asyncio.TimeoutError:
-                    await ctx.send("아이템 삭제를 취소했어요.")
+                    await send(ctx, "아이템 삭제를 취소했어요.")
                     return
             for current in db.records("SELECT name FROM items WHERE created_by = ?", ctx.author.id):
                 if current[0] == msg4:
                     break
             else:
-                await ctx.send("해당 아이템을 팔고 있지 않아요!")
+                await send(ctx, "해당 아이템을 팔고 있지 않아요!")
                 return
             db.execute("DELETE FROM items WHERE name = ? AND created_by = ?", msg4, ctx.author.id)
-            await ctx.send("아이템 삭제를 완료했어요!")
+            await send(ctx, "아이템 삭제를 완료했어요!")
             return
         elif activity == "신고":
             if item:
                 msg5 = item
             else:
-                await ctx.send("어떤 아이템을 신고하실 건가요?")
+                await send(ctx, "어떤 아이템을 신고하실 건가요?")
                 try:
                     msg5 = await self.bot.wait_for(
                         "message",
@@ -2020,12 +2020,12 @@ class Exp(Cog):
                     )
                     msg5 = msg5.content
                 except asyncio.TimeoutError:
-                    await ctx.send("아이템 신고를 취소했어요.")
+                    await send(ctx, "아이템 신고를 취소했어요.")
                     return
             if not db.record("SELECT name FROM items WHERE name = ?", msg5)[0]:
-                await ctx.send("존재하지 않는 아이템명이에요!")
+                await send(ctx, "존재하지 않는 아이템명이에요!")
                 return
-            await ctx.send("신고를 완료했어요!")
+            await send(ctx, "신고를 완료했어요!")
             await self.bot.get_channel(823393077376581654).send(f"{ctx.author}님이 아이템을 신고함\n신고한 템: {msg5}")
 
     @command(name="서버강화", aliases=["섭강"])
@@ -2035,7 +2035,7 @@ class Exp(Cog):
         if ctx.author.bot:
             await self.bot.get_channel(823393077376581654).send(
                 f'봇으로 서버강화 시도, 서버 아이디: {ctx.guild.id}, 현재 레벨: {server_level}')
-            await ctx.send("봇으로 서버강화를 시도했습니다. 당분간 이 서버에서 오는 서버강화 시도는 무시됩니다. 기간은 이전에 몇 번이나 같은 행동을 했는지에 따라 결정됩니다.")
+            await send(ctx, "봇으로 서버강화를 시도했습니다. 당분간 이 서버에서 오는 서버강화 시도는 무시됩니다. 기간은 이전에 몇 번이나 같은 행동을 했는지에 따라 결정됩니다.")
             db.execute("UPDATE guilds SET enchant_level = -1 WHERE GuildID = ?", ctx.guild.id)
             return
         if server_level == -1:
@@ -2052,7 +2052,7 @@ class Exp(Cog):
         probability = round(probability)
         probability = int(probability)
         embed.set_footer(text=f"강화 성공 확률 {probability}%")
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
         db.execute("UPDATE guilds SET enchant_level = ? WHERE GuildID = ?", server_level, ctx.guild.id)
         db.commit()
         if extra in ["리더보드", "릳"]:
@@ -2066,7 +2066,7 @@ class Exp(Cog):
                 now_servers += 1
             if tjfaud == "":
                 tjfaud = "선택하신 페이지에는 서버가 없는 것 같아요!"
-            await ctx.send(embed=Embed(color=ctx.author.color, title="강화 랭킹!", description=tjfaud))
+            await send(ctx, embed=Embed(color=ctx.author.color, title="강화 랭킹!", description=tjfaud))
         db.commit()
 
     @command(name="초대횟수")
@@ -2082,12 +2082,12 @@ class Exp(Cog):
         embed.add_field(name="초대 횟수", value=f"{invite_score}", inline=True)
         embed.add_field(name="등수", value=f"{rank}등")
         embed.set_thumbnail(url=target.avatar_url)
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
 
     @Cog.listener()
     async def on_ready(self):
         if not self.bot.ready:
-            self.bot.cogs_ready.ready_up("exp")
+            print('("exp")')
 
     @Cog.listener()
     async def on_message(self, message):
@@ -2098,5 +2098,5 @@ class Exp(Cog):
                 await self.process_xp(message)
 
 
-def setup(bot):
-    bot.add_cog(Exp(bot))
+async def setup(bot):
+    await bot.add_cog(Exp(bot))

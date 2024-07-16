@@ -10,6 +10,9 @@ from json import dumps, loads
 from ..db import db
 from time import time
 
+from discord.app_commands import command as slash, choices, Choice
+from ..utils.send import send
+
 quarkgen_coefficients = [0, 20000, 100000, 400000, 2000000]
 alpha_centauri = [52776.49, ]
 trade_item_visual = ['5000 아니 씨밧을 알데바락의 조각 하나와 거래합니다.', '특가 상품! 3000 아니 씨밧을 알데바락의 조각 하나와 거래합니다.',
@@ -115,7 +118,7 @@ class Alpha(Cog):
                         asdf += ', 별 지도'
         tjfaud += asdf
         embed.add_field(name='게임 정보', value=tjfaud)
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
 
     @command(name='ㅇ상점')
     async def shop(self, ctx):
@@ -165,7 +168,7 @@ class Alpha(Cog):
             if stats['personal_setting'] & 1024 and stats['quarkgen_level'] == 3:
                 embed.add_field(name='쿼크 유링겟ㅍㅇ 추출기 (줄여서 13)',
                                 value='쿼크 뭉탱태 추출기를 강화해 쿼크를 유링겟ㅍㅇ으로 끌어오는 초고급 쿼크 추출기입니다. 업 쿼크와 다운 쿼크를 매우 빠른 속도로 만들어내며 아마 받았을 30% 속도 보너스까지 생각한다면 굉장하네요!\n비용: 90000 아니 씨밧')
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
 
     @command(name='ㅇ구매')
     async def purchase(self, ctx, *, item):
@@ -175,7 +178,7 @@ class Alpha(Cog):
         stats = loads(base64.b64decode(stats))
         if item in ['채팅 시 획득 아니 씨밧 증가', "1"]:
             if stats['ani_cvat'] < (cost := stats['cvat_gain_upgrade_cost']):
-                await ctx.send(f"이 아이템의 가격인 {cost}만큼의 아니 씨밧을 가지고 있지 않아요!")
+                await send(ctx, f"이 아이템의 가격인 {cost}만큼의 아니 씨밧을 가지고 있지 않아요!")
                 return
             stats['ani_cvat'] -= cost
             stats['cvat_per_message'] *= 2
@@ -185,26 +188,26 @@ class Alpha(Cog):
             if l == 1:
                 return
             if stats['ani_cvat'] < 1500:
-                await ctx.send("이 아이템의 가격인 1500만큼의 아니 씨밧을 가지고 있지 않아요!")
+                await send(ctx, "이 아이템의 가격인 1500만큼의 아니 씨밧을 가지고 있지 않아요!")
                 return
             if 'personal_setting' not in stats:
                 stats['personal_setting'] = 0
             if stats['personal_setting'] & 1 == 1:
-                await ctx.send("이미 구매한 아이템이에요!")
+                await send(ctx, "이미 구매한 아이템이에요!")
                 return
             stats['ani_cvat'] -= 1500
             stats['personal_setting'] += 1
             await ctx.author.send("오타 연구소를 구매하셨습니다! 이제 다양한 오타를 연구하실 수 있습니다.")
         elif item in ['초당 획득 아니 씨밧 증가', '3']:
             if stats['ani_cvat'] < stats['cvatgen_efficiency_cost']:
-                await ctx.send(f"이 아이템의 가격인 {stats['cvatgen_efficiency_cost']}만큼의 아니 씨밧을 가지고 있지 않아요!")
+                await send(ctx, f"이 아이템의 가격인 {stats['cvatgen_efficiency_cost']}만큼의 아니 씨밧을 가지고 있지 않아요!")
                 return
             stats['ani_cvat'] -= stats['cvatgen_efficiency_cost']
             stats['cvat_per_second'] += 0.25
             stats['cvatgen_efficiency_cost'] += 1500
         elif item in ['미접속 중 아니 씨밧 최대치 증가', '4']:
             if stats['ani_cvat'] < stats['cvatgen_gather_cost']:
-                await ctx.send(f"이 아이템의 가격인 {stats['cvatgen_gather_cost']}만큼의 아니 씨밧을 가지고 있지 않아요!")
+                await send(ctx, f"이 아이템의 가격인 {stats['cvatgen_gather_cost']}만큼의 아니 씨밧을 가지고 있지 않아요!")
                 return
             stats['ani_cvat'] -= stats['cvatgen_gather_cost']
             stats['cvat_gather_max'] += 1000
@@ -217,7 +220,7 @@ class Alpha(Cog):
             if stats['quarkgen_level']:
                 return
             if stats['ani_cvat'] < 6969:
-                await ctx.send('이 아이템의 가격인 6969 아니 씨밧을 가지고 있지 않아요!')
+                await send(ctx, '이 아이템의 가격인 6969 아니 씨밧을 가지고 있지 않아요!')
                 return
             stats['ani_cvat'] -= 6969
             stats['quarkgen_level'] = 1
@@ -231,12 +234,12 @@ class Alpha(Cog):
             stats['electric_usage'] = 0
             stats['electric_saving'] = 0
             stats['electric_saving_max'] = 1000000
-            await ctx.send('ㅋㅇ발전 명령어를 사용해 보세요!')
+            await send(ctx, 'ㅋㅇ발전 명령어를 사용해 보세요!')
         elif item in ['쿼크 뭉탱태 추출기 ver.1', '7']:
             if stats['personal_setting'] & 64 == 0 or stats['research_doing'] == '뭉탱태':
                 return
             if stats['ani_cvat'] < 12000:
-                await ctx.send('이 아이템의 가격인 12000 아니 씨밧을 가지고 있지 않아요!')
+                await send(ctx, '이 아이템의 가격인 12000 아니 씨밧을 가지고 있지 않아요!')
                 return
             stats['ani_cvat'] -= 12000
             stats['quarkgen_level'] = 2
@@ -244,7 +247,7 @@ class Alpha(Cog):
             if stats['personal_setting'] & 64 == 0 or stats['research_doing'] == '뭉탱태':
                 return
             if stats['ani_cvat'] < 30000:
-                await ctx.send('이 아이템의 가격인 30000 아니 씨밧을 가지고 있지 않아요!')
+                await send(ctx, '이 아이템의 가격인 30000 아니 씨밧을 가지고 있지 않아요!')
                 return
             stats['ani_cvat'] -= 30000
             stats['quarkgen_level'] = 3
@@ -252,7 +255,7 @@ class Alpha(Cog):
             if stats['personal_setting'] & 32 == 0:
                 return
             if stats['ani_cvat'] < stats['elecgen_capacity_cost']:
-                await ctx.send(f'이 아이템의 가격인 {stats["elecgen_capacity_cost"]} 아니 씨밧을 가지고 있지 않아요!')
+                await send(ctx, f'이 아이템의 가격인 {stats["elecgen_capacity_cost"]} 아니 씨밧을 가지고 있지 않아요!')
                 return
             stats['ani_cvat'] -= stats['elecgen_capacity_cost']
             stats['electric_saving_max'] += 500000
@@ -261,7 +264,7 @@ class Alpha(Cog):
             if stats['personal_setting'] & 16 == 0 or stats['personal_setting'] & 256:
                 return
             if stats['ani_cvat'] < 40000:
-                await ctx.send(f'이 아이템의 가격인 40000 아니 씨밧을 가지고 있지 않아요!')
+                await send(ctx, f'이 아이템의 가격인 40000 아니 씨밧을 가지고 있지 않아요!')
                 return
             stats['ani_cvat'] -= 40000
             stats['personal_setting'] += 256
@@ -277,7 +280,7 @@ class Alpha(Cog):
             if 'trading_progress' not in stats or stats['personal_setting'] & 512:
                 return
             if 'pollux_shard' not in stats or not stats['pollux_shard']:
-                await ctx.send('이 아이템의 가격인 폴룩스의 조각 1개를 가지고 있지 않아요!')
+                await send(ctx, '이 아이템의 가격인 폴룩스의 조각 1개를 가지고 있지 않아요!')
                 return
             stats['pollux_shard'] -= 1
             stats['personal_setting'] += 512
@@ -285,7 +288,7 @@ class Alpha(Cog):
             if not stats['personal_setting'] & 1024:
                 return
             if stats['ani_cvat'] < 90000:
-                await ctx.send('이 아이템의 가격인 90000 아니 씨밧을 가지고 있지 않아요!')
+                await send(ctx, '이 아이템의 가격인 90000 아니 씨밧을 가지고 있지 않아요!')
                 return
             stats['ani_cvat'] -= 90000
             stats['quarkgen_level'] = 4
@@ -298,7 +301,7 @@ class Alpha(Cog):
         stats = db.record("SELECT alpha_centauri FROM games WHERE UseriD = ?", ctx.author.id)[0]
         stats = loads(base64.b64decode(stats))
         if 'research_doing' in stats and stats['research_doing'] != '없음':
-            await ctx.send('이미 어떤 오타를 연구중이에요!')
+            await send(ctx, '이미 어떤 오타를 연구중이에요!')
             return
         if 'personal_setting' in stats and stats['personal_setting'] & 1 == 1:
             if 'typo_research' not in stats:
@@ -344,7 +347,7 @@ class Alpha(Cog):
             if stats['typo_research'] & 3072 == 1024:
                 embed.add_field(name='유링겟ㅍㅇ 연구하기',
                                 value='스트리머 "케인"님의 밈 중 하나인 뭉탱이 밈의 일부인 "유링게슝"을 채팅에 치려다가 ㅠ가 ㅍ으로 변했나 봅니다.\n\n연구를 완료하면 쿼크 뭉탱태로 있다가 유링겟ㅍㅇ 추출기가 상점에 입고되는데, 이 추출기는 쿼크만 추출하는 게 아니라고 하더라고요?\n\n연구비용: 400000 아니 씨밧, 소요 시간 1일 12시간')
-            await ctx.send("어떤 연구를 하시겠습니까? 연구할 오타의 이름을 말해 주세요", embed=embed)
+            await send(ctx, "어떤 연구를 하시겠습니까? 연구할 오타의 이름을 말해 주세요", embed=embed)
             try:
                 msg = await self.bot.wait_for(
                     "message",
@@ -352,17 +355,17 @@ class Alpha(Cog):
                     check=lambda message: message.author == ctx.author and ctx.channel == message.channel
                 )
             except TimeoutError:
-                await ctx.send("연구를 취소했어요.")
+                await send(ctx, "연구를 취소했어요.")
                 return
             if msg.content == "아니 씨밧":
                 if stats['ani_cvat'] < 69:
-                    await ctx.send(f"이 오타를 연구할 수 있는 69만큼의 아니 씨밧을 가지고 있지 않아요!")
+                    await send(ctx, f"이 오타를 연구할 수 있는 69만큼의 아니 씨밧을 가지고 있지 않아요!")
                     return
                 if stats['typo_research'] & 1:
-                    await ctx.send("이미 연구한 오타에요!")
+                    await send(ctx, "이미 연구한 오타에요!")
                     return
                 stats['typo_research'] = 1
-                await ctx.send("아니 씨밧 연구 시작 완료!")
+                await send(ctx, "아니 씨밧 연구 시작 완료!")
                 await ctx.author.send(
                     "아니 씨밧 연구 완료!\n알파 센타우리 주변의 자기장 형성에 대해 일부분 알 것 같습니다...\n이제부터 `ㅋㅇ획득`을 입력하시면 모아진 아니 씨밧이 지급됩니다.")
                 stats['cvat_per_second'] = 0.5
@@ -372,10 +375,10 @@ class Alpha(Cog):
                 stats['cvat_gather_max'] = 2000
             elif msg.content == "피겅":
                 if stats['ani_cvat'] < 1000:
-                    await ctx.send("이 오타를 연구할 수 있는 1000만큼의 아니 씨밧을 가지고 있지 않아요!")
+                    await send(ctx, "이 오타를 연구할 수 있는 1000만큼의 아니 씨밧을 가지고 있지 않아요!")
                     return
                 if stats['typo_research'] & 2:
-                    await ctx.send("이미 연구한 오타에요!")
+                    await send(ctx, "이미 연구한 오타에요!")
                     return
                 stats['ani_cvat'] -= 1000
                 stats['typo_research'] += 2
@@ -383,10 +386,10 @@ class Alpha(Cog):
                 stats['research_doing'] = '피겅'
             elif msg.content == '피곦':
                 if stats['ani_cvat'] < 1500:
-                    await ctx.send("이 오타를 연구할 수 있는 1500만큼의 아니 씨밧을 가지고 있지 않아요!")
+                    await send(ctx, "이 오타를 연구할 수 있는 1500만큼의 아니 씨밧을 가지고 있지 않아요!")
                     return
                 if stats['typo_research'] & 4:
-                    await ctx.send("이미 연구한 오타에요!")
+                    await send(ctx, "이미 연구한 오타에요!")
                     return
                 stats['ani_cvat'] -= 1500
                 stats['typo_research'] += 4
@@ -394,10 +397,10 @@ class Alpha(Cog):
                 stats['research_doing'] = '피곦'
             elif msg.content == 'h':
                 if stats['proton'] < 100000000 or stats['neutron'] < 100000000:
-                    await ctx.send("이 오타를 연구할 때 쓰이는 양성자 1억 개와 중성자 1억 개를 가지고 있지 않아요!")
+                    await send(ctx, "이 오타를 연구할 때 쓰이는 양성자 1억 개와 중성자 1억 개를 가지고 있지 않아요!")
                     return
                 if stats['typo_research'] & 8:
-                    await ctx.send("이미 연구한 오타에요!")
+                    await send(ctx, "이미 연구한 오타에요!")
                     return
                 stats['proton'] -= 100000000
                 stats['neutron'] -= 100000000
@@ -406,10 +409,10 @@ class Alpha(Cog):
                 stats['research_doing'] = 'h'
             elif msg.content == '🎆':
                 if stats['1h'] < 200000000:
-                    await ctx.send("이 오타를 연구할 때 쓰이는 경수소 2억 개를 가지고 있지 않아요!")
+                    await send(ctx, "이 오타를 연구할 때 쓰이는 경수소 2억 개를 가지고 있지 않아요!")
                     return
                 if stats['typo_research'] & 16:
-                    await ctx.send("이미 연구한 오타에요!")
+                    await send(ctx, "이미 연구한 오타에요!")
                     return
                 stats['1h'] -= 200000000
                 stats['typo_research'] += 16
@@ -417,10 +420,10 @@ class Alpha(Cog):
                 stats['research_doing'] = '🎆'
             elif msg.content == ';TH':
                 if stats['ani_cvat'] < 5000:
-                    await ctx.send('이 오타를 연구할 때 쓰이는 5000만큼의 아니 씨밧을 가지고 있지 않아요!')
+                    await send(ctx, '이 오타를 연구할 때 쓰이는 5000만큼의 아니 씨밧을 가지고 있지 않아요!')
                     return
                 if stats['typo_research'] & 32:
-                    await ctx.send('이미 연구한 오타에요!')
+                    await send(ctx, '이미 연구한 오타에요!')
                     return
                 stats['ani_cvat'] -= 5000
                 stats['typo_research'] += 32
@@ -428,10 +431,10 @@ class Alpha(Cog):
                 stats['research_doing'] = ';TH'
             elif msg.content == '뭉탱태':
                 if stats['ani_cvat'] < 10000:
-                    await ctx.send('이 오타를 연구할 때 쓰이는 10000만큼의 아니 씨밧을 가지고 있지 않아요!')
+                    await send(ctx, '이 오타를 연구할 때 쓰이는 10000만큼의 아니 씨밧을 가지고 있지 않아요!')
                     return
                 if stats['typo_research'] & 64:
-                    await ctx.send('이미 연구한 오타에요!')
+                    await send(ctx, '이미 연구한 오타에요!')
                     return
                 stats['ani_cvat'] -= 10000
                 stats['typo_research'] += 64
@@ -439,10 +442,10 @@ class Alpha(Cog):
                 stats['research_doing'] = '뭉탱태'
             elif msg.content == '메타벗':
                 if stats['ani_cvat'] < 100000:
-                    await ctx.send('이 오타를 연구할 때 쓰이는 100000만큼의 아니 씨밧을 가지고 있지 않아요!')
+                    await send(ctx, '이 오타를 연구할 때 쓰이는 100000만큼의 아니 씨밧을 가지고 있지 않아요!')
                     return
                 if stats['typo_research'] & 128:
-                    await ctx.send('이미 연구한 오타에요!')
+                    await send(ctx, '이미 연구한 오타에요!')
                     return
                 stats['ani_cvat'] -= 100000
                 stats['typo_research'] += 128
@@ -452,10 +455,10 @@ class Alpha(Cog):
                 if 'electric_saving' not in stats:
                     return
                 if stats['electric_saving'] < 2000000:
-                    await ctx.send('이 오타를 연구할 때 쓰이는 2000000만큼의 비축된 전력을 가지고 있지 않아요!')
+                    await send(ctx, '이 오타를 연구할 때 쓰이는 2000000만큼의 비축된 전력을 가지고 있지 않아요!')
                     return
                 if stats['typo_research'] & 256:
-                    await ctx.send('이미 연구한 오타에요!')
+                    await send(ctx, '이미 연구한 오타에요!')
                     return
                 stats['electric_saving'] -= 2000000
                 stats['typo_research'] += 256
@@ -465,10 +468,10 @@ class Alpha(Cog):
                 if stats['personal_setting'] & 16 == 0:
                     return
                 if stats['typo_research'] & 512:
-                    await ctx.send('이미 연구한 오타에요!')
+                    await send(ctx, '이미 연구한 오타에요!')
                     return
                 if stats['ani_cvat'] < 25000 or stats['electric_saving'] < 1000000:
-                    await ctx.send('이 오타를 연구할 때 쓰이는 25000만큼의 아니 씨밧과 1000000만큼의 비축된 전력을 가지고 있지 않아요!')
+                    await send(ctx, '이 오타를 연구할 때 쓰이는 25000만큼의 아니 씨밧과 1000000만큼의 비축된 전력을 가지고 있지 않아요!')
                     return
                 stats['ani_cvat'] -= 25000
                 stats['electric_saving'] -= 1000000
@@ -479,10 +482,10 @@ class Alpha(Cog):
                 if 'trading_slot' not in stats or stats['trading_slot'] == 1:
                     return
                 if stats['typo_research'] & 1024:
-                    await ctx.send('이미 연구한 오타에요!')
+                    await send(ctx, '이미 연구한 오타에요!')
                     return
                 if stats['ani_cvat'] < 100000 or stats['aldebarak_shard'] < 25 or stats['electric_saving'] < 3000000:
-                    await ctx.send('이 오타를 연구할 때 쓰이는 100000 아니 씨밧, 25 알데바락의 조각, 3000000 비축된 전기를 가지고 있지 않아요!')
+                    await send(ctx, '이 오타를 연구할 때 쓰이는 100000 아니 씨밧, 25 알데바락의 조각, 3000000 비축된 전기를 가지고 있지 않아요!')
                     return
                 stats['ani_cvat'] -= 100000
                 stats['aldebarak_shard'] -= 25
@@ -494,19 +497,19 @@ class Alpha(Cog):
                 if not stats['typo_research'] & 1024:
                     return
                 if stats['typo_research'] & 2048:
-                    await ctx.send('이미 연구한 오타에요!')
+                    await send(ctx, '이미 연구한 오타에요!')
                     return
                 if stats['ani_cvat'] < 400000:
-                    await ctx.send('이 오타를 연구할 때 쓰이는 400000만큼의 아니 씨밧을 가지고 있지 않아요!')
+                    await send(ctx, '이 오타를 연구할 때 쓰이는 400000만큼의 아니 씨밧을 가지고 있지 않아요!')
                     return
                 stats['ani_cvat'] -= 400000
                 stats['typo_research'] += 2048
                 stats['research_end'] = time() + 129600
                 stats['research_doing'] = '유링겟ㅍㅇ'
             else:
-                await ctx.send("존재하지 않거나 연구가 불가능한 오타에요!")
+                await send(ctx, "존재하지 않거나 연구가 불가능한 오타에요!")
                 return
-            await ctx.send('오타 연구를 시작했어요! 정해진 시간이 지난 뒤에 아니 씨밧 카테고리의 아무 채널에나 메세지를 보내면 커뉴봇이 DM으로 오타 연구가 완료됐다고 알려줄 거에요.')
+            await send(ctx, '오타 연구를 시작했어요! 정해진 시간이 지난 뒤에 아니 씨밧 카테고리의 아무 채널에나 메세지를 보내면 커뉴봇이 DM으로 오타 연구가 완료됐다고 알려줄 거에요.')
             stats = base64.b64encode(dumps(stats).encode("ascii"))
             db.record("UPDATE games SET alpha_centauri = ? WHERE UserID = ?", stats, ctx.author.id)
             db.commit()
@@ -552,7 +555,7 @@ class Alpha(Cog):
             tjfaud += '\n전력 1000000을 채웠으므로 우선 최대로 비축할 수 있는 전력의 양이 1500000까지 늘어나고, 오타 연구소에 새로운 연구들이 해금되는 데다가, 상점에도 새로운 아이템이 입고됩니다!'
             stats['electric_saving_max'] = 1500000
             stats['elecgen_capacity_cost'] = 20000
-        await ctx.send(tjfaud)
+        await send(ctx, tjfaud)
         stats['cvat_gather_start'] = time()
         stats = base64.b64encode(dumps(stats).encode("ascii"))
         await asyncio.sleep(0.2)
@@ -576,7 +579,7 @@ class Alpha(Cog):
                 s = '보유 중인 다운 쿼크'
             if s:
                 tjfaud += f'\n{s}: {stats[stat]}'
-        await ctx.send(embed=Embed(color=0xffd6fe, title='쿼크 정보', description=tjfaud))
+        await send(ctx, embed=Embed(color=0xffd6fe, title='쿼크 정보', description=tjfaud))
 
     @command(name='ㅇ디버그')
     async def debug(self, ctx):
@@ -584,7 +587,7 @@ class Alpha(Cog):
             return
         stats = db.record("SELECT alpha_centauri FROM games WHERE UseriD = ?", ctx.author.id)[0]
         stats = base64.b64decode(stats)
-        await ctx.send(stats.replace(b"'", b'"'))
+        await send(ctx, stats.replace(b"'", b'"'))
         stats = loads(stats)
         stats['trading_next_refresh'] = time()
         stats = base64.b64encode(dumps(stats).encode("ascii"))
@@ -596,7 +599,7 @@ class Alpha(Cog):
         if ctx.channel.category.id != 916323967248248892:
             return
         if not a:
-            await ctx.send("합성할 물질을 정해주세요...")
+            await send(ctx, "합성할 물질을 정해주세요...")
             return
         if ctx.channel.category.id != 916323967248248892:
             return
@@ -606,7 +609,7 @@ class Alpha(Cog):
             return
         if a == '양성자':
             if (stats['up_quark'] < 2 * amount) or (stats['down_quark'] < amount):
-                await ctx.send('양성자 하나는 업 쿼크 2개와 다운 쿼크 1개로 구성돼요...')
+                await send(ctx, '양성자 하나는 업 쿼크 2개와 다운 쿼크 1개로 구성돼요...')
                 return
             if 'proton' not in stats:
                 stats['proton'] = amount
@@ -614,10 +617,10 @@ class Alpha(Cog):
                 stats['proton'] += amount
             stats['up_quark'] -= 2 * amount
             stats['down_quark'] -= amount
-            await ctx.send(f'보유 중인 양성자의 개수를 {stats["proton"]}까지 늘렸어요')
+            await send(ctx, f'보유 중인 양성자의 개수를 {stats["proton"]}까지 늘렸어요')
         elif a == '중성자':
             if (stats['down_quark'] < 2 * amount) or (stats['up_quark'] < amount):
-                await ctx.send('중성자 하나는 다운 쿼크 2개와 업 쿼크 1개로 구성돼요...')
+                await send(ctx, '중성자 하나는 다운 쿼크 2개와 업 쿼크 1개로 구성돼요...')
                 return
             if 'neutron' not in stats:
                 stats['neutron'] = amount
@@ -625,10 +628,10 @@ class Alpha(Cog):
                 stats['neutron'] += amount
             stats['down_quark'] -= 2 * amount
             stats['up_quark'] -= amount
-            await ctx.send(f'보유 중인 중성자의 개수를 {stats["neutron"]}까지 늘렸어요')
+            await send(ctx, f'보유 중인 중성자의 개수를 {stats["neutron"]}까지 늘렸어요')
         elif a == '수소':
             if stats['proton'] < amount or stats['electron'] < amount:
-                await ctx.send('수소 원자 하나는 양성자 하나와 전자 하나로 구성돼요...가끔 중수소가 나오는 건 보너스래요.')
+                await send(ctx, '수소 원자 하나는 양성자 하나와 전자 하나로 구성돼요...가끔 중수소가 나오는 건 보너스래요.')
                 return
             h2 = amount // 6400
             h1 = amount - h2
@@ -642,7 +645,7 @@ class Alpha(Cog):
                 stats['2h'] += h2
             stats['proton'] -= amount
             stats['electron'] -= amount
-            await ctx.send(f'보유 중인 경수소의 개수를 {stats["1h"]}, 중수소의 개수를 {stats["2h"]}까지 늘렸어요.')
+            await send(ctx, f'보유 중인 경수소의 개수를 {stats["1h"]}, 중수소의 개수를 {stats["2h"]}까지 늘렸어요.')
         stats = base64.b64encode(dumps(stats).encode("ascii"))
         db.record("UPDATE games SET alpha_centauri = ? WHERE UserID = ?", stats, ctx.author.id)
         db.commit()
@@ -666,12 +669,12 @@ class Alpha(Cog):
             embed.add_field(name='현재 초당 쿼크 증감량과 전력 생산량',
                             value=f'쿼크: 쿼크 추출기에 의해 +{quarkgen_speed}, 전력 생산에 의해 -{stats["electric_gen"] * 2000} -> 총합 {quarkgen_speed - stats["electric_gen"] * 2000}\n전기: 핵융합 발전소에 의해 {stats["electric_gen"]}')
             embed.set_footer(text='새로 얼만큼 발전할지를 정하려면 `ㅋㅇ발전 (초당전력)`\n처음으로 비축 가능한 전력을 가득 채웠을 때 좋은 일이 일어날 거에요!')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         else:
             if rate * 2000 > quarkgen_speed:
-                await ctx.send("아직은 쿼크 생산량을 초과할 정도로 많은 전력을 생산할 수 없어요! yonsei6 업데이트에서 만나요.")
+                await send(ctx, "아직은 쿼크 생산량을 초과할 정도로 많은 전력을 생산할 수 없어요! yonsei6 업데이트에서 만나요.")
                 return
-                # await ctx.send("이 정도로 많은 전력을 생산한다면 쿼크가 부족해질 수도 있어요. 그래도 이만큼의 전력을 생산하고 싶으시면 `설정`이라고 말해주세요.")
+                # await send(ctx, "이 정도로 많은 전력을 생산한다면 쿼크가 부족해질 수도 있어요. 그래도 이만큼의 전력을 생산하고 싶으시면 `설정`이라고 말해주세요.")
                 # try:
                 #     _ = await self.bot.wait_for(
                 #         "message",
@@ -679,13 +682,13 @@ class Alpha(Cog):
                 #         check=lambda message: message.author == ctx.author and ctx.channel == message.channel and message.content == '설정'
                 #     )
                 # except asyncio.TimeoutError:
-                #     await ctx.send("설정을 취소했어요.")
+                #     await send(ctx, "설정을 취소했어요.")
                 #     return
             stats['electric_gen'] = rate
             stats_ = base64.b64encode(dumps(stats).encode("ascii"))
             db.execute("UPDATE games SET alpha_centauri = ? WHERE UserID = ?", stats_, ctx.author.id)
             db.commit()
-            await ctx.send('발전에 의한 전력 생산량을 바꿨어요!')
+            await send(ctx, '발전에 의한 전력 생산량을 바꿨어요!')
 
     @command(name='ㅇ업뎃', aliases=['ㅇ최근업뎃'])
     async def alpha_update(self, ctx):
@@ -697,7 +700,7 @@ class Alpha(Cog):
         embed.add_field(name='3. 수정된 버그', value='`ㅋㅇ프로필` 명령어에서 일부 스탯이 표시되지 않던 버그 수정\n메타벗과 뇌저를 연구해도 `ㅋㅇ우주선`명령어가 제대로 작동하지 않던 버그 수정\n우주여행 도중 우주선의 남은 전력 값이 이상하게 표기되던 버그 수정',
                         inline=False)
         embed.set_footer(text='이전 업데이트 정보도 알고 싶다면 `커뉴야 업데이트 알파센타우리` (yonsei1 또는 그 이후의 업데이트만 알려줍니다)')
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
 
     @command(name='ㅇ우주선')
     async def ani_cvat_spaceship(self, ctx, activity: Optional[str], activity2: Optional[str]):
@@ -712,7 +715,7 @@ class Alpha(Cog):
             embed = Embed(color=0x0f0f19, title='우주선 정보')
             if stats['spaceship_velocity'] == -1:
                 embed.add_field(name='연료를 넣는 방법을 모르겠다!', value='아직 지식이 부족한데 음... 오타에 대해서 좀만 더 잘 알았어도...')
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
                 return
             else:
                 destination = None
@@ -729,30 +732,30 @@ class Alpha(Cog):
                 embed.add_field(name='남은 전력', value=stats['spaceship_electricity'])
                 embed.add_field(name='설정된 속력', value=f"{stats['spaceship_velocity']}v")
                 embed.add_field(name='초당 소모하는 전력', value=stats['spaceship_elec_consumption'])
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
         else:
             if stats['spaceship_velocity'] == -1:
                 return
             elif activity == '충전':
                 if not activity2 or not activity2.isdigit():
-                    await ctx.send("`ㅋㅇ우주선 충전 (충전할 전기)`")
+                    await send(ctx, "`ㅋㅇ우주선 충전 (충전할 전기)`")
                     return
                 activity2 = int(activity2)
                 if activity2 > stats['electric_saving']:
                     activity2 = stats['electric_saving']
                 stats['electric_saving'] -= activity2
                 stats['spaceship_electricity'] += activity2
-                await ctx.send(f'우주선에 전력을 {activity2}만큼 충전해 {stats["spaceship_electricity"]}만큼이 됐어요!')
+                await send(ctx, f'우주선에 전력을 {activity2}만큼 충전해 {stats["spaceship_electricity"]}만큼이 됐어요!')
             elif activity == '속력':
                 if not activity2 or not activity2.isdigit():
-                    await ctx.send('`ㅋㅇ우주선 속력 (속력)`')
+                    await send(ctx, '`ㅋㅇ우주선 속력 (속력)`')
                     return
                 activity2 = int(activity2)
                 stats['spaceship_velocity'] = activity2
                 if stats['typo_research'] & 1024 and stats['research_doing'] != 'ㅍ':
                     stats['spaceship_velocity'] = stats['spaceship_velocity'] * 6 // 5
                 stats['spaceship_elec_consumption'] = round((activity2 / 50) ** 2.5)
-                await ctx.send(
+                await send(ctx, 
                     f'속력을 {stats["spaceship_velocity"]}v로 변경했어요! 그에 따라 우주선을 운행하는 도중 초당 소모하는 전력이 {round((activity2 / 50) ** 2.5)}로 바뀌었어요!')
             elif activity == '출발':
                 if not stats['spaceship_traveling']:
@@ -760,12 +763,12 @@ class Alpha(Cog):
                         if 'known_locations' not in stats:
                             destination = 'proxima_b'
                         else:
-                            await ctx.send('`ㅋㅇ우주선 출발 (목적지)`')
+                            await send(ctx, '`ㅋㅇ우주선 출발 (목적지)`')
                             return
                     else:
                         return  # todo 목적지를 직접 설정할 때 코드는 여기로
                     if stats['spaceship_velocity'] == 0:
-                        await ctx.send('먼저 `ㅋㅇ우주선 속력 (속력)`으로 우주선의 속력을 결정해 주세요!')
+                        await send(ctx, '먼저 `ㅋㅇ우주선 속력 (속력)`으로 우주선의 속력을 결정해 주세요!')
                         return
                     if 'known_locations' in stats:
                         embed = Embed(color=0x0f0f19, title='우주선 출발 예정',
@@ -773,7 +776,7 @@ class Alpha(Cog):
                     else:
                         embed = Embed(color=0x0f0f19, title='우주선 출발 예정',
                                       description=f'다른 곳으로 출발할 예정이에요. 이번 여행에 관한 정보를 표시할테니 꼼꼼히 확인하세요.\n\n설정된 우주선 속력: {stats["spaceship_velocity"]}, 초당 소모하는 전력 {stats["spaceship_elec_consumption"]}\n\n목적지까지의 거리: ?, 걸리는 시간 ? -> 총 소모 전력 ?\n\n`출발`이라고 입력해 출발하세요\n최소 수백만 전력 정도는 모아서 출발하시는 걸 추천드려요..')
-                    await ctx.send(embed=embed)
+                    await send(ctx, embed=embed)
                     try:
                         go = await self.bot.wait_for(
                             "message",
@@ -782,9 +785,9 @@ class Alpha(Cog):
                                 message: message.author == ctx.author and ctx.channel == message.channel and message.content == '출발'
                         )
                     except asyncio.TimeoutError:
-                        await ctx.send("출발하지 않기로 했어요.")
+                        await send(ctx, "출발하지 않기로 했어요.")
                         return
-                    await ctx.send('성공적으로 출발했어요!')
+                    await send(ctx, '성공적으로 출발했어요!')
                     stats['destination'] = destination
                     stats['spaceship_traveling'] = True
                     stats['spaceship_electricity'] -= int(
@@ -794,7 +797,7 @@ class Alpha(Cog):
                         excess_time = -stats['spaceship_electricity'] / stats["spaceship_elec_consumption"]
                         stats['arrival_time'] += excess_time * 99
                 else:
-                    await ctx.send('이미 어딘가를 향해 가는 중이에요...')
+                    await send(ctx, '이미 어딘가를 향해 가는 중이에요...')
                     return
             stats_ = base64.b64encode(dumps(stats).encode("ascii"))
             db.execute("UPDATE games SET alpha_centauri = ? WHERE UserID = ?", stats_, ctx.author.id)
@@ -811,7 +814,7 @@ class Alpha(Cog):
         if stats['trading_level'] == 0:
             embed = Embed(title='dHJhZGU=',
                           description='633256755A4342446232355649487071633249675A47316B625738676447686C6269424A49486470624777675A326C325A534235623355674D79427261336C314C69424A5A694235623355675A326C325A5342745A5341314D444177494746756156396A646D46304C4342306147567549456B6764326C736243426E61585A6C49486C7664584967633268766343426849484E775A574E70595777676158526C62534268626D51675A326C325A534235623355675953427A614746795A4342765A6942686247526C596D46795957733D')
-            await ctx.send('`거래`라고 입력해 거래를 진행하세요.', embed=embed)
+            await send(ctx, '`거래`라고 입력해 거래를 진행하세요.', embed=embed)
             try:
                 go = await self.bot.wait_for(
                     "message",
@@ -820,15 +823,15 @@ class Alpha(Cog):
                         message: message.author == ctx.author and ctx.channel == message.channel and message.content == '거래'
                 )
             except asyncio.TimeoutError:
-                await ctx.send("거래하지 않기로 했어요.")
+                await send(ctx, "거래하지 않기로 했어요.")
                 return
             if stats['trading_level'] == 0:
                 if stats['ani_cvat'] < 5000:
-                    await ctx.send('거래에 필요한 5000 아니 씨밧을 가지고 있지 않아요!')
+                    await send(ctx, '거래에 필요한 5000 아니 씨밧을 가지고 있지 않아요!')
                     return
             stats['ani_cvat'] -= 5000
             stats['aldebarak_shard'] = 1
-            await ctx.send('거래를 완료했어요!')
+            await send(ctx, '거래를 완료했어요!')
         else:
             if not activity:
                 check = 1
@@ -848,18 +851,18 @@ class Alpha(Cog):
                         embed.add_field(name=str(i), value=trade_item_visual[stats['trading_current'][i-1]])
                     except TypeError:
                         embed.add_field(name=str(i), value='이미 거래 완료된 아이템이에요!')
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
                 if check:
                     return
             elif activity == '새로고침':
                 refresh_cool = stats['trading_next_refresh'] - time()
                 if refresh_cool > 0:
                     h, m, s = int(refresh_cool) // 3600, (int(refresh_cool) % 3600) // 60, int(refresh_cool) % 60
-                    await ctx.send(f'다음 새로고침은 약 {h}시간 {m}분 {s}초 뒤에 할 수 있어요!')
+                    await send(ctx, f'다음 새로고침은 약 {h}시간 {m}분 {s}초 뒤에 할 수 있어요!')
                     return
                 stats['trading_current'] = trade_refresh(stats)
                 stats['trading_next_refresh'] = time() + stats['trading_cooldown']
-                await ctx.send('새로고침을 완료했어요!')
+                await send(ctx, '새로고침을 완료했어요!')
             elif activity == '정보':
                 embed = Embed(color=0xffd6fe, title='거래 정보')
                 embed.add_field(name='현재까지 거래한 횟수', value=stats['trading_count'])
@@ -871,106 +874,106 @@ class Alpha(Cog):
                     embed.add_field(name='다음 새로고침까지 남은 시간', value='지금 새로고침 가능')
                 embed.add_field(name='거래 레벨', value=stats['trading_level'])
                 embed.add_field(name='새로고침당 얻을 수 있는 거래 품목 개수', value=stats['trading_slot'])
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
                 return
             elif activity.isdigit():
                 activity = int(activity)
                 if activity > stats['trading_slot']:
-                    await ctx.send('잘못된 번호를 입력했어요!')
+                    await send(ctx, '잘못된 번호를 입력했어요!')
                     return
                 activity -= 1
                 item = stats['trading_current'][activity]
                 if item is None:
-                    await ctx.send('이미 진행한 거래에요! 할 수 있는 거래를 다 한 상태라면 `ㅋㅇ거래 새로고침`으로 새로운 거래 아이템을 받으셔야 돼요.')
+                    await send(ctx, '이미 진행한 거래에요! 할 수 있는 거래를 다 한 상태라면 `ㅋㅇ거래 새로고침`으로 새로운 거래 아이템을 받으셔야 돼요.')
                     return
                 if item == 0:
                     if stats['ani_cvat'] < 5000:
-                        await ctx.send('제가 가져갈 5000 아니 씨밧은 어디 있죠?')
+                        await send(ctx, '제가 가져갈 5000 아니 씨밧은 어디 있죠?')
                         return
                     stats['ani_cvat'] -= 5000
                     stats['aldebarak_shard'] += 1
-                    await ctx.send('알데바락의 조각이에요. 가져가세요!')
+                    await send(ctx, '알데바락의 조각이에요. 가져가세요!')
                 elif item == 1:
                     if stats['ani_cvat'] < 3000:
-                        await ctx.send('제가 가져갈 3000 아니 씨밧은 어디 있죠?')
+                        await send(ctx, '제가 가져갈 3000 아니 씨밧은 어디 있죠?')
                         return
                     stats['ani_cvat'] -= 3000
                     stats['aldebarak_shard'] += 1
-                    await ctx.send('알데바락 조각이에요. 가져가세요!')
+                    await send(ctx, '알데바락 조각이에요. 가져가세요!')
                 elif item == 2:
                     if stats['aldebarak_shard'] < 20:
-                        await ctx.send('제가 가져갈 20 알데바락의 조각은 어디 있죠?')
+                        await send(ctx, '제가 가져갈 20 알데바락의 조각은 어디 있죠?')
                         return
                     stats['aldebarak_shard'] -= 20
                     stats['trading_slot'] += 1
-                    await ctx.send('좋아요! 다음 새로고침 때부터는 한 번에 두 아이템을 제시해 드릴게요. 거기에다가 새로운 오타 하나를 연구하실 수도 있어요!')
+                    await send(ctx, '좋아요! 다음 새로고침 때부터는 한 번에 두 아이템을 제시해 드릴게요. 거기에다가 새로운 오타 하나를 연구하실 수도 있어요!')
                 elif item == 3:
                     if stats['ani_cvat'] < 50000:
-                        await ctx.send('제가 가져갈 50000 아니 씨밧은 어디 있죠?')
+                        await send(ctx, '제가 가져갈 50000 아니 씨밧은 어디 있죠?')
                         return
                     stats['ani_cvat'] -= 50000
                     stats['trading_cooldown'] = 3600 * 7
-                    await ctx.send('좋아요! 다음 새로고침 때부터는 새로고침에 필요한 쿨타임을 줄여 드릴게요.')
+                    await send(ctx, '좋아요! 다음 새로고침 때부터는 새로고침에 필요한 쿨타임을 줄여 드릴게요.')
                 elif item == 4:
                     if stats['ani_cvat'] < 100000:
-                        await ctx.send('제가 가져갈 100000 아니 씨밧은 어디 있죠?')
+                        await send(ctx, '제가 가져갈 100000 아니 씨밧은 어디 있죠?')
                         return
                     stats['ani_cvat'] -= 100000
                     stats['trading_cooldown'] = 3600 * 6
-                    await ctx.send('좋아요! 다음 새로고침 때부터는 새로고침에 필요한 쿨타임을 줄여 드릴게요.')
+                    await send(ctx, '좋아요! 다음 새로고침 때부터는 새로고침에 필요한 쿨타임을 줄여 드릴게요.')
                 elif item == 5:
                     if stats['ani_cvat'] < 100000 or stats['aldebarak_shard'] < 50:
-                        await ctx.send('제가 가져갈 100000 아니 씨밧과 50 알데바락의 조각은 어디 있죠?')
+                        await send(ctx, '제가 가져갈 100000 아니 씨밧과 50 알데바락의 조각은 어디 있죠?')
                         return
                     stats['ani_cvat'] -= 100000
                     stats['aldebarak_shard'] -= 50
                     stats['trading_cooldown'] = 3600 * 5
-                    await ctx.send('좋아요! 다음 새로고침 때부터는 새로고침에 필요한 쿨타임을 줄여 드릴게요.')
+                    await send(ctx, '좋아요! 다음 새로고침 때부터는 새로고침에 필요한 쿨타임을 줄여 드릴게요.')
                 elif item == 6:
                     if stats['ani_cvat'] < 5000:
-                        await ctx.send('제가 가져갈 5000 아니 씨밧은 어디 있죠?')
+                        await send(ctx, '제가 가져갈 5000 아니 씨밧은 어디 있죠?')
                         return
                     x = randint(0, 1)
                     if not x:
-                        await ctx.send('5000 아니 씨밧 감사합니다!')
+                        await send(ctx, '5000 아니 씨밧 감사합니다!')
                         stats['ani_cvat'] -= 5000
                     else:
-                        await ctx.send('운이 좋으신데요? 5000 아니 씨밧을 가져가세요!')
+                        await send(ctx, '운이 좋으신데요? 5000 아니 씨밧을 가져가세요!')
                         stats['ani_cvat'] += 5000
                 elif item == 7:
                     if stats['aldebarak_shard'] < 10:
-                        await ctx.send('제가 가져갈 10 알데바락의 조각은 어디 있죠?')
+                        await send(ctx, '제가 가져갈 10 알데바락의 조각은 어디 있죠?')
                         return
                     stats['aldebarak_shard'] -= 10
                     stats['trading_progress'] = 0
-                    await ctx.send('좋아요! 상점에 방문해 보세요.')
+                    await send(ctx, '좋아요! 상점에 방문해 보세요.')
                 elif item == 8:
                     if stats['aldebarak_shard'] < 10:
-                        await ctx.send('제가 가져갈 10 알데바락의 조각은 어디 있죠?')
+                        await send(ctx, '제가 가져갈 10 알데바락의 조각은 어디 있죠?')
                         return
                     stats['aldebarak_shard'] -= 10
                     if 'pollux_shard' not in stats:
                         stats['pollux_shard'] = 1
                     else:
                         stats['pollux_shard'] += 1
-                    await ctx.send('폴룩스의 조각이에요. 귀한 거니까 조심히 가져가세요!')
+                    await send(ctx, '폴룩스의 조각이에요. 귀한 거니까 조심히 가져가세요!')
                 elif item == 9:
                     if stats['ani_cvat'] < 7000:
-                        await ctx.send('제가 가져갈 7000 아니 씨밧은 어디 있죠?')
+                        await send(ctx, '제가 가져갈 7000 아니 씨밧은 어디 있죠?')
                         return
                     if stats['destination'] is not None:
-                        await ctx.send('우주여행 도중에는 저희도 거래하기가 힘들어요... 내려서 거래해 주시면 충전해 드릴게요!')
+                        await send(ctx, '우주여행 도중에는 저희도 거래하기가 힘들어요... 내려서 거래해 주시면 충전해 드릴게요!')
                         return
                     stats['ani_cvat'] -= 7000
                     stats['spaceship_electricity'] += 1000000
-                    await ctx.send('좋아요! 제대로 충전했어요.')
+                    await send(ctx, '좋아요! 제대로 충전했어요.')
                 elif item == 10:
                     if stats['aldebarak_shard'] < 250:
-                        await ctx.send('제가 가져갈 250 알데바락의 조각은 어디 있죠?')
+                        await send(ctx, '제가 가져갈 250 알데바락의 조각은 어디 있죠?')
                         return
                     stats['aldebarak_shard'] -= 250
                     stats['trading_slot'] += 1
-                    await ctx.send('250 알데바락의 조각은 저희에게도 큰 돈이에요! 다음 새로고침 때부터 한 번에 세 개의 아이템이나 거래할 수 있게 돼요.')
+                    await send(ctx, '250 알데바락의 조각은 저희에게도 큰 돈이에요! 다음 새로고침 때부터 한 번에 세 개의 아이템이나 거래할 수 있게 돼요.')
                 stats['trading_current'][activity] = None
                 stats['trading_count'] += 1
                 if stats['trading_count'] == 100:
@@ -978,7 +981,7 @@ class Alpha(Cog):
                     if l == 1:
                         await grant(ctx, "활발한 거래자", "알데바락 우주센터와 100회 이상 성공적으로 거래하세요\n\n`인게임 도전과제입니다.`", 1)
             else:
-                await ctx.send('올바르지 않은 명령어에요!')
+                await send(ctx, '올바르지 않은 명령어에요!')
                 return
         stats_ = base64.b64encode(dumps(stats).encode("ascii"))
         db.execute("UPDATE games SET alpha_centauri = ? WHERE UserID = ?", stats_, ctx.author.id)
@@ -1029,11 +1032,11 @@ class Alpha(Cog):
             if ctx.channel.category.id != 916323967248248892:
                 embed.set_footer(
                     text='채널 안에서만 실행 가능한 명령어이므로 이곳에서는 아무것도 뜨지 않습니다. 바깥 분들께 컨텐츠를 스포하면 안 되죠.\n게임 구입은 `커뉴야 뀨 구매 알파 센타우리`')
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
                 return
             embed.add_field(name='사용 가능한 명령어', value=', '.join(available_commands), inline=False)
             embed.add_field(name='명령어는 아닌 게임 요소들', value=', '.join(available_features), inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         else:
             if content in available_commands:
                 embed = Embed(color=0xffd6fe, title=f'알파 센타우리 명령어 도움')
@@ -1067,12 +1070,12 @@ class Alpha(Cog):
                      '알데바락의 조각': '알데바락 우주센터에서 흔하게 발견되는 물건입니다. 그러나 알데바락 우주센터 바깥에서는 그리 흔하게 발견되지는 않는 것 같네요. 알데바락의 조각 자체가 무언가 대단한 걸 하지는 않지만, 알데바락의 조각은 우주 곳곳에서 화폐로 쓰인다고 합니다! 심지어 커뉴핑크에서도...',
                      '폴룩스의 조각': '알데바락 우주센터에서 희귀하게 취급되는 물건입니다. 저 먼 곳에 폴룩스라는 별이 있다네요. 이 물건은 알데바락의 조각과 다르게 무언가 대단한 걸 한다고 알려져 있습니다.'}
             embed.add_field(name=content, value=helps[content])
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
 
     @Cog.listener()
     async def on_ready(self):
         if not self.bot.ready:
-            self.bot.cogs_ready.ready_up("alpha")
+            print('("alpha")')
 
     @Cog.listener()
     async def on_message(self, message):
@@ -1199,9 +1202,9 @@ async def end_purchase(stats, ctx):
     stats = base64.b64encode(dumps(stats).encode("ascii"))
     db.record("UPDATE games SET alpha_centauri = ? WHERE UserID = ?", stats, ctx.author.id)
     db.commit()
-    await ctx.send("구매 완료!")
+    await send(ctx, "구매 완료!")
     return
 
 
-def setup(bot):
-    bot.add_cog(Alpha(bot))
+async def setup(bot):
+    await bot.add_cog(Alpha(bot))

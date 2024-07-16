@@ -2,7 +2,9 @@ import asyncio
 from typing import Optional
 
 from ..db import db
+from ..utils.send import send
 from discord import Embed
+from discord.app_commands import command as slash, choices, Choice
 from discord.ext.commands import Cog, command
 
 
@@ -31,7 +33,16 @@ class Achieve(Cog):
         self.bot = bot
 
     @command(name="도전과제")
-    async def achievement_list(self, ctx, activity: Optional[str], seat: Optional[int], *, name: Optional[str]):
+    async def ach_list_normal(self, ctx, activity: Optional[str], seat: Optional[int], *, name: Optional[str]):
+        await self.achievement_list(ctx, activity, seat, name=name)
+
+    @slash(name="도전과제", description="도전과제에 관한 각종 명령어 세트 (원본: `커뉴야 도전과제`)")
+    @choices(
+        무엇=[Choice(name='내가달성한거', value=''), Choice(name='페이지순', value='페이지순'), Choice(name='리더보드', value='리더보드'),    Choice(name='목록', value='목록'), Choice(name='설명', value='설명'), Choice(name='미션', value='미션'),    Choice(name='미션', value='미션'), Choice(name='장착', value='장착')])
+    async def ach_list_slash(self, interaction, 무엇: Optional[str], 장착자리: Optional[int], *, 도전과제이름: Optional[str]):
+        await self.achievement_list(interaction, 무엇, 장착자리, 도전과제이름)
+
+    async def achievement_list(self, ctx, activity, seat, name):
         if not activity:
             my_ach = db.records("SELECT name FROM achievement_progress WHERE UserID = ? and ach_type = 0",
                                 ctx.author.id)
@@ -44,7 +55,7 @@ class Achieve(Cog):
             else:
                 l = len(my_ach)
                 embed.add_field(name=f"도전 과제 개수: {l}개", value=f"달성한 도전 과제들\n{tjfaud[1:]}")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif activity in ["랭킹", "리더보드"]:
             score_info = db.records(
                 "SELECT * FROM (SELECT UserID, count(name) as n FROM achievement_progress GROUP BY UserID) ORDER BY n DESC LIMIT 10")
@@ -60,10 +71,10 @@ class Achieve(Cog):
                 c = scores.index(b) + 1
                 tjfaud += f"\n{c}. {self.bot.get_user(uid)} (달성한 도전 과제 {b}개)"
             embed = Embed(color=0xffd6fe, title=f"전체 도전과제 랭킹", description=tjfaud)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif activity == "장착":
             if not seat or (seat and seat not in [1, 2, 3, 4, 5]):
-                await ctx.send("올바르지 않은 자리에요!")
+                await send(ctx, "올바르지 않은 자리에요!")
                 return
             cur = db.record("SELECT name FROm achievement_progress WHERE UseriD = ?", ctx.author.id)[0]
             if cur:
@@ -80,10 +91,10 @@ class Achieve(Cog):
 
                 embed = Embed(color=0xffd6fe, title="대표 업적 설정 완료",
                               description=f"{seat}번 자리에 {name} 도전과제를 대표 업적으로 설정했습니다")
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
                 db.commit()
             else:
-                await ctx.send('달성하지 못한 도전과제에요!')
+                await send(ctx, '달성하지 못한 도전과제에요!')
                 return
         elif activity == "목록":
             embed = Embed(color=0xffd6fe, title="획득 가능한 도전과제 목록")
@@ -91,7 +102,7 @@ class Achieve(Cog):
                 embed.add_field(name="도전과제 목차",
                                 value="1. 기본 도전 과제\n2. 커뉴봇 명령어 관련 도전 과제\n3. 커뉴봇 스펙 관련 도전 과제\n4. 공식서버 관련 도전 과제\n5. 프리미엄 도전 과제\n6. 이스터 에그 도전 과제\n7. 미션형 도전 과제\n8. 기간 한정 도전 과제\n9. 명예 도전 과제")
                 embed.set_footer(text="`커뉴야 도전과제 목록 <1~9>`로 도전과제 목록을 확인하세요")
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
                 return
             better_list = db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0] & 512 == 512
             achievement_got = set()
@@ -191,7 +202,7 @@ class Achieve(Cog):
                 else:
                     embed.set_footer(text="이 도전과제들의 경우 획득조건을 알려주지 않습니다. 이름이나 `커뉴야 도전과제 설명`을 보고 추론해서 도전 과제를 달성해 보세요!",
                                     icon_url="https://cdn.discordapp.com/emojis/594239588399317079.png?v=1")
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
                 return
             elif seat == 7:
                 achievement_descriptions = {
@@ -239,12 +250,12 @@ class Achieve(Cog):
                 if l == 1:
                     await grant(ctx, "그런 페이지는 존재하지 않습니다", "도전과제 목록에서 페이지 인수를 69로 설정하세요")
             embed.set_footer(text="일부 도전과제의 경우 달성조건을 알려주지 않을 수 있습니다")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif activity == "설명":
             try:
                 des = db.record("SELECT description FROM achievements WHERE name = ?", name)[0]
             except TypeError:
-                await ctx.send("그런 도전과제는 존재하지 않아요!")
+                await send(ctx, "그런 도전과제는 존재하지 않아요!")
                 return
             setting = db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0]
             if setting & 64:
@@ -257,7 +268,7 @@ class Achieve(Cog):
                 embed.set_footer(text='아직 달성하지 못한 도전과제에요!')
             else:
                 embed.set_footer(text='달성한 도전과제에요!')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
             if name == '설명좀':
                 l = grant_check("설명좀", ctx.author.id)
                 if l == 1:
@@ -265,7 +276,7 @@ class Achieve(Cog):
         elif activity == "페이지순":
             setting = db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0]
             if setting & 32 == 0:
-                await ctx.send("해금하지 못한 기능이에요! `커뉴야 뀨 구매 도전과제 페이지순 정렬`으로 먼저 이 기능을 해금하세요")
+                await send(ctx, "해금하지 못한 기능이에요! `커뉴야 뀨 구매 도전과제 페이지순 정렬`으로 먼저 이 기능을 해금하세요")
                 return
             sort = [[], [], [], [], [], [], [], [], [], [], []]
             my_ach = db.records("SELECT name FROM achievement_progress WHERE UserID = ?", ctx.author.id)
@@ -286,12 +297,12 @@ class Achieve(Cog):
             for i in range(len(pages)):
                 if pages[i]:
                     embed.add_field(name=f"{i}페이지", value=pages[i], inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif activity == '미션':
             current_mission = db.record("SELECT mission_achievement, mission_temp FROM games WHERE UserID = ?",
                                         ctx.author.id)
             if current_mission[0] == '진정한 레벨업':
-                await ctx.send('도전과제 달성 여부를 불러오는 중이에요...')
+                await send(ctx, '도전과제 달성 여부를 불러오는 중이에요...')
                 await asyncio.sleep(1)
                 xp_now = \
                 db.record("SELECT XP FROM exp WHERE UserID = ? AND GuildID = 743101101401964647", ctx.author.id)[0]
@@ -299,7 +310,7 @@ class Achieve(Cog):
                 wz = db.record("SELECT uses FROM cmd_uses WHERE UserID = ? AND command = '잡초키우기'", ctx.author.id)[0]
                 check = current_mission[1].split(",")
                 if int(check[1]) != dx or int(check[2]) != wz:
-                    await ctx.send('진정한 레벨업 도전과제 달성을 실패했어요! 다시 시도하려면 `커뉴야 도전과제 미션 진정한 레벨업`을 입력해주세요.')
+                    await send(ctx, '진정한 레벨업 도전과제 달성을 실패했어요! 다시 시도하려면 `커뉴야 도전과제 미션 진정한 레벨업`을 입력해주세요.')
                     db.execute("UPDATE games SET mission_achievement = NULL, mission_temp = NULL WHERE UserID = ?",
                                ctx.author.id)
                     db.commit()
@@ -312,16 +323,16 @@ class Achieve(Cog):
                                ctx.author.id)
                     db.commit()
                     return
-                await ctx.send(f'미션이 진행 중이에요! 3000 exp를 벌어야 하고 현재는 그중 {xp_gained}만큼 번 상태에요.')
+                await send(ctx, f'미션이 진행 중이에요! 3000 exp를 벌어야 하고 현재는 그중 {xp_gained}만큼 번 상태에요.')
                 return
             if not name:
-                await ctx.send('`커뉴야 도전과제 미션 (도전과제명)`')
+                await send(ctx, '`커뉴야 도전과제 미션 (도전과제명)`')
                 return
             mission_check = db.record("SELECT name FROM achievements WHERE name = ? AND page = 7", name)
             if not mission_check:
-                await ctx.send("그런 도전과제는 존재하지 않아요!")
+                await send(ctx, "그런 도전과제는 존재하지 않아요!")
                 return
-            await ctx.send("정말로 해당 미션을 시작할 건가요? `시작`이라고 입력해 시작하세요")
+            await send(ctx, "정말로 해당 미션을 시작할 건가요? `시작`이라고 입력해 시작하세요")
             try:
                 msg = await self.bot.wait_for(
                     "message",
@@ -329,17 +340,17 @@ class Achieve(Cog):
                     check=lambda message: message.author == ctx.author and ctx.channel == message.channel
                 )
             except asyncio.TimeoutError:
-                await ctx.send("미션형 도전과제를 시작하지 않기로 했어요.")
+                await send(ctx, "미션형 도전과제를 시작하지 않기로 했어요.")
                 return
             if msg.content != '시작':
-                await ctx.send("미션형 도전과제를 시작하지 않기로 했어요.")
+                await send(ctx, "미션형 도전과제를 시작하지 않기로 했어요.")
                 return
             if name == '진정한 레벨업':
                 l = grant_check("진정한 레벨업", ctx.author.id)
                 if l == 0:
-                    await ctx.send("이미 달성한 도전과제에요!")
+                    await send(ctx, "이미 달성한 도전과제에요!")
                     return
-                await ctx.send(
+                await send(ctx, 
                     "**진정한 레벨업**도전과제를 시작했어요! 우주탐험과 잡초키우기는 잠깐 당신의 손에서 벗어나 있으라고 하세요...\n\n도전과제를 완료했다고 생각하시면 `커뉴야 도전과제 미션`을 꼭 다시 입력하셔야 돼요!")
                 xp_now = \
                 db.record("SELECT XP FROM exp WHERE UserID = ? AND GuildID = 743101101401964647", ctx.author.id)[0]
@@ -351,9 +362,9 @@ class Achieve(Cog):
             elif name == '숫자를 많이 세다':
                 l = grant_check("숫자를 많이 세다", ctx.author.id)
                 if l == 0:
-                    await ctx.send("이미 달성한 도전과제에요!")
+                    await send(ctx, "이미 달성한 도전과제에요!")
                     return
-                await ctx.send("**숫자를 많이 세다**도전과제를 시작했어요! 제발 끊기지 않도록 기도하세요.\n\n이 도전 과제를 달성하면 커뉴봇이 개인 메세지를 보낼 거에요!")
+                await send(ctx, "**숫자를 많이 세다**도전과제를 시작했어요! 제발 끊기지 않도록 기도하세요.\n\n이 도전 과제를 달성하면 커뉴봇이 개인 메세지를 보낼 거에요!")
                 current_number = db.record("SELECT num FROM channels WHERE ChannelID = 743339107731767366")[0]
                 current_number += 5
                 db.execute("UPDATE games SET mission_achievement = ?, mission_temp = ? WHERE UserID = ?", name,
@@ -361,6 +372,13 @@ class Achieve(Cog):
                 db.commit()
 
     @command(name="프로필")
+    async def profile_normal(self, ctx):
+        await self.represent(ctx)
+
+    @slash(name="프로필", description="자신의 프로필을 보여줘요.")
+    async def profile_slash(self, interaction):
+        await self.represent(interaction)
+
     async def represent(self, ctx):
         chs = db.record("SELECT p1, p2, p3, p4, p5 FROM games WHERE UserID = ?", ctx.author.id)
         s = db.record("SELECT sogae FROM games WHERE UserID = ?", ctx.author.id)
@@ -376,14 +394,21 @@ class Achieve(Cog):
             tjfaud += f"\n{ele_}"
         embed = Embed(color=0xffd6fe)
         embed.add_field(name=f"{ctx.author.display_name}님의 프로필", value=tjfaud)
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
 
     @command(name="소개작성")
-    async def write_sogae(self, ctx, *, sogae: str):
+    async def sogae_normal(self, ctx, *, sogae: str):
+        await self.represent(ctx, sogae)
+
+    @slash(name="소개작성", description="프로필에 표시할 소개를 작성해요.")
+    async def sogae_slash(self, interaction, *, 소개: str):
+        await self.represent(interaction, 소개)
+
+    async def write_sogae(self, ctx, sogae: str):
         if len(sogae) > 100:
-            await ctx.send("소개글이 너무 길어요!")
+            await send(ctx, "소개글이 너무 길어요!")
             return
-        await ctx.send(f"{sogae}로 소개글을 바꿀려고 해요. 이렇게 바꿀려는 게 맞나요?\n`변경`이라고 입력해 소개글을 변경하세요")
+        await send(ctx, f"{sogae}로 소개글을 바꿀려고 해요. 이렇게 바꿀려는 게 맞나요?\n`변경`이라고 입력해 소개글을 변경하세요")
         try:
             msg = await self.bot.wait_for(
                 "message",
@@ -391,10 +416,10 @@ class Achieve(Cog):
                 check=lambda message: message.author == ctx.author and ctx.channel == message.channel
             )
         except asyncio.TimeoutError:
-            await ctx.send("소개글 변경을 취소했어요.")
+            await send(ctx, "소개글 변경을 취소했어요.")
             return
         if msg.content == "변경":
-            await ctx.send("소개글 변경을 완료했어요! `커뉴야 프로필`명령어로 확인해 보세요")
+            await send(ctx, "소개글 변경을 완료했어요! `커뉴야 프로필`명령어로 확인해 보세요")
             l = grant_check("프로필 꾸미기", ctx.author.id)
             if l == 1:
                 await grant(ctx, "프로필 꾸미기", "소개작성 명령어로 소개글을 작성하기")
@@ -404,11 +429,11 @@ class Achieve(Cog):
     @Cog.listener()
     async def on_ready(self):
         if not self.bot.ready:
-            self.bot.cogs_ready.ready_up("achieve")
+            print('achieve cog ready')
 
 
-def setup(bot):
-    bot.add_cog(Achieve(bot))
+async def setup(bot):
+    await bot.add_cog(Achieve(bot))
 
 
 def grant_check(achievement, userid):

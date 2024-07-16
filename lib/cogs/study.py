@@ -18,6 +18,8 @@ from discord import Embed, File, HTTPException
 from discord.ext.commands import Cog, command
 from PIL import Image, ImageDraw, ImageFont
 from ..db import db
+from discord.app_commands import command as slash, choices, Choice
+from ..utils.send import send
 
 
 class Study(Cog):
@@ -1241,7 +1243,7 @@ class Study(Cog):
     @Cog.listener()
     async def on_ready(self):
         if not self.bot.ready:
-            self.bot.cogs_ready.ready_up("study")
+            print('("study")')
 
     # @Cog.listener()
     # async def on_message(self, message):
@@ -1293,5 +1295,5 @@ class Study(Cog):
     #         await self.sub_subject(message, cmd[1], cmd[2])
 
 
-def setup(bot):
-    bot.add_cog(Study(bot))
+async def setup(bot):
+    await bot.add_cog(Study(bot))

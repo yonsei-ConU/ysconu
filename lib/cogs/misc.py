@@ -6,6 +6,8 @@ from discord.ext.commands import Cog, Greedy, command
 
 from .achieve import grant_check, grant
 from ..db import db
+from discord.app_commands import command as slash, choices, Choice
+from ..utils.send import send
 
 
 class Misc(Cog):
@@ -18,52 +20,52 @@ class Misc(Cog):
         # if extra1 == '설정':
         #     if not extra2:
         #         visual_ust = ['방식별', '기능별'][update_show_type]
-        #         await ctx.send(f"현재는 `커뉴야 업데이트`를 실행하면 {visual_ust}로 표시해요! 단, 24_seol 업데이트 또는 그 이후의 업데이트에만 적용돼요.\n\n`커뉴야 업데이트 설정 (방식별/기능별)`로 업데이트를 어떻게 표시할지 바꾸세요")
+        #         await send(ctx, f"현재는 `커뉴야 업데이트`를 실행하면 {visual_ust}로 표시해요! 단, 24_seol 업데이트 또는 그 이후의 업데이트에만 적용돼요.\n\n`커뉴야 업데이트 설정 (방식별/기능별)`로 업데이트를 어떻게 표시할지 바꾸세요")
         #         return
         #     elif extra2 == '방식별':
         #         if update_show_type == 1:
-        #             await ctx.send('성공적으로 변경했어요!')
+        #             await send(ctx, '성공적으로 변경했어요!')
         #             db.execute("UPDATE games SET user_setting = user_setting - 4096 WHERE UserID = ?", ctx.author.id)
         #         else:
-        #             await ctx.send("이미 방식별로 표시하고 있어요!")
+        #             await send(ctx, "이미 방식별로 표시하고 있어요!")
         #             return
         #     elif extra2 == '기능별':
         #         if update_show_type == 0:
-        #             await ctx.send('성공적으로 변경했어요!')
+        #             await send(ctx, '성공적으로 변경했어요!')
         #             db.execute("UPDATE games SET user_setting = user_setting + 4096 WHERE UserID = ?", ctx.author.id)
         #         else:
-        #             await ctx.send("이미 기능별로 표시하고 있어요!")
+        #             await send(ctx, "이미 기능별로 표시하고 있어요!")
         #             return
         #     else:
-        #         await ctx.send("`커뉴야 업데이트 설정 (방식별/기능별)`")
+        #         await send(ctx, "`커뉴야 업데이트 설정 (방식별/기능별)`")
         #         return
         if not extra1:
-            embed = Embed(color=0xffd6fe, title="커뉴봇 yonsei6 업데이트 (날짜: 2024년 7월 8일)")
+            embed = Embed(color=0xffd6fe, title="커뉴봇 yonsei6 업데이트 (날짜: 2024년 7월 17일)")
             embed.add_field(name='이번 업데이트의 방향성',
-                            value="functionality",
+                            value="슬래시 커맨드 지원, 커뉴스터디 추가",
                             inline=False)
             embed.add_field(name="1. 새로운 기능",
-                            value="",
+                            value="커뉴스터디 추가 (이전에 있었던 `할거`를 비롯한 기능의 상위 버전으로, 다양한 명령어와 알잘딱한 파싱 능력을 보여 줍니다. 단, 슬래시 커맨드 전용. 처음 사용하는 유저라면 `커뉴야 도움 공부`를 확인해보세요.)",
                             inline=False)
             embed.add_field(name="2. 개선된 기능",
-                            value="",
+                            value="몇몇 명령어에서 슬래시 커맨드를 사용할 수 있게 됨\n`커뉴야 출첵`을 약간 리워크, 커뉴스터디 기능과 양립 가능",
                             inline=False)
             embed.add_field(name="3. 수정된 버그",
                             value="커뉴핑크에 있었던 오타 수정",
                             inline=False)
             embed.add_field(name="4. 삭제된 기능",
-                            value="",
+                            value="사용 빈도가 극히 낮던 일부 대화 명령어를 삭제",
                             inline=False)
             embed.set_footer(
-                text="커뉴야 심심해 명령어로 나오는 TMI 개수: 220개 -> 230개\n도전과제 개수: 123개 -> 123개 ()\n이전 업데이트 yonsei4\n다음 업데이트 미출시")
-            await ctx.send(embed=embed)
+                text="커뉴야 심심해 명령어로 나오는 TMI 개수: 230개 -> 230개\n도전과제 개수: 123개 -> 123개 ()\n이전 업데이트 yonsei5\n다음 업데이트 미출시")
+            await send(ctx, embed=embed)
         elif extra1 == '커뉴핑크':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 커뉴핑크")
             embed.add_field(name='yonsei6', value='도감에서 나타났던 오타 수정')
             embed.add_field(name='yonsei5', value='# 신기능\n`커뉴야 커뉴핑크 리더보드 경험치` 추가 (현재는 리더보드 까지만 쳐야 함), 23레벨의 컨텐츠 추가\n# 밸런스 조절\n검은 계통 색들을 전반적으로 너프\n# 버그 수정\n커뉴핑크 광산에서 백금이 포함된 행동을 하면 나던 에러, 광석 판매가 되지 않던 버그 수정, 커뉴핑크 상점에서 애교 부스터가 구매되지 않던 버그 수정')
             embed.add_field(name='yonsei2', value='# 밸런스 조절\nSimpleGreen의 경험치 추가량 5 -> 3으로 **너프**\n# 버그 수정\n명령어 실행당 경험치를 상수로 더하는 색의 효과가 적용되지 않던 버그 수정')
             embed.add_field(name='yonsei1', value='명령어 출시', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'yonsei5':
             embed = Embed(color=0xffd6fe, title="커뉴봇 yonsei5 업데이트 (날짜: 2024년 7월 8일)")
             embed.add_field(name='이번 업데이트의 방향성',
@@ -88,21 +90,21 @@ class Misc(Cog):
                             inline=False)
             embed.set_footer(
                 text="커뉴야 심심해 명령어로 나오는 TMI 개수: 220개 -> 230개\n도전과제 개수: 123개 -> 123개 ()\n이전 업데이트 yonsei4\n다음 업데이트 yonsei6")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '리더보드':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 리더보드")
             embed.add_field(name='yonsei5', value='커뉴야 리더보드 커뉴핑크` 추가')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '클오클':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 클오클 (관련된 모든 명령어의 업데이트 내역이 여기에 표시됨)")
             embed.add_field(name='yonsei5', value='유틸성 명령어인 `멤버정보`를 추가', inline=False)
             embed.add_field(name='yonsei3', value='지원 관련 무기여 지수 결정 알고리즘을 변경', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '도전과제':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 도전과제")
             embed.add_field(name='yonsei5', value='도전과제 `눈치게임 개고수` 관련된 버그 수정', inline=False)
             embed.add_field(name='yonsei1', value='도전과제 개수가 122개까지 증가, `코인 대부호`가 조건을 만족함에도 달성되지 않던 버그 수정, `명령어의 신`이 서로 다른 255개의 명령어만 사용해도 달성되던 버그 수정', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '계산':
             embed = Embed(color=0xffd6fe, title='커뉴봇 기능 업데이트 내역: 계산')
             embed.add_field(name='yonsei5', value='mod 연산자의 표기를 임시로 %로 바꾸고, 함수 sin, cos, tan, harmonic, 상수 pi, gamma 추가\nmod 연산자가 의도되지 않게 높은 우선순위를 가지던 버그 수정')
@@ -114,7 +116,7 @@ class Misc(Cog):
                 await grant(ctx, "과거를 보는 자", "연세 버전이나 그 이후 버전에서 삭제된 명령어의 업데이트 내역을 확인하세요")
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 추천인")
             embed.add_field(name='yonsei5', value='명령어 삭제')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'yonsei4':
             embed = Embed(color=0xffd6fe, title="커뉴봇 yonsei4 업데이트 (날짜: 2024년 6월 4일)")
             embed.add_field(name='이번 업데이트의 방향성',
@@ -137,13 +139,13 @@ class Misc(Cog):
                             inline=False)
             embed.set_footer(
                 text="커뉴야 심심해 명령어로 나오는 TMI 개수: 220개 -> 220개\n도전과제 개수: 123개 -> 123개 ()\n이전 업데이트 yonsei3\n다음 업데이트 yonsei5")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '코인':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 코인")
             embed.add_field(name='yonsei4', value='화력코인의 가격 변동 알고리즘을 변경, 보유 화력코인 등의 데이터를 전으로 롤백\n더 이상 화력코인의 가격이 음수가 되지 않음')
             embed.add_field(name='yonsei3', value='코인 가격이 0까지 떨어질 확률을 낮춤\n코인의 가격이 이따금씩 제대로 새로고침되지 않던 버그 수정')
             embed.add_field(name='yonsei1', value='새로운 기능\n\n`커뉴야 코인 그래프` 실험 단계 출시\n\n개선된 기능\n\n화력코인의 변동성을 소폭 감소시킴\n큰 수가 나오는 대부분의 기능에서 수를 쉼표로 구분\n룰렛: 가능한 수의 범위가 1~36임을 더 잘 보이는 곳에 명시, 홀수 또는 짝수에 거는 경우 줄임말을 인식\n블랙잭: 가능한 행동들의 설명을 튜토리얼에만 표시, 판이 끝난 이후 남은 코인을 표시, 판돈의 2배보다 보유 현금이 적을 경우 더블 다운을 할 수 없음\n\n수정된 버그\n\n알맞은 양의 코인을 가지고 있었음에도 판매되지 않던 버그 수정\n화력코인 변화량이 이상하게 표기되던 버그 수정\n지원금: 특정한 경우 지원금이 100000.0처럼 소수점으로 표기되던 버그 수정\n블랙잭: 더블 다운을 해도 카드를 더 뽑을 수 있던 버그 수정, 돈을 잃은 후 남은 돈이 0 이하이면 에러가 나면서 돈 변화가 반영되지 않던 버그 수정', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'yonsei3':
             embed = Embed(color=0xffd6fe, title="커뉴봇 yonsei3 업데이트 (날짜: 2024년 5월 13일)")
             embed.add_field(name='이번 업데이트의 방향성',
@@ -165,16 +167,16 @@ class Misc(Cog):
                             inline=False)
             embed.set_footer(
                 text="커뉴야 심심해 명령어로 나오는 TMI 개수: 210개 -> 220개\n도전과제 개수: 123개 -> 123개 ()\n이전 업데이트 yonsei2\n다음 업데이트 yonsei4")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '숫자채널':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 숫자채널")
             embed.add_field(name='yonsei3', value='명령어 실행 시 나던 에러를 수정', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '날짜차이':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 날짜차이")
             embed.add_field(name='yonsei3', value='결과로 나온 날짜 차이가 0일이면 나던 에러 수정', inline=False)
             embed.add_field(name='yonsei1', value='뒤에 날짜 하나만 입력했을 때를 빼면 명령어가 작동하지 않던 버그 수정', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'yonsei2':
             embed = Embed(color=0xffd6fe, title="커뉴봇 yonsei2 업데이트 (날짜: 2024년 3월 22일)")
             embed.add_field(name='이번 업데이트의 방향성',
@@ -195,22 +197,22 @@ class Misc(Cog):
             embed.set_footer(
                 text="커뉴야 심심해 명령어로 나오는 TMI 개수: 210개 -> 210개\n도전과제 개수: 122개 -> 123개 (추가된 도전과제: 과거를 보는 자(6p))\n이전 업데이트 "
                      "yonsei1\n다음 업데이트 yonsei3\n이 업데이트 또는 이후 업데이트에서 밸런스 조절이라는 말이 있다면 명령어별 세부 업데이트 내역에 자세한 내용이 실어집니다.")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '소수판정':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 소수판정")
             embed.add_field(name='yonsei2', value='가능한 입력값의 범위를 10의 1900제곱까지에서 10의 1980제곱까지로 상향')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '다음거울수':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 다음거울수")
             embed.add_field(name='yonsei2', value='가능한 입력값의 범위를 10의 1500제곱-1까지에서 10의 1800제곱-1까지로 상향')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '봇메세지무시':
             l = grant_check("과거를 보는 자", ctx.author.id)
             if l == 1:
                 await grant(ctx, "과거를 보는 자", "연세 버전이나 그 이후 버전에서 삭제된 명령어의 업데이트 내역을 확인하세요")
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 봇메세지무시")
             embed.add_field(name='yonsei2', value='명령어 삭제')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'yonsei1':
             embed = Embed(color=0xffd6fe, title="커뉴봇 yonsei1 업데이트 (날짜: 2024년 3월 18일)")
             embed.add_field(name='이번 업데이트의 방향성',
@@ -252,75 +254,75 @@ class Misc(Cog):
             embed.set_footer(text="커뉴야 심심해 명령어로 나오는 TMI 개수: 200개 -> 210개\n도전과제 개수: 115개 -> 122개 (추가된 도전과제: 블랙잭!(2p), "
                                   "커뉴핑크 사용자, 커뉴핑크 초보 탈출, 커뉴핑크 중수(2p), 상시숭배, 다시 하는 1주년 이벤트(6p), 커뉴핑크 초기 개척자(8p))\n이전 "
                                   "업데이트 24_seol\n다음 업데이트 yonsei2")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '업데이트':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 업데이트")
             embed.add_field(name='yonsei1', value='지금 보고 있는 업데이트 내역처럼 뒤에 특정한 기능 이름을 입력하면 명령어가 근래에 어떻게 업데이트되었는지를 알려줌', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '다음거울수':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 다음거울수")
             embed.add_field(name='yonsei1', value='명령어 출시', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '뀨':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 뀨")
             embed.add_field(name='yonsei1', value='새로운 기능\n\n상점에 `퀴즈 주제 다중 선택`, `TMI 트래커` 추가\n\n개선된 기능\n\n상점의 아이템들의 페이지를 더 자세히 나눔\n\n수정된 버그\n\n인벤에서 출첵내역 연장이 표시되지 않던 버그 수정', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '타이머':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 타이머")
             embed.add_field(name='yonsei1', value='시간 입력이 정수가 아니어도 인식함', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '퀴즈':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 퀴즈")
             embed.add_field(name='yonsei1', value='중복이 뜰 확률 계산 알고리즘을 약간 개선', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '올려':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 올려")
             embed.add_field(name='yonsei1', value='채팅이 조금 더 많이 올라감', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '묵찌빠':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 묵찌빠")
             embed.add_field(name='yonsei1', value='레이팅 차이가 더 많이 나는 상대와도 매칭이 되도록 변경, 그에 맞게 경기 종료 이후 레이팅 변화 공식을 수정', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '심심해':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 심심해")
             embed.add_field(name='yonsei1', value='TMI 개수가 210개까지 증가, 명령어의 쿨타임이 90초로 감소', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '도움':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 도움")
             embed.add_field(name='yonsei1', value='여러 가지 소소한 표기오류들과 누락된 사항들을 수정', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '강화':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 강화")
             embed.add_field(name='yonsei1', value='이전에 봇을 사용한 적이 거의 없을 때 명령어를 실행하면 나던 에러 수정', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '스펙':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 스펙")
             embed.add_field(name='yonsei1', value='이전에 봇을 사용한 적이 거의 없을 때 명령어를 실행하면 나던 에러 수정', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '지분':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 지분")
             embed.add_field(name='yonsei1', value='모든 사람이 같은 횟수만큼 명령어를 사용했을 때 지분 순위가 비정상적으로 표시되던 버그 수정', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '로그채널':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 로그채널")
             embed.add_field(name='yonsei1', value='근래에 만들어진 채널을 로그 채널로 정하려고 할 때 봇이 인식하지 못하던 버그 수정', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '레벨역할':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 레벨역할")
             embed.add_field(name='yonsei1', value='근래에 만들어진 역할을 레벨 역할으로 정하려고 할 때 봇이 인식하지 못하던 버그 수정', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '이름색역할':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 이름색역할")
             embed.add_field(name='yonsei1', value='근래에 만들어진 역할을 이름색 역할으로 정하려고 할 때 봇이 인식하지 못하던 버그 수정', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '세로채널':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 세로채널")
             embed.add_field(name='yonsei1', value='근래에 만들어진 커스텀 이모지 하나만 세로채널에 보냈을 때 봇이 메세지를 삭제하던 버그 수정', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '알파센타우리':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 알파센타우리")
             embed.add_field(name='yonsei1', value='새로운 기능\n\n(스포방지)\n\n개선된 기능\n\n`ㅋㅇ프로필` 명령어에서 자동 획득 아니 씨밧 부스트에 대한 보너스를 반영\n`ㅋㅇ거래` 명령어에서 거래 품목 개수가 1일 때 추가 거래 품목을 늘리는 거래를 제안할 확률 증가\n\n수정된 버그\n\n`ㅋㅇ프로필` 명령어에서 일부 스탯이 표시되지 않던 버그 수정\n메타벗과 뇌저를 연구해도 `ㅋㅇ우주선`명령어가 제대로 작동하지 않던 버그 수정', inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == '24_seol':
             embed = Embed(color=0xffd6fe, title="커뉴봇 24_seol 업데이트 (날짜: 2024년 2월 9일)")
             embed.add_field(name='이번 업데이트의 방향성',
@@ -357,7 +359,7 @@ class Misc(Cog):
             embed.set_footer(text="커뉴야 심심해 명령어로 나오는 TMI 개수: 180개 -> 200개\n도전과제 개수: 110개 -> 115개 (추가된 도전과제: 능지개떡상(2p), "
                                   "만렙을 초월한 (2p), 단골 사용자 3(3p), 3웨(6p), ㅎ😩ㅎ(6p))\n`설명좀`, `핑이나 막아라!`도전과제의 달성조건이 "
                                   "변경됐습니다\n이전 업데이트 hs35\n다음 업데이트 yonsei1")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs35':
             embed = Embed(color=0xffd6fe, title="커뉴봇 업데이트 (날짜: 2024년 1월 27일)")
             embed.add_field(name='이번 업데이트의 방향성',
@@ -376,7 +378,7 @@ class Misc(Cog):
                                 value="`잡소리 독자` 도전과제가 정말로 부활했을 거임.")
             embed.set_footer(text="커뉴야 심심해 명령어로 나오는 TMI 개수: 180개 -> 180개\n도전과제 개수: 110개 -> 110개\n이전 업데이트 hs34\n다음 "
                                   "업데이트 24_seol")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs34':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2024년 01월 22일)')
             embed.add_field(name='이번 업데이트의 방향성', value='현재까지 뀨로 구매한 아이템들의 목록을 볼 수 있는 `커뉴야 뀨 인벤토리` 명령어 추가\n뀨 상점에 `지분 '
@@ -396,7 +398,7 @@ class Misc(Cog):
             embed.set_footer(text='커뉴야 심심해 명령어로 나오는 TMI 개수: 170개 -> 180개\n도전과제 개수: 104개 -> 110개(+:코인 대부호(2p), '
                                   '퀴즈 출제자(2p), 프로 퀴즈 출제자(2p), 드루이드(4p), 설명대로(6p), 얼마나 심심하셨길래...(6p))\n이전 업데이트 '
                                   'hs33\n다음 업데이트 hs35')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs33':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2024년 01월 20일)')
             embed.add_field(name='이번 업데이트의 방향성', value='어뷰징 의심으로 인한 핫픽스', inline=False)
@@ -406,7 +408,7 @@ class Misc(Cog):
             embed.add_field(name='4. 공식서버 전용 업데이트', value='-', inline=False)
             embed.set_footer(text='커뉴야 심심해 명령어로 나오는 TMI 개수: 170개 -> 170개\n도전과제 개수: 104개 -> 104개\n이전 업데이트 hs32\n다음 '
                                   '업데이트 hs34')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs32':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2024년 01월 19일)')
             embed.add_field(name='이번 업데이트의 방향성', value='오랜만의 업데이트인 만큼, 이 업데이트는 새로운 기능을 마구 추가하기보다는 일부 기능을 개선하고, 알려진 버그 '
@@ -422,7 +424,7 @@ class Misc(Cog):
             embed.add_field(name='4. 공식서버 전용 업데이트', value='<#1000636815239299082> 부활', inline=False)
             embed.set_footer(text='커뉴야 심심해 명령어로 나오는 TMI 개수: 160개 -> 170개\n도전과제 개수: 101개 -> 104개\n이전 업데이트 hs31\n다음 '
                                   '업데이트 hs33')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs31':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2023년 07월 04일)')
             embed.add_field(name='업데이트 공지', value='최근 봇으로 `커뉴야 서버강화` 명령어를 매크로로 지정한 사례가 적발되었습니다.\n\n확인 결과 5000회 넘게 '
@@ -431,13 +433,13 @@ class Misc(Cog):
                                                   '봇 메세지를 무시합니다. 이런 시도가 잦은 서버는 아래와 같은 방식의 제재를 가하겠습니다.\n\n해당 서버에 대해서는, '
                                                   '서버에서 커뉴봇이 바로 나가고, 나중에 커뉴봇을 부르더라도 커뉴봇이 즉시 나가는 조치를 취했습니다.\n\n감사합니다.')
             embed.set_footer(text='이런거 보면 신고해요\n업데이트 명령어에 쓴 게 없어서 공지로 대체합니다.\n이전 업데이트 darkness\n다음 업데이트 hs32')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'darkness':
             embed = Embed(color=0xffd6fe, title='커뉴봇 없데이트 (날짜: ???)')
             embed.add_field(name='네 뭐 없네요...', value='개발자가 정신적으로 매우 힘든 나날을 보내던 와중인 만큼 업데이트도 없던 시기입니다. 잠수함 패치는 생각보다 더 '
                                                      '많이 이루어졌지만, 이때는 그저 암흑시기일 뿐이었어요...')
             embed.set_footer(text='이전 업데이트 hs30\n다음 업데이트 hs31')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs30':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2022년 02월 02일)')
             embed.add_field(name='1. 새로운 기능', value='`커뉴야 할거`기능에 새로운 기능 다수 추가: 중간 목표 설정, 정기적 목표, 같이 할 일 설정 가능\n`커뉴야 '
@@ -457,7 +459,7 @@ class Misc(Cog):
                             inline=False)
             embed.set_footer(text='커뉴야 심심해 명령어로 나오는 TMI 개수: 120개 -> 120개\n도전과제 개수: 96개 -> 101개\n이전 업데이트 hs29\n다음 업데이트 '
                                   'darkness')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs29':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 12월 24일)')
             embed.add_field(name='1. 새로운 기능', value='`커뉴야 스톱워치 내역`추가: 이전 스톱워치들의 내역을 확인할 수 있음 (자세한 도움말은 `커뉴야 도움 '
@@ -473,7 +475,7 @@ class Misc(Cog):
                             inline=False)
             embed.set_footer(text='커뉴야 심심해 명령어로 나오는 TMI 개수: 100개 -> 120개\n도전과제 개수: 83개 -> 96개\n이전 업데이트 hs28\n다음 업데이트 '
                                   'hs30')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs28':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 12월 16일)')
             embed.add_field(name='업데이트 공지', value='매일매일 서버스탯 자동화 작업이 완료되었습니다!\n기술적으로 **서버 총 메세지 개수** 스탯은 커뉴봇으로 집계가 '
@@ -485,21 +487,21 @@ class Misc(Cog):
                                                   '마치기 전 보내진 메세지는 집계되지 않았기 때문입니다. 고로 12월 17일부터를 다루는 서버스탯에서는 정상적으로 반영될 '
                                                   '것입니다.\n\n감사합니다!')
             embed.set_footer(text='업데이트 명령어에 쓴 게 없어서 공지로 대체합니다.\n이전 업데이트 hs27\n다음 업데이트 hs29')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs27':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 12월 05일)')
             embed.add_field(name='업데이트 공지', value='봇의 유료 재화 `뀨` 를 가지고 무언가를 살 수 있게 되었습니다.\n\n`커뉴야 뀨 도움` 으로 자세한 정보들을 '
                                                   '알아보실 수 있을 것 같네요.\n\n상점에서 무언가를 팔기는 하지만 그게 뭔지는 아직 잘 모르겠습니다.\n\n과연 '
                                                   '그것을 사면 무슨 일이 생길까요?')
             embed.set_footer(text='업데이트 명령어에 쓴 게 없어서 공지로 대체합니다.\n이전 업데이트 hs26\n다음 업데이트 hs28')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs26':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 11월 26일)')
             embed.add_field(name='업데이트 공지', value='11월 21일에 진행된 업데이트 이후 버그 두 개가 발견되어 이 버그들을 고쳐냈습니다.\n\n- 공식서버 아이템 중 '
                                                   '`원하는 사람 강제닉변권` 등의 아이템이 구매 자체가 안 됐던 버그\n- `커뉴야 스펙` 명령어를 실행할 수 없었던 '
                                                   '버그\n\n감사합니다!')
             embed.set_footer(text='업데이트 명령어에 쓴 게 없어서 공지로 대체합니다.\n이전 업데이트 hs25\n다음 업데이트 hs27')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs25':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 11월 21일)')
             embed.add_field(name='1. 새로운 기능', value='`커뉴야 섞어` 추가: 입력받은 값들을 랜덤한 순서대로 섞어서 다시 출력', inline=False)
@@ -513,7 +515,7 @@ class Misc(Cog):
                                                     '수정\n`커뉴야 출첵내역`에서 15일 이상이 지난 출석체크 정보가 삭제되지 않던 버그 수정\n묵찌빠에서 게임 종료시 '
                                                     '점수 득실이 반대로 되던 버그 수정', inline=False)
             embed.set_footer(text='커뉴야 심심해 명령어로 나오는 TMI 개수: 60개 -> 80개\n도전과제 개수: 75개 -> 85개\n이전 업데이트 hs24\n다음 업데이트 hs26')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs24':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 10월 18일)')
             embed.add_field(name='업데이트 공지', value='지금 좀 많이 급해서 공지 제대로 못 쓰네요 죄송합니다 :jasuk:\n\n일단 1차 업데이트를 완료했습니다.\n\n업데이트 해야 될 건 '
@@ -524,7 +526,7 @@ class Misc(Cog):
                                                 '있음) 등등입니다.\n\n좀 정신상태가 제대로 돌아오고 나면 다시 공지 쓸게요 내일이나 '
                                                 '모레쯤\n\n감사합니다ㅃ\n\n힘들다')
             embed.set_footer(text='업데이트 명령어에 쓴 게 없어서 공지로 대체합니다.\n이전 업데이트 hs23\n다음 업데이트 hs25')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs23':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 09월 29일)')
             embed.add_field(name='1. 새로운 기능', value='상점에서 파는 아이템을 신고할 수 있는 `커뉴야 상점 신고` 기능 추가\n시스템 관리명령어 `커뉴야 처벌알림` '
@@ -539,7 +541,7 @@ class Misc(Cog):
                                                     '사람 강제닉변권 등을 살 시에 나오던 에러\n`커뉴야 애교`의 일부 애교에서 ~가 너무 많아 취소선으로 바뀌던 '
                                                     '버그\n`커뉴야 코인`에서 너무 많은 재산을 가지고 있을 때 나던 버그', inline=False)
             embed.set_footer(text='이전 업데이트 hs22\n다음 업데이트 hs24')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs22':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 09월 14일)')
             embed.add_field(name='1. 새로운 기능', value='문자열을 오타로 변환해주는 `커뉴야 서바준보`명령어 추가', inline=False)
@@ -547,7 +549,7 @@ class Misc(Cog):
                                                     '잡초키우기 매크로방지 수정', inline=False)
             embed.add_field(name='3. 수정된 버그', value='`커뉴야 코인 룰렛`에서 뒤에 수를 입력하지 않을 때 나던 에러 수정', inline=False)
             embed.set_footer(text='이전 업데이트 hs21\n다음 업데이트 hs23')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs21':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 09월 06일)')
             embed.add_field(name='1. 새로운 기능', value='`커뉴야 스펙`명령어 추가: 자신의 봇 커맨드 사용 횟수 등 많은 정보를 수집 (이번 패치 이후 사용된 커맨드부터 '
@@ -558,7 +560,7 @@ class Misc(Cog):
             embed.add_field(name='3. 수정된 버그', value='`커뉴야 레벨업채널 끔`사용시 아무것도 출력하지 않던 버그 수정\n`커뉴야 레벨업문구 설정`에서 나오던 표기오류를 '
                                                     '수정\n봇에게 밴 권한을 안 줬을 때 밴 명령어를 쓰면 에러 메세지가 출력되던 오류 수정', inline=False)
             embed.set_footer(text='이전 업데이트 hs20\n다음 업데이트 hs22')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs20':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 08월 25일)')
             embed.add_field(name='업데이트 공지', value='업데이트가 완료되었습니다!\n\n항상 그랬듯 다양한 버그가 수정되었으며 공식서버에서 `커뉴야 상점` 명령어를 대폭 '
@@ -566,7 +568,7 @@ class Misc(Cog):
                                                   '해당 아이템의 삭제가 가능합니다.\n\n또한 `커뉴야 코인 지원금` 등 몇몇 명령어들도 더 '
                                                   '추가되었습니다.\n\n**뿌잉뿌잉>_<**\n\n뀨우?!')
             embed.set_footer(text='업데이트 명령어에 쓴 게 없어서 공지로 대체합니다.\n이전 업데이트 hs19\n다음 업데이트 hs21')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs19':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 08월 13일)')
             embed.add_field(name='업데이트 공지', value='봇에 또 한번 업데이트가 이루어졌습니다.\n\n~~업데이트 명령어로 뭐 추가됐는지 안써놓음 ㅅㄱ~~\n\n봇 인증을 '
@@ -575,7 +577,7 @@ class Misc(Cog):
                                                   '들어있는 피이자이아아...! 햄토핑도 좋쿠우 빵에들어가있누눈 치즈도 좋쿠우 매코무한양파아아..!! 피먀양 맛 없써어! '
                                                   '새쿄뮤한 토마토쇼슈 버섯 뫄이쩌엉! 피자 사듀떼여')
             embed.set_footer(text='나와 있다 시피 업데이트 명령어에 쓴 게 없어서 공지로 대체합니다.\n이전 업데이트 hs18\n다음 업데이트 hs20')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs18':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 08월 03일)')
             embed.add_field(name='1. 새로운 기능', value='`커뉴야 타이머`기능 추가', inline=False)
@@ -584,7 +586,7 @@ class Misc(Cog):
                                                     '`커뉴야 우주탐험`명령어를 공식서버 바깥에서 실행했을 때 연동이 안 되던 오류 수정, 다른 서버에서 벌어들인 돈을 '
                                                     '공식서버 돈으로 합침', inline=False)
             embed.set_footer(text='이전 업데이트 hs17\n다음 업데이트 hs19')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs17':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 07월 24일)')
             embed.add_field(name='1. 새로운 기능', value='`커뉴야 닉홍보금지`기능 추가: 닉네임에 서버 링크를 걸어둘 시 다시 이전 닉네임으로 되돌려 놓음\n오목에서 렌주룰 '
@@ -596,7 +598,7 @@ class Misc(Cog):
             embed.add_field(name='3. 수정된 버그', value='`커뉴야 코인`명령어 부활, `커뉴야 코인 룰렛`에서 뒤에 아무것도 입력하지 않았을 때 나던 오류 수정\n오목에서 '
                                                     '대각선이 포함된 쌍삼은 잡지 못하던 오류 수정', inline=False)
             embed.set_footer(text='이전 업데이트 hs16\n다음 업데이트 hs18')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs16':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 07월 17일)')
             embed.add_field(name='1. 새로운 기능', value='로그 기능에서 멤버가 차단되는 로그, 채널이 만들어지거나 삭제되는 로그, 역할이 만들어지거나 삭제되는 로그도 표시', inline=False)
@@ -606,7 +608,7 @@ class Misc(Cog):
                                                     '기능의 리더보드를 출력\n퀴즈 정답률을 소수점 이하 세자리수까지만 표시', inline=False)
             embed.add_field(name='3. 수정된 버그', value='초대 추적기능이 나오기 전이라든가에 들어온 사람이 나가면 환영채널에 메세지가 출력되지 않던 오류 수정', inline=False)
             embed.set_footer(text='이전 업데이트 hs15\n다음 업데이트 hs17')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs15':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 07월 13일)')
             embed.add_field(name='1. 새로운 기능', value='이번엔 없네요... 다만 추후 생길 떡밥을 숨겨놓긴 했는데 아마 아무도 못찾을거임', inline=False)
@@ -615,7 +617,7 @@ class Misc(Cog):
                                                     ' 구분으로 여러 개 나열할 시 한 번에 여러 명 밴 가능', inline=False)
             embed.add_field(name='3. 수정된 버그', value='오목에서 시간초과로 인해 경기가 끝나면 점수가 바뀌지 않던 오류 수정\n`커뉴야 처벌내역`명령어에 있던 오타 수정', inline=False)
             embed.set_footer(text='이전 업데이트 hs14\n다음 업데이트 hs16')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs14':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 07월 11일)')
             embed.add_field(name='1. 새로운 기능', value='커뉴야 커맨드금지기능 추가: 특정 채널에서 사용할 수 있는 커맨드에 제한을 둘 수 있음\n`커뉴야 오목`에도 '
@@ -631,7 +633,7 @@ class Misc(Cog):
                                                         '보셈\n"커뉴봇 베타 실험실"채널에서 봇이 서버에 들어가는 로그가 표시 안되던 버그를 수정',
                             inline=False)
             embed.set_footer(text='이전 업데이트 hs13\n다음 업데이트 hs15')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs13':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 06월 16일)')
             embed.add_field(name='1. 새로운 기능', value='`커뉴야 도전과제 목록` 기능 추가: 도전과제들의 목록을 볼 수 있음\n새로운 도전과제 및 이스터에그 추가', inline=False)
@@ -642,7 +644,7 @@ class Misc(Cog):
                                                     '시 나던 에러 수정', inline=False)
             embed.add_field(name='4. 공식서버 전용 패치', value='상점 아이템에 강화 슬롯 추가권 생성', inline=False)
             embed.set_footer(text='이전 업데이트 hs12\n다음 업데이트 hs14')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs12':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 06월 02일)')
             embed.add_field(name='1. 새로운 기능', value='`커뉴야 코인`명령어 수학 모듈 재구성 후 재출시\n`커뉴야 퀴즈 뮤트` 추가: 랜덤 주제로 문제를 풀 때 보고 '
@@ -656,7 +658,7 @@ class Misc(Cog):
                             inline=False)
             embed.add_field(name='3. 수정된 버그', value='도움말 글자가 이상하게 표기되던 것을 수정\n랜덤채팅 매칭이 안되던 오류 수정\n화력코인 값 표기 오류 수정', inline=False)
             embed.set_footer(text='이전 업데이트 hs11\n다음 업데이트 hs13')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs11':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 05월 20일)')
             embed.add_field(name='1. 새로운 기능', value='로그 기능 추가 - 멤버가 오고가는, 메세지가 수정되고 삭제되는, 멤버가 닉변하거나 멤버 역할이 바뀌는 것만 지원, '
@@ -670,14 +672,14 @@ class Misc(Cog):
                                                     '오류 수정\n계정정보 명령어에서 True나 False라고 보내던 버그 수정\n출석체크 시 오늘의 1등이 이상하게 '
                                                     '표시되던 버그 수정', inline=False)
             embed.set_footer(text='이전 업데이트 hs10\n다음 업데이트 hs12')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs10':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 05월 05일)')
             embed.add_field(name='1. 새로운 기능', value='`커뉴야 오목 관전` 기능 추가: 커뉴야 오목 관전 (방번호)로 방번호 방에서 진행 중인 게임을 관전 가능', inline=False)
             embed.add_field(name='2. 개선된 기능', value='`커뉴야 오목`에서 게임 중 UI 수정', inline=False)
             embed.add_field(name='3. 수정된 버그', value='레벨 시스템에서 나던 오류 수정, 커뉴야 오목에서 착수할 수 끝에 ""이라는 문자가 붙어있으면 봇이 뻗던 오류를 수정', inline=False)
             embed.set_footer(text='이전 업데이트 hs9\n다음 업데이트 hs11')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs9':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 05월 01일)')
             embed.add_field(name='1. 새로운 기능', value='`커뉴야 오목` 기능 추가: 자세한 내용은 `커뉴야 오목`명령어 실행을 통해 확인', inline=False)
@@ -685,7 +687,7 @@ class Misc(Cog):
             embed.add_field(name='3. 수정된 버그', value='`커뉴야 뮤트`명령어를 처음 실행할 때 나던 오류 수정', inline=False)
             embed.add_field(name='4. 공식서버 전용 패치', value='없음 :zany_face:', inline=False)
             embed.set_footer(text='이전 업데이트 hs8\n다음 업데이트 hs10')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs8':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 04월 29일)')
             embed.add_field(name='1. 새로운 기능', value='`커뉴야 추천인`기능 추가 (서버에 봇을 데려갈 때 누가 추천했는지 입력하는 기능)\n`커뉴야 봇메세지무시`시스템 '
@@ -698,7 +700,7 @@ class Misc(Cog):
                                                     '부분이 이상하게 출력되던 오류 수정', inline=False)
             embed.add_field(name='4. 공식서버 전용 패치', value='`커뉴야 잡키` 보상 버프\n`커뉴야 출첵`시 주는 돈을 좀 더 랜덤하게 변경', inline=False)
             embed.set_footer(text='이전 업데이트 hs7\n다음 업데이트 hs9')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs7':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 04월 20일)')
             embed.add_field(name='1. 새로운 기능', value='대화 명령어 다수 추가\n`커뉴야 퀴즈 주제` 명령어 추가: 주제별 문제 수를 알 수 있음\n(공식서버 전용) '
@@ -710,7 +712,7 @@ class Misc(Cog):
                                                     '수정\n사용 권한이 없는 명령어에 대해서 더 이상 에러가 났다고 출력하지 않음\n`커뉴야 퀴즈 내점수` 명령어에서 '
                                                     '나던 에러 수정, 인터페이스를 고침', inline=False)
             embed.set_footer(text='이전 업데이트 hs6\n다음 업데이트 hs8')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs6':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 04월 06일)')
             embed.add_field(name='1. 새로운 기능', value='뮤트, 밴, 킥, 들낙퇴치 등을 기록하는 처벌 로그 추가\n레벨업문구, 들어오거나 나갈 때 문구를 서버별로 다르게 '
@@ -723,7 +725,7 @@ class Misc(Cog):
                                                     "바보라서 빠진 명령어 있을 수도 있음)", inline=False)
             embed.add_field(name='3. 수정된 버그', value='묵찌빠 관련 버그들을 수정\n다른 사람을 뮤트할 때 나던 에러 수정\n(공식서버 전용) 잡초키우기를 처음에 하면 나던 에러 수정\n(공식서버 전용) `커뉴야 구매`에서 아이템 이름을 인식하지 못하던 오류 수정\n`커뉴야 기원목록 서버`명령어 실행 시 기원이 없으면 에러 나던 것을 수정\n모바일에서 `커뉴야 올려`명령어 실행 시 조금 올라가던 오류 롤백', inline=False)
             embed.set_footer(text='이전 업데이트 hs5\n다음 업데이트 hs7')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs5':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 03월 22일)')
             embed.add_field(name='1. 새로운 기능', value='칭호 역할 시스템 추가, 자세한 내용은 `커뉴야 도움 칭호`로 확인\n문의 사항이 있을 때 `커뉴야 문의` 명령어 '
@@ -741,7 +743,7 @@ class Misc(Cog):
                                                     '퀴즈` 등의 명령어 최초 실행 시 나던 에러를 수정\n`커뉴야 삭제`명령어 실행 시 나던 에러 수정\n`커뉴야 퀴즈 '
                                                     '풀기`사용시 가끔 나던 에러 수정\n(공식서버 전용) `커뉴야 구매`명령어 관련 문제 해결', inline=False)
             embed.set_footer(text='이전 업데이트 hs4\n다음 업데이트 hs6')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs4':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 03월 12일)')
             embed.add_field(name='1. 새로운 기능', value='`커뉴야 골라` 명령어 추가, `커뉴야 말해` 명령어 추가, `커뉴야 퀴즈 풀기` 명령어 추가', inline=False)
@@ -750,7 +752,7 @@ class Misc(Cog):
             embed.add_field(name='3. 수정된 버그', value='(공식서버 전용) `커뉴야 잡초키우기` 에서 물을 줬는데 비료를 줬다고 표기되는 오류 수정\n`커뉴야 '
                                                     '공식서버`명령어에서 링크가 만료됐다고 뜨던 오류 수정', inline=False)
             embed.set_footer(text='이전 업데이트 hs3\n다음 업데이트 hs5')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs3':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 03월 09일)')
             embed.add_field(name='1. 새로운 기능', value='`커뉴야 명령어` 추가: 명령어별 자세한 도움말\n채널부스트 기능 추가: 경부의 채널 버전', inline=False)
@@ -758,7 +760,7 @@ class Misc(Cog):
                                                     '잡초키우기` 게임 업데이트', inline=False)
             embed.add_field(name='3. 수정된 버그', value='(공식서버 전용) 돈 명령어 표기오류 수정', inline=False)
             embed.set_footer(text='이전 업데이트 hs2\n다음 업데이트 hs4')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs2':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 03월 08일)')
             embed.add_field(name='1. 새로운 기능', value='`커뉴야 서버사진` 명령어 추가: 서버의 아이콘을 보여주는 명령어\n(공식서버 전용) 거울수 알림 추가: '
@@ -767,7 +769,7 @@ class Misc(Cog):
             embed.add_field(name='3. 수정된 버그', value='출석체크 버그 수정 시도 2트: 내일 다시 출석체크를 하라는 답이 와도 일단은 시간 값은 수집하도록 변경, '
                                                    '일시적으로 쿨타임 줄임', inline=False)
             embed.set_footer(text='이전 업데이트 hs1\n다음 업데이트 hs3')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'hs1':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 03월 06일)')
             embed.add_field(name='1. 새로운 기능', value='세로 채널 기능 추가(메세지당 한 글자씩만 입력 가능한 채널)', inline=False)
@@ -776,7 +778,7 @@ class Misc(Cog):
                                                    '수정\n(공식서버 전용) 잡초키우기, 우주탐험, 강화 명령어를 처음 실행할 때 나는 에러 수정\n출석체크 명령어 오류'
                                                    ' 수정 시도 시작 (출석체크 시 시간을 내부에 기록함)', inline=False)
             embed.set_footer(text='이전 업데이트 ms10\n다음 업데이트 hs2')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'ms10':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 02월 26일)')
             embed.add_field(name='1. 새로운 기능', value='1)`커뉴야 업다운` 미니게임 명령어 추가: 업다운 게임 진행 가능\n2) `커뉴야 강화` 리메이크 (이제부터 '
@@ -786,7 +788,7 @@ class Misc(Cog):
                                                     '`커뉴야 상점` 명령어에서 돈 이모지가 이상하게 표시되던 점을 수정', inline=False)
             embed.add_field(name='3. 버그 수정', value='커뉴야 선물 명령어에서 네라고 대답하지 않았는데도 선물이 완료되었다고 표시되던 버그 수정', inline=False)
             embed.set_footer(text='이전 업데이트 ms9\n다음 업데이트 hs1')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'ms9':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 02월 20일)')
             embed.add_field(name='업데이트', value='1.`커뉴야 출첵목록` 명령어 추가: 명령어 실행으로 누가 몇 등으로 출석체크 했는지 확인 가능\n2. 새로운 퀴즈 기능 '
@@ -798,13 +800,13 @@ class Misc(Cog):
                                                '기원추가 명령어로 서버 내에서만 쓰는 기원이 아닌 기원에서는 부적절한 단어가 들어갔거나 너무 긴 기원은 설정할 수 '
                                                '없음\n8. `커뉴야 도움`, `커뉴야 관리` 명령어에서 신기능들을 반영')
             embed.set_footer(text='이전 업데이트 ms8\n다음 업데이트 ms10')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'ms8':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 02월 15일)')
             embed.add_field(name='업데이트', value='1.`커뉴야 출첵` 명령어가 봇이 꺼졌다 켜져도 출석체크 정보를 저장하도록 변경(지금 켜졌던 건 적용 안될거에요)\n2. '
                                                '커뉴야 이름색목록 명령어를 통해 보는 이름색이 색깔순으로 정렬됨')
             embed.set_footer(text='이전 업데이트 ms7\n다음 업데이트 ms9')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'ms7':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 02월 04일)')
             embed.add_field(name='업데이트', value='1. 커뉴야 우주탐험, 커뉴야 기원 명령어를 실행하면 났던 에러를 고침\n2. 랜덤채팅 기능 추가: `커뉴야 랜덤채팅` 또는 '
@@ -812,7 +814,7 @@ class Misc(Cog):
                                                '추가: `커뉴야 레벨업메시지 설정`, `커뉴야 환영메시지 설정`, `커뉴야 나갈때메시지 설정`\n5. 커뉴봇 설 기념 이벤트 '
                                                '진행! 커뉴봇을 널리 퍼트리자는 취지에서 연 이벤트로 서버 관리자가 `커뉴야 이벤트`를 입력해 참여')
             embed.set_footer(text='이전 업데이트 ms6\n다음 업데이트 ms8')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'ms6':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 01월 27일)')
             embed.add_field(name='업데이트', value='1. 2차 데이터베이스 안정화\n2. 잡초키우기, 우주탐험 미니게임을 커뉴서버에서만 실행할 수 있도록 변경\n3. 커뉴야 '
@@ -820,14 +822,14 @@ class Misc(Cog):
                                                '수정\n6. 들낙 퇴치 시스템을 선택적으로 켜고 끌 수 있도록 변경\n7. 출석체크 메커니즘 변경 - 출첵을 봇이 들어간 '
                                                '모든 서버의 사람들과 등수 공유')
             embed.set_footer(text='이전 업데이트 ms5\n다음 업데이트 ms7')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'ms5':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 01월 25일)')
             embed.add_field(name='업데이트', value='1. 각종 리더보드 추가! 잡초키우기, 우주탐험, 묵찌빠(멀티플레이어)의 리더보드를 추가했어요.\n2. 출첵 난이도 버프! '
                                                '이제 12시 직전에 도배하는 건 안 먹혀요.\n3. 멀티서버 준비 패치 #3 - 말투 통일, 서버에 사람들이 들어오거나 나갈 '
                                                '때 메세지 설정 가능, 레벨업 보상도 자동으로 관리 가능\n4. 데이터베이스 안정화! 이제 레벨 롤백되는 현상 없습니다')
             embed.set_footer(text='이전 업데이트 ms4\n다음 업데이트 ms6')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'ms4':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 01월 09일)')
             embed.add_field(name='업데이트', value='1. 우주탐험 미니게임 추가! 새로운 미니게임이 추가됐어요. 여태껏 없었던 보상도 여기엔 있으니 한번 해보세요!\n2. '
@@ -835,19 +837,19 @@ class Misc(Cog):
                                                '커뉴야 프사 (사람이름)뒤에 임베드, 링크 라는 말을 붙이면 프사를 임베드에 넣어서 보내거나 프사의 링크롤 보내요.\n4. '
                                                '서버강화 명령어 업데이트! 서버강화를 시도하면 에러가 나는 버그를 고치고 쿨타임을 줄였어요.')
             embed.set_footer(text='이전 업데이트 ms3\n다음 업데이트 ms5')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'ms3':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2021년 01월 05일)')
             embed.add_field(name='업데이트', value='1. 잡초키우기 게임 업데이트: 비료 가격이 감소했어.\n2. 묵찌빠 멀티플레이어 모드 추가: `커뉴야 묵찌빠 매칭`으로 '
                                                '다른 사람과 실시간으로 묵찌빠를 할 수 있게 됐어.\n3. 각종 버그 수정: 레벨업하기 직전에 다음 레벨까지 필요한 경험치가 '
                                                '0이나 마이너스로 표시되고 한 번 더 채팅을 쳐야 레벨업이 되던 버그가 없어졌어.')
             embed.set_footer(text='이전 업데이트 ms2\n다음 업데이트 ms4')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'ms2':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2020년 12월 30일)')
             embed.add_field(name='2021년 새해맞이 업데이트', value='1.커뉴야 잡초키우기 게임 업데이트\n2. 초대 역할에 대한 경험치 부스트 버프')
             embed.set_footer(text='이전 업데이트 ms1\n다음 업데이트 ms3')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'ms1':
             embed = Embed(color=0xffd6fe, title='커뉴봇 업데이트 (날짜: 2020년 12월 28일)')
             embed.add_field(name='2021년 새해맞이 업데이트', value='1. `커뉴야 프사` 명령어 부활! 오류가 고쳐져서 다시 프사 명령어를 쓸 수 있어.\n2. 새로운 게임 '
@@ -858,51 +860,51 @@ class Misc(Cog):
                                                           '추가! 이제 힘들게 :weary:반응 달 필요 없어.\n7. `커뉴야 가위바위보`와 `커뉴야 묵찌빠` '
                                                           '명령어 추가! 커뉴봇과 게임을 즐겨봐.')
             embed.set_footer(text='이전 업데이트 initial_release\n다음 업데이트 ms2')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'initial_release':
             embed = Embed(color=0xffd6fe, title='커뉴봇 뼈대 완성 (날짜 2020년 11월 28일)')
             embed.set_footer(text='11월은 커뉴봇 개발 기간이어서 이 동안 수많은 변화가 있었겠지만 `커뉴야 업데이트`는 이것보다 더 나중에 나왔대요. 비록 이 기간 동안 업데이트 '
                                   '내용을 정확히 알 수는 없지만 이날부터 커뉴봇이 레벨 시스템을 관리하기 시작했어요.\n이전 업데이트 birth\n다음 업데이트 ms1')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1 == 'birth':
             embed = Embed(color=0xffd6fe, title='커뉴봇 출시 (날짜 2020년 11월 1일)')
             embed.set_footer(text='이날은 커뉴봇이 처음으로 출시된 날이에요! 출시일을 기념하기 위해 업데이트는 아니지만 이곳에 실어 두었어요.\n이전 업데이트 없음\n다음 업데이트 '
                                   'initial_release')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif extra1:
-            await ctx.send(embed=Embed(color=0xffd6fe, title='커뉴봇 업데이트 명령어 도움', description='`커뉴야 업데이트`: 최근에 이루어진 업데이트 정보를 알려줍니다.\n`커뉴야 업데이트 (기능)`: yonsei1 또는 그 이후 버전에 대해 특정한 기능이 버전별로 어떻게 업데이트됐는지를 보여줍니다.\n`커뉴야 업데이트 (버전)`: 최신 버전이 아닌 버전을 같이 입력한다면 해당 버전의 업데이트 내용을 알려줍니다. 24_seol보다 먼저 이루어진 업데이트의 버전명은 임의로 부여되었으며 일부 버전의 경우 해당 업데이트 출시 당시 공지가 대신 출력되기도 합니다 (당시 업데이트 명령어 출력 결과가 유실된 경우). 또한 첫 출시 때의 버전명은 birth로 설정해 두었습니다.\n언급된 값이 아닌 값이 입력된다면, 이 도움말을 표시합니다.'))
+            await send(ctx, embed=Embed(color=0xffd6fe, title='커뉴봇 업데이트 명령어 도움', description='`커뉴야 업데이트`: 최근에 이루어진 업데이트 정보를 알려줍니다.\n`커뉴야 업데이트 (기능)`: yonsei1 또는 그 이후 버전에 대해 특정한 기능이 버전별로 어떻게 업데이트됐는지를 보여줍니다.\n`커뉴야 업데이트 (버전)`: 최신 버전이 아닌 버전을 같이 입력한다면 해당 버전의 업데이트 내용을 알려줍니다. 24_seol보다 먼저 이루어진 업데이트의 버전명은 임의로 부여되었으며 일부 버전의 경우 해당 업데이트 출시 당시 공지가 대신 출력되기도 합니다 (당시 업데이트 명령어 출력 결과가 유실된 경우). 또한 첫 출시 때의 버전명은 birth로 설정해 두었습니다.\n언급된 값이 아닌 값이 입력된다면, 이 도움말을 표시합니다.'))
 
     @command(name="없뎃")
     async def no_update(self, ctx):
-        await ctx.send("없뎃: since 2024-7-8")
+        await send(ctx, "없뎃: since 2024-7-8")
 
     @command(name="나중업뎃")
     async def future_updates(self, ctx):
         l = grant_check("업뎃을 기대하시는 거에요?", ctx.author.id)
         if l == 1:
             await grant(ctx, "업뎃을 기대하시는 거에요?", "2024년이나 그 이후에 `커뉴야 나중업뎃` 명령어를 실행하세요.\n그런데, 업데이트를 원하시면 새로운 기능을 제안해 보시는 게 어떨까요?")
-        await ctx.send("예정된 나중 업데이트 내용(바로 다음 업데이트라는 보장은 없음)\n뀨 상점에 `클오클 클랜 운영 도우미`, `레벨역할 최대치 증가`, `초대역할 기능 해금` 추가\n타이머 등 여러 명령어에 실시간 기능을 구현\n슬래시 커맨드 전부 지원\n여태 모은 총 돈을 기준으로 하는 커뉴핑크 리더보드")
+        await send(ctx, "예정된 나중 업데이트 내용(바로 다음 업데이트라는 보장은 없음)\n뀨 상점에 `클오클 클랜 운영 도우미`, `레벨역할 최대치 증가`, `초대역할 기능 해금` 추가\n타이머 등 여러 명령어에 실시간 기능을 구현\n슬래시 커맨드 전부 지원\n여태 모은 총 돈을 기준으로 하는 커뉴핑크 리더보드")
 
     @command(name="정지먹여")
     async def addban_command(self, ctx, target: Optional[int]):
         if ctx.author.id != 724496900920705045: return
         if not target:
-            await ctx.send("지정된 멤버가 없어요.")
+            await send(ctx, "지정된 멤버가 없어요.")
 
         else:
             self.bot.banlist.extend([target])
-            await ctx.send("정지를 성공적으로 먹였어요.")
+            await send(ctx, "정지를 성공적으로 먹였어요.")
 
     @command(name="정지풀어")
     async def delban_command(self, ctx, targets: Greedy[Member]):
         if ctx.author.id != 724496900920705045: return
         if not targets:
-            await ctx.send("지정된 멤버가 없어요.")
+            await send(ctx, "지정된 멤버가 없어요.")
 
         else:
             for target in targets:
                 self.bot.banlist.remove(target.id)
-            await ctx.send("정지를 성공적으로 풀었어요.")
+            await send(ctx, "정지를 성공적으로 풀었어요.")
 
     @command(name='문의')
     async def moon_doctor(self, ctx):
@@ -920,7 +922,7 @@ class Misc(Cog):
                                                                        "다수입니다. 그런 현상이 발생하면 우선 봇공지에 해당 내용이 있었나 보고 그 다음 "
                                                                        "문의해야 합니다.\n\n6. 지금 문의를 취소하려면 `취소`를 입력하세요")
         embed.set_footer(text="답변은 개발자가 바쁘거나 문의가 너무 복잡하지 않으면 하루 안에는 옵니다. 그동안은 0번 항목을 주의해주세요")
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
         try:
             nae_yong = await self.bot.wait_for(
             "message",
@@ -928,18 +930,18 @@ class Misc(Cog):
             check=lambda message: message.author == ctx.author and ctx.channel == message.channel
             )
         except asyncio.TimeoutError:
-            await ctx.send("문의를 취소했어요.")
+            await send(ctx, "문의를 취소했어요.")
             return
         if nae_yong.content == "취소":
-            await ctx.send("문의를 취소했어요.")
+            await send(ctx, "문의를 취소했어요.")
             return
-        await ctx.send("문의를 완료했어요!")
+        await send(ctx, "문의를 완료했어요!")
         await self.bot.get_channel(822461129384525824).send(f"{str(ctx.author)} (아이디 {ctx.author.id}의 문의: {nae_yong.content}")
 
     @Cog.listener()
     async def on_ready(self):
         if not self.bot.ready:
-            self.bot.cogs_ready.ready_up("misc")
+            print('("misc")')
 
     @Cog.listener()
     async def on_guild_join(self, guild):
@@ -987,5 +989,5 @@ class Misc(Cog):
             f"있던 서버가 삭제되거나 봇이 추방됨\n이름: {guild.name}, 멤버수: {guild.member_count}")
 
 
-def setup(bot):
-    bot.add_cog(Misc(bot))
+async def setup(bot):
+    await bot.add_cog(Misc(bot))

@@ -2,8 +2,9 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from discord import Embed, Member
-from discord.ext.commands import Cog
-from discord.ext.commands import command
+from discord.ext.commands import Cog, command
+from discord.app_commands import command as slash, choices, Choice
+from ..utils.send import send
 
 
 class Info(Cog):
@@ -36,7 +37,7 @@ class Info(Cog):
         for name, value, inline in fields:
             embed.add_field(name=name, value=value, inline=inline)
 
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
 
     @command(name="서버정보")
     async def server_info(self, ctx):
@@ -72,13 +73,13 @@ class Info(Cog):
         for name, value, inline in fields:
             embed.add_field(name=name, value=value, inline=inline)
 
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
 
     @Cog.listener()
     async def on_ready(self):
         if not self.bot.ready:
-            self.bot.cogs_ready.ready_up("info")
+            print('("info")')
 
 
-def setup(bot):
-    bot.add_cog(Info(bot))
+async def setup(bot):
+    await bot.add_cog(Info(bot))

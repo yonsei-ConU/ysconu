@@ -7,9 +7,8 @@ from datetime import datetime, timedelta
 from time import time
 
 from ..db import db
-
-intents = discord.Intents.default()
-intents.members = True
+from discord.app_commands import command as slash, choices, Choice
+from ..utils.send import send
 
 
 class Welcome(Cog):
@@ -23,19 +22,19 @@ class Welcome(Cog):
         welcome_channel = welcome_channel[0]
         if activity == "조회":
             if welcome_channel == 1:
-                await ctx.send(f"현재 {ctx.guild.name}의 환영 채널이 없어요!")
+                await send(ctx, f"현재 {ctx.guild.name}의 환영 채널이 없어요!")
                 return
             else:
-                await ctx.send(f"현재 {ctx.guild.name}의 환영 채널은 <#{welcome_channel}>(이)에요!")
+                await send(ctx, f"현재 {ctx.guild.name}의 환영 채널은 <#{welcome_channel}>(이)에요!")
                 return
         if not ctx.author.guild_permissions.value & 8:
-            await ctx.send("이 명령어를 실행할 권한이 없어요!")
+            await send(ctx, "이 명령어를 실행할 권한이 없어요!")
             return
         if activity == "초기화":
-            await ctx.send(f"이제 {ctx.guild.name}에서는 새로 사람이 들어오거나 나가도 알림이 표시되지 않아요!")
+            await send(ctx, f"이제 {ctx.guild.name}에서는 새로 사람이 들어오거나 나가도 알림이 표시되지 않아요!")
             ch = 1
         elif activity == "설정":
-            await ctx.send("어느 채널을 환영 채널로 설정할 건가요?")
+            await send(ctx, "어느 채널을 환영 채널로 설정할 건가요?")
             try:
                 msg = await self.bot.wait_for(
                     "message",
@@ -44,13 +43,13 @@ class Welcome(Cog):
                 )
                 ch = msg.content[2:20]
             except asyncio.TimeoutError:
-                await ctx.send("환영 채널을 설정하지 않기로 했어요.")
+                await send(ctx, "환영 채널을 설정하지 않기로 했어요.")
                 return
-            await ctx.send(f"이제 {ctx.guild.name}의 환영 채널은 <#{msg.content[2:20]}>(이)에요!")
+            await send(ctx, f"이제 {ctx.guild.name}의 환영 채널은 <#{msg.content[2:20]}>(이)에요!")
         elif activity == "끔":
             return
         else:
-            await ctx.send("`커뉴야 환영채널 <조회/설정/초기화>`")
+            await send(ctx, "`커뉴야 환영채널 <조회/설정/초기화>`")
             return
         db.execute("UPDATE guilds SET welcome_channel = ? WHERE GuildID = ?", ch, ctx.guild.id)
         db.commit()
@@ -62,37 +61,37 @@ class Welcome(Cog):
         anti = servertype & 2 == 2
         if activity == "조회":
             if anti:
-                await ctx.send(f"현재 {ctx.guild.name}에는 들낙 퇴치 시스템이 **켜져** 있어요!")
+                await send(ctx, f"현재 {ctx.guild.name}에는 들낙 퇴치 시스템이 **켜져** 있어요!")
             else:
-                await ctx.send(f"현재 {ctx.guild.name}에는 들낙 퇴치 시스템이 **꺼져** 있어요!")
+                await send(ctx, f"현재 {ctx.guild.name}에는 들낙 퇴치 시스템이 **꺼져** 있어요!")
             return
         elif activity == "도움":
-            await ctx.send(
+            await send(ctx, 
                 "들낙 퇴치 시스템은 들낙한 사람을 차단시켜서 다시 못 오게 만드는 시스템이에요! 들낙 퇴치 시스템이 켜져 있다면 나갈 때 커뉴봇 레벨 기준 0레벨이었거나 들어온 지 10분도 안 돼서 나간 사람을 들낙으로 간주, 차단해요.")
             return
         if not ctx.author.guild_permissions.value & 8:
-            await ctx.send("이 명령어를 실행할 권한이 없어요!")
+            await send(ctx, "이 명령어를 실행할 권한이 없어요!")
             return
         if activity in ["끔", "꺼", "끄기"]:
             if anti:
                 db.execute("UPDATE guilds SET guild_type = ? WHERE GuildID = ?", servertype - 2, ctx.guild.id)
-                await ctx.send(f"변경을 완료했어요! 이제 {ctx.guild.name}에서는 들낙을 퇴치하지 않아요.")
+                await send(ctx, f"변경을 완료했어요! 이제 {ctx.guild.name}에서는 들낙을 퇴치하지 않아요.")
             else:
-                await ctx.send(f"이미 {ctx.guild.name}에서는 들낙을 퇴치하지 않아요!")
+                await send(ctx, f"이미 {ctx.guild.name}에서는 들낙을 퇴치하지 않아요!")
                 return
             db.commit()
         elif activity in ["켬", "켜", "켜기"]:
             if anti:
-                await ctx.send(f"이미 {ctx.guild.name}에서는 들낙을 퇴치하고 있어요!")
+                await send(ctx, f"이미 {ctx.guild.name}에서는 들낙을 퇴치하고 있어요!")
             else:
                 db.execute("UPDATE guilds SET guild_type = ? WHERE GuildID = ?", servertype + 2, ctx.guild.id)
-                await ctx.send(f"변경을 완료했어요! 이제 {ctx.guild.name}에서는 들낙을 퇴치해요.")
+                await send(ctx, f"변경을 완료했어요! 이제 {ctx.guild.name}에서는 들낙을 퇴치해요.")
             db.commit()
 
     @Cog.listener()
     async def on_ready(self):
         if not self.bot.ready:
-            self.bot.cogs_ready.ready_up("welcome")
+            print('("welcome")')
 
     @Cog.listener()
     async def on_invite_create(self, invite):
@@ -236,5 +235,5 @@ class Welcome(Cog):
         db.commit()
 
 
-def setup(bot):
-    bot.add_cog(Welcome(bot))
+async def setup(bot):
+    await bot.add_cog(Welcome(bot))

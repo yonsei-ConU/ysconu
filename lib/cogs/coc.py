@@ -9,6 +9,9 @@ from math import ceil, tan, pi, e, sqrt
 from collections import deque, defaultdict
 from datetime import datetime
 
+from discord.app_commands import command as slash, choices, Choice
+from ..utils.send import send
+
 headers = {
     'Authorization': 'Bearer '
                      'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiIsImtpZCI6IjI4YTMxOGY3LTAwMDAtYTFlYi03ZmExLTJjNzQzM2M2Y2NhNSJ9.eyJpc3MiOiJzdXBlcmNlbGwiLCJhdWQiOiJzdXBlcmNlbGw6Z2FtZWFwaSIsImp0aSI6IjQxZWUzY2I3LWQwNjItNGMzMC1hYzJkLTMzNWMwZjYxMGY5OSIsImlhdCI6MTcwMjg3MzM3Mywic3ViIjoiZGV2ZWxvcGVyLzBiMDQ3MGY5LWUxODEtNTg2YS0zNjdkLWUzZGY3YWNjYmRlMyIsInNjb3BlcyI6WyJjbGFzaCJdLCJsaW1pdHMiOlt7InRpZXIiOiJkZXZlbG9wZXIvc2lsdmVyIiwidHlwZSI6InRocm90dGxpbmcifSx7ImNpZHJzIjpbIjIxMC4yMjEuMTcuMTMiXSwidHlwZSI6ImNsaWVudCJ9XX0.8rap51PWgENKDetjCr-yaz7_mfWttRe3tH2UttbZdm9tOrJonAp2NWyZHs3lX9AMKnHqWEbu89d-JVDNrizfXQ '
@@ -157,7 +160,7 @@ class Coc(Cog):
     #     if check:
     #         embed.add_field(name=str(page), value=desc)
     #     embed.set_footer(text='`커뉴야 뀨 구매 클오클 클랜 운영 도우미`로 구매 가능한 상품이고, 구매하셨다면 여기에 포함된 모든 명령어들을 기간 제한 없이 사용하실 수 있습니다.')
-    #     await ctx.send(embed=embed)
+    #     await send(ctx, embed=embed)
 
     @command(name='클전정산')
     async def clan_war(self, ctx, clan_tag: str, check: int = 0):
@@ -302,7 +305,7 @@ class Coc(Cog):
         war_banned = db.records("SELECT user_tag FROM clash_of_clans WHERE clan_tag = ? AND war_ban != 0", clan_tag)
         embed.add_field(name='다음번 클랜전에서 뺄 사람', value=', '.join(list(map(lambda y: tag_to_name[y[0]], war_banned))),
                         inline=False)
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
         if not check:
             db.commit()
 
@@ -387,12 +390,12 @@ class Coc(Cog):
 
         actual_nal_meok = []
         if a + b != 0:
-            await ctx.send(
+            await send(ctx, 
                 f"{a + b}명이 비정상적인 습격전 기록을 가진 것으로 확인되었습니다. 지금부터 {a}명의, 자원을 너무 적게 턴 자들과, {b}명의, 짬처리를 다른 사람에게 돌림이 의심되는 "
                 f"사람들에 대한 정보를 입력해주세요.")
             ask_tolerance.rotate(b)
             for i in range(b):
-                await ctx.send(ask_tolerance[i])
+                await send(ctx, ask_tolerance[i])
                 try:
                     tolerate = await self.bot.wait_for(
                         "message",
@@ -400,12 +403,12 @@ class Coc(Cog):
                         check=lambda message: message.author == ctx.author and ctx.channel == message.channel
                     )
                 except asyncio.TimeoutError:
-                    await ctx.send("습격전 정산을 취소했어요")
+                    await send(ctx, "습격전 정산을 취소했어요")
                     return
                 if tolerate.content != '1':
                     actual_nal_meok.append(possible_nal_meok[i])
             for i in range(a):
-                await ctx.send(ask_tolerance[b + i])
+                await send(ctx, ask_tolerance[b + i])
                 try:
                     tolerate = await self.bot.wait_for(
                         "message",
@@ -413,7 +416,7 @@ class Coc(Cog):
                         check=lambda message: message.author == ctx.author and ctx.channel == message.channel
                     )
                 except asyncio.TimeoutError:
-                    await ctx.send("습격전 정산을 취소했어요")
+                    await send(ctx, "습격전 정산을 취소했어요")
                     return
                 if tolerate == '1':
                     dkv_dict[low_loot[i]] = 400 * (low_loot[i] in actual_nal_meok)
@@ -447,7 +450,7 @@ class Coc(Cog):
             embed.add_field(name='​', value=result_string, inline=False)
         if not a + b:
             embed.set_footer(text='아무도 비정상적인 행보를 보이지 않았어요!')
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
         if not check:
             db.commit()
 
@@ -506,7 +509,7 @@ class Coc(Cog):
                 embed.add_field(name='​', value=result_strings[i], inline=False)
         if result_string:
             embed.add_field(name='​', value=result_string, inline=False)
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
 
     @command(name='추방정산')
     @max_concurrency(1, BucketType.default)
@@ -530,7 +533,7 @@ class Coc(Cog):
         result_text = ''
         for i in range(1, min(50, len(member_kv)) + 1):
             result_text += f'{i}. {member_kv[i - 1][1]} ({member_kv[i - 1][2]}): {member_kv[i - 1][0]}\n'
-        await ctx.send(embed=Embed(color=yonseiblue, title='무기여 지수' + '(클랜전 리그로 인한 임시값 반영됨)' * league_temp_included,
+        await send(ctx, embed=Embed(color=yonseiblue, title='무기여 지수' + '(클랜전 리그로 인한 임시값 반영됨)' * league_temp_included,
                                    description=result_text))
 
     @command(name='리그정산')
@@ -555,7 +558,7 @@ class Coc(Cog):
             embed = Embed(color=yonseiblue, title='클랜전 리그 불참 요청자 정산 완료')
             embed.add_field(name='리그전 멤버에서 빠진 사람들 (이들은 리그전이 다 끝난 이후 클랜전 리그 관련 무기여 지수 1600점이 일괄 부여됩니다)',
                             value=','.join([tag_to_name[tag] for tag in voluntary_no_participate]))
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
             if not just_show:
                 db.commit()
             return
@@ -683,7 +686,7 @@ class Coc(Cog):
         embed.add_field(name='클랜전 리그 관련 임시 무기여 지수 변화', value=result_string, inline=False)
         if war_day == max_war_day:
             embed.set_footer(text='이번 정산이 마지막 일차 정산이므로, 바로 이어서 클랜전 리그 전체 정산이 진행됩니다')
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
         if not just_show:
             for user_tag in dkv_dict:
                 db.execute("UPDATE clash_of_clans SET league_dkv_temp = league_dkv_temp + ? WHERE user_tag = ?",
@@ -738,7 +741,7 @@ class Coc(Cog):
         if result_string:
             embed.add_field(name='​', value=result_string, inline=False)
         embed.set_footer(text='이 정산이 완료되었으므로, 모든 멤버의 클랜전 리그 관련 임시 무기여 지수는 0으로 초기화됩니다.')
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
         if not just_show:
             db.execute("UPDATE clash_of_clans SET league_dkv_temp = 0 WHERE clan_tag = ?", clan_tag)
             db.commit()
@@ -748,7 +751,7 @@ class Coc(Cog):
         tag_to_name, _ = clan_member_refresh(clan_tag)
         clan_game_dkv = defaultdict(lambda: 1200)
         score_sum = 0
-        await ctx.send(
+        await send(ctx, 
             '클랜 게임 정산은 API로 받을 방법이 없어 수동으로 해야 돼요 ㅠㅠ 이걸 자동으로 받는 방법이 있다면 문의해 주세요!\n지금부터 정확히 여기 나온 대로 입력해주세요!\n첫 번째 줄에는, 만점을 빨리 기록하신 분들에게 약간의 보너스를 줄지를 입력합니다. 준다면 1 아니면 0을 입력해주세요. 다만, 클랜 게임이 끝난 이후 정산하고 계신다면 0을 입력하셔야 합니다.\n두 번째 줄에는 이번 클랜 게임에서 1인당 얻을 수 있는 최대 점수, 모든 보상을 얻기 위해 필요한 클랜 총점을 입력합니다. 보통은 `4000 50000` 일 겁니다.\n세 번째 줄부터는, 보이는 등수대로 `닉네임 점수` 형식으로 입력해주시면 됩니다. 0점인 멤버는 굳이 입력하지 않으셔도 됩니다.\n\n아래는 좋은 예시입니다.\n1\n4000 50000\n으으ㅐ 4000\n으으ㅐ2 4000\n으으ㅐ느느 ㅏ 3000')
         try:
             response = await self.bot.wait_for(
@@ -757,7 +760,7 @@ class Coc(Cog):
                 check=lambda message: message.author == ctx.author and ctx.channel == message.channel
             )
         except asyncio.TimeoutError:
-            await ctx.send("클랜 게임 정산을 취소했어요.")
+            await send(ctx, "클랜 게임 정산을 취소했어요.")
             return
         response = response.content.split('\n')
         for i in range(len(response)):
@@ -766,16 +769,16 @@ class Coc(Cog):
                 try:
                     x = int(data)
                 except ValueError:
-                    await ctx.send(f"{i + 1}번째 줄 입력이 잘못됐어요!")
+                    await send(ctx, f"{i + 1}번째 줄 입력이 잘못됐어요!")
                     return
                 if x not in [0, 1]:
-                    await ctx.send(f"{i + 1}번째 줄 입력이 잘못됐어요!")
+                    await send(ctx, f"{i + 1}번째 줄 입력이 잘못됐어요!")
                     return
             elif i == 1:
                 try:
                     max_score, max_clan_score = map(int, data.split())
                 except ValueError:
-                    await ctx.send(f"{i + 1}번째 줄 입력이 잘못됐어요!")
+                    await send(ctx, f"{i + 1}번째 줄 입력이 잘못됐어요!")
                     return
             else:
                 data = data.split(' ')
@@ -806,7 +809,7 @@ class Coc(Cog):
                         if tag_to_name[tag] == member_name:
                             clan_game_dkv[tag] = member_dkv
                 except ValueError:
-                    await ctx.send(f"{i + 1}번째 줄 입력이 잘못됐어요!")
+                    await send(ctx, f"{i + 1}번째 줄 입력이 잘못됐어요!")
                     return
         result_strings = []
         result_string = ''
@@ -828,7 +831,7 @@ class Coc(Cog):
                 embed.add_field(name='​', value=result_strings[i], inline=False)
         if result_string:
             embed.add_field(name='​', value=result_string, inline=False)
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
         if not just_show:
             db.commit()
 
@@ -837,7 +840,7 @@ class Coc(Cog):
         tag_to_name, _ = clan_member_refresh(clan_tag)
         name_to_tag = {tag_to_name[k]: k for k in tag_to_name}
         if user_name not in name_to_tag:
-            await ctx.send('존재하지 않는 이름이에요!')
+            await send(ctx, '존재하지 않는 이름이에요!')
             return
         user_tag = name_to_tag[user_name]
         war_kv, raid_kv, donation_kv, league_dkv_temp, league_dkv, member_time, clan_game_dkv = db.record(
@@ -852,13 +855,13 @@ class Coc(Cog):
         embed.add_field(name='클랜전 리그 관련 무기여 지수 (-1500~1600)', value=str(league_dkv))
         embed.add_field(name='클랜 게임 관련 무기여 지수 (-1500~1500)', value=str(clan_game_dkv))
         embed.add_field(name='총 무기여 지수 (0~?????)', value=str(calculate_final_kv(war_kv, raid_kv, donation_kv, league_dkv_temp, league_dkv, member_time, clan_game_dkv)))
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
 
     @Cog.listener()
     async def on_ready(self):
         if not self.bot.ready:
-            self.bot.cogs_ready.ready_up("coc")
+            print('("coc")')
 
 
-def setup(bot):
-    bot.add_cog(Coc(bot))
+async def setup(bot):
+    await bot.add_cog(Coc(bot))

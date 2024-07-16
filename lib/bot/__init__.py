@@ -1,47 +1,36 @@
 import traceback
-from asyncio import sleep
-from glob import glob
-
+import aiohttp
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from discord import Intents
-from discord.errors import Forbidden
-from discord.ext.commands import Bot as BotBase
-from discord.ext.commands import Context
-from discord.ext.commands import (CommandNotFound, BadArgument, MissingRequiredArgument,
-                                  CommandOnCooldown)
+from discord import Embed, Intents, Forbidden, Object
+from discord.ext.commands import (Bot, CommandNotFound, BadArgument, MissingPermissions,
+                                  MissingRequiredArgument, Context, CommandOnCooldown)
+from nest_asyncio import apply
+from time import sleep
 
 from lib.cogs.achieve import grant_check, grant
 from lib.db import db
-import discord
+from discord.app_commands import command as slash, choices, Choice
 
-client = discord.Client()
+# -*- coding: utf-8 -*-
 
+apply()
 PREFIX = "커뉴야 "
-
 OWNER_IDS = [724496900920705045]
-COGS = [path.split("/")[-1][:-3] for path in glob("./lib/cogs/*.py")]
-IGNORE_EXCEPTIONS = (CommandNotFound, BadArgument, discord.ext.commands.errors.MissingPermissions, discord.errors.Forbidden)
+IGNORE_EXCEPTIONS = (CommandNotFound, BadArgument, MissingPermissions, Forbidden)
 errors = set()
 
-class Ready(object):
-    def __init__(self):
-        for cog in COGS:
-            setattr(self, cog, False)
 
-    def ready_up(self, cog):
-        setattr(self, cog, True)
-        print(f" {cog} cog ready")
-
-    def all_ready(self):
-        return all([getattr(self, cog) for cog in COGS])
-
-
-class Bot(BotBase):
-    def __init__(self):
+class ConU(Bot):
+    def __init__(self, **options):
+        super().__init__(command_prefix=("커뉴야 ", "ㅋ"),
+                         owner_ids=OWNER_IDS,
+                         intents=Intents.all(),
+                         **options
+                         )
         self.ready = False
-        self.cogs_ready = Ready()
+        self.stdout = self.get_channel(773409630125817887)
 
-        self.guild = None
+        self.guild = self.get_guild(743101101401964647)
         self.scheduler = AsyncIOScheduler()
 
         try:
@@ -51,17 +40,14 @@ class Bot(BotBase):
             self.banlist = []
 
         db.autosave(self.scheduler)
-        super().__init__(command_prefix=("커뉴야 ", "ㅋ"),
-                         owner_ids=OWNER_IDS,
-                         intents=Intents.all(),
-                         )
 
-    def setup(self):
-        for cog in COGS:
-            self.load_extension(f"lib.cogs.{cog}")
-            print(f" {cog} cog loaded")
-
-        print("setup complete")
+    async def setup_hook(self) -> None:
+        self.session = aiohttp.ClientSession()
+        for name in ['achieve', 'alpha', 'coc', 'conupink', 'fun', 'exp', 'help', 'info', 'log', 'meta', 'misc',
+                     'mod', 'omok', 'study', 'talk', 'welcome', 'ch_temp']:
+            await self.load_extension(f'lib.cogs.{name}')
+        await self.tree.sync()
+        print('트리 싱크 완료!')
 
     def update_db(self):
         db.multiexec("INSERT OR IGNORE INTO guilds (GuildID) VALUES (?)",
@@ -80,18 +66,6 @@ class Bot(BotBase):
         # 			 ((id_,) for id_ in to_remove))
 
         db.commit()
-
-    def run(self, version):
-        self.VERSION = version
-
-        print("running setup...")
-        self.setup()
-
-        with open("/Users/yonseiconu/PycharmProjects/ysconu/token.txt", "r", encoding="utf-8") as tf:
-            self.TOKEN = tf.read()
-
-        print("running bot...")
-        super().run(self.TOKEN, reconnect=True)
 
     async def process_commands(self, message):
         if message.author.bot:
@@ -133,7 +107,7 @@ class Bot(BotBase):
 
             else:
                 if ctx.command.name not in ["가위바위보", "묵찌빠", "오목", "코인", "도움", "업데이트", "공식서버", "초대", "문의", "퀴즈", "업다운",
-                                       "관리", "운빨테스트", "공지", "골라", "서버시간", "랜덤숫자", "서버추천", "파이값", "말해", "골라", "섞어", "소수판정", "소인수분해", "글자수", "핑", "나중업뎃", "뀨", "스펙", "지분", "도전과제", "코인", "커뉴핑크", "계산"]:
+                                       "관리", "꺼져", "운빨테스트", "공지", "골라", "서버시간", "랜덤숫자", "서버추천", "파이값", "말해", "골라", "섞어", "소수판정", "소인수분해", "글자수", "핑", "나중업뎃", "뀨", "스펙", "지분", "도전과제", "코인", "커뉴핑크", "계산"]:
                     await ctx.send("현재 개인 메세지에서는 사용할 수 없는 명령어에요! 이게 왜 안 되지 싶은 명령어는 주저하지 말고 `커뉴야 문의`로 물어보세요.")
                     return
             if message.author.id in self.banlist:
@@ -166,7 +140,7 @@ class Bot(BotBase):
                         f"DM\n{str(ctx.author)} {ctx.author.id}\n{ctx.command}")
 
     async def on_connect(self):
-        print(" bot connected")
+        print("bot connected")
 
     async def on_disconnect(self):
         print("bot disconnected")
@@ -175,7 +149,7 @@ class Bot(BotBase):
         et = traceback.format_exc()
         if "Forbidden: 403" in et:
             return
-        embed = discord.Embed(title='<a:ablobweary:801762171008319508> 에러남 <a:ablobweary:801762171008319508>',
+        embed = Embed(title='<a:ablobweary:801762171008319508> 에러남 <a:ablobweary:801762171008319508>',
                               colour=0xe74c3c)  # Red
         embed.add_field(name='Event', value=err)
         embed.description = '```py\n%s\n```' % et
@@ -224,9 +198,6 @@ class Bot(BotBase):
 
             self.update_db()
 
-            while not self.cogs_ready.all_ready():
-                await sleep(0.5)
-
             # for gid in [1040887723159994379, 998961724008972308, 1044512214171799582, 1232956416424284192]:
             #     await self.get_guild(gid).leave()
 
@@ -263,4 +234,7 @@ class Bot(BotBase):
             print("bot reconnected")
 
 
-bot = Bot()
+with open("../../token.txt", "r", encoding="utf-8") as tf:
+    TOKEN = tf.read()
+print('running bot...')
+ConU().run(token=TOKEN, reconnect=True)

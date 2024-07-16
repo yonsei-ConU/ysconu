@@ -3,7 +3,7 @@ from sqlite3 import connect
 
 from apscheduler.triggers.cron import CronTrigger
 
-DB_PATH = "./identifier.sqlite"
+DB_PATH = "../../identifier.sqlite"
 BUILD_PATH = "./data/db/build.sql"
 
 cxn = connect(DB_PATH, check_same_thread=False)

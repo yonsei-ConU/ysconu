@@ -13,6 +13,8 @@ from psutil import Process, virtual_memory
 
 from .achieve import grant_check, grant
 from ..db import db
+from discord.app_commands import command as slash, choices, Choice
+from ..utils.send import send
 
 
 class Meta(Cog):
@@ -49,7 +51,7 @@ class Meta(Cog):
 
     @command(name='서버개수')
     async def server_count(self, ctx):
-        await ctx.send(len(self.bot.guilds))
+        await send(ctx, len(self.bot.guilds))
 
     # @command(name="setactivity")
     # async def set_activity_message(self, ctx, *, text: str):
@@ -59,7 +61,7 @@ class Meta(Cog):
     @command(name="핑")
     async def ping(self, ctx, check: Optional[str]):
         start = time()
-        message = await ctx.send(f"디스코드 API 지연시간: {self.bot.latency * 1000:,.0f} ms")
+        message = await send(ctx, f"디스코드 API 지연시간: {self.bot.latency * 1000:,.0f} ms")
         end = time()
 
         await message.edit(
@@ -107,12 +109,12 @@ class Meta(Cog):
         for name, value, inline in fields:
             embed.add_field(name=name, value=value, inline=inline)
 
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
 
     @command(name="꺼져")
     async def shutdown(self, ctx):
         if ctx.author.id == 724496900920705045:
-            await ctx.send("봇을 끄는 중이에요...")
+            await send(ctx, "봇을 끄는 중이에요...")
 
             count_channels = db.records("SELECT ChannelID, num FROM channels WHERE channel_type & 1 == 1")
             for channel_to_send in count_channels:
@@ -123,20 +125,20 @@ class Meta(Cog):
                     db.execute("DELETE FROM channels WHERE ChannelID = ?", channel_to_send[0])
                 except:
                     continue
+            exit()
             with open("./data/banlist.txt", "w", encoding="utf-8") as f:
                 f.writelines([f"{item}\n" for item in self.bot.banlist])
             db.commit()
-
-            db.commit()
+            exit()
             await self.bot.logout()
         else:
-            await ctx.send("ㅈㄹ")
+            await send(ctx, "ㅈㄹ")
 
     @Cog.listener()
     async def on_ready(self):
         if not self.bot.ready:
-            self.bot.cogs_ready.ready_up("meta")
+            print('("meta")')
 
 
-def setup(bot):
-    bot.add_cog(Meta(bot))
+async def setup(bot):
+    await bot.add_cog(Meta(bot))

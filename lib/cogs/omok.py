@@ -9,6 +9,8 @@ from ..db import db
 from asyncio import TimeoutError
 from math import fabs
 from re import compile
+from discord.app_commands import command as slash, choices, Choice
+from ..utils.send import send
 
 
 class Omok(Cog):
@@ -357,25 +359,25 @@ class Omok(Cog):
         if a1 == "도움":
             embed.add_field(name="커뉴봇 오목 기능 도움!",
                             value="`커뉴야 오목 도움`: 이 도움말을 표시해요.\n`커뉴야 오목 규칙`: 커뉴봇 오목에 적용되는 규칙을 설명해요.\n`커뉴야 오목 테스트`: 지금 오목을 실행해도 되는지 판단해요.\n`커뉴야 오목 입장`: 오목 게임에 입장할 수 있어요. `커뉴야 오목 입장 (방번호)`로 입장해 주세요.\n`커뉴야 오목 목록`: 현재 비어 있지 않은 방들의 목록을 표시해요.\n`커뉴야 오목 관전`: `커뉴야 오목 관전 (방번호)` 로 게임 중인 방을 관전할 수 있어요.\n`커뉴야 오목 점수`: 현재 오목 점수를 표시해요. (기본 1000점) 점수별 티어나 리더보드는 현 점수 시스템의 밸런스를 먼저 확인하고 다음 업데이트 정도에 추가될 예정이에요.")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif a1 == "규칙":
             embed.add_field(name="커뉴봇 오목 기능 규칙!",
                             value="1. 오목은 15*15 오목판에서 진행됩니다.\n\n2. 현재까지의 커뉴봇 오목은 두 가지 규칙으로 진행됩니다.\n\n2.1. 자유룰은 흑백 모두 어떠한 경우에도 금수처리가 안 뜨는 규칙이며, 4500 ~ 5999번 방에 들어가시면 이 룰로 진행됩니다.\n\n2.2. 학교룰은 흑백 모두 33은 금수지만 44는 가능하고, 장목은 가능하지만 승리 처리는 안되는 규칙이며, 6000, 7000번대 방에 들어가시면 이 룰로 진행됩니다.")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif a1 == "테스트":
-            await ctx.send("이글자들이한줄이라면시작하셔도됩니다")
+            await send(ctx, "이글자들이한줄이라면시작하셔도됩니다")
         elif a1 == "관전":
             if a1_:
                 a2 = int(a1_.display_name)
             if not a2:
-                await ctx.send("`커뉴야 오목 관전 (방번호)`로 입력해 주세요! 현재 있는 방들의 목록은 `커뉴야 오목 목록`으로 확인하실 수 있어요.")
+                await send(ctx, "`커뉴야 오목 관전 (방번호)`로 입력해 주세요! 현재 있는 방들의 목록은 `커뉴야 오목 목록`으로 확인하실 수 있어요.")
                 return
             if 4500 <= a2 < 10000:
                 maybe_room = db.record("SELECT people_in FROM rooms WHERE room_number = ?", a2)
                 if maybe_room[0] and len(maybe_room[0]) < 37:
-                    await ctx.send("그 방은 게임이 진행중이지 않은 것 같아요!")
+                    await send(ctx, "그 방은 게임이 진행중이지 않은 것 같아요!")
                     return
-                await ctx.send("관전을 하실 건가요? `네`라고 입력해서 관전을 시작하세요")
+                await send(ctx, "관전을 하실 건가요? `네`라고 입력해서 관전을 시작하세요")
                 try:
                     responded = await self.bot.wait_for(
                         "message",
@@ -384,11 +386,11 @@ class Omok(Cog):
                             message: message.author.id == ctx.author.id and message.channel.id == ctx.channel.id
                     )
                 except TimeoutError:
-                    await ctx.send("관전하지 않기로 했어요.")
+                    await send(ctx, "관전하지 않기로 했어요.")
                     return
                 if responded.content == "네":
                     spectate = db.record("SELECT people_out FROM rooms WHERE room_number = ?", a2)
-                    await ctx.send("관전을 시작했어요! 이 방에서 게임 중인 사람들이 수를 둘 때마다 이 채널에 오목판이 보내질 거에요.")
+                    await send(ctx, "관전을 시작했어요! 이 방에서 게임 중인 사람들이 수를 둘 때마다 이 채널에 오목판이 보내질 거에요.")
                     if not spectate[0]:
                         db.execute("UPDATE rooms SET people_out = ? WHERE room_number = ?", ctx.channel.id, a2)
                     else:
@@ -402,11 +404,11 @@ class Omok(Cog):
                 else:
                     return
         elif a1 == "입장":
-            await ctx.send("오목을 시작한다면 당신은 DM 받는 걸 허용했다고 가정하며, DM 보내는 데 실패할 시 자동으로 실격패 처리 된다는 것에 동의합니다.")
+            await send(ctx, "오목을 시작한다면 당신은 DM 받는 걸 허용했다고 가정하며, DM 보내는 데 실패할 시 자동으로 실격패 처리 된다는 것에 동의합니다.")
             if a1_:
                 a2 = int(a1_.display_name)
             if not a2:
-                await ctx.send("`커뉴야 오목 입장 (방번호)`로 입력해 주세요! 현재 있는 방들의 목록은 `커뉴야 오목 목록`으로 확인하실 수 있어요.")
+                await send(ctx, "`커뉴야 오목 입장 (방번호)`로 입력해 주세요! 현재 있는 방들의 목록은 `커뉴야 오목 목록`으로 확인하실 수 있어요.")
                 return
             if 4500 <= a2 < 10000:
                 now_room = db.record("SELECT room_number FROM games WHERE UserID = ?", ctx.author.id)
@@ -419,7 +421,7 @@ class Omok(Cog):
                     now_room = None
                 room = room[0]
                 if now_room:
-                    await ctx.send("이미 어딘가에서 매칭을 기다리고 있거나 게임을 진행하고 있어요!")
+                    await send(ctx, "이미 어딘가에서 매칭을 기다리고 있거나 게임을 진행하고 있어요!")
                     return
                 if room[2] is not None:
                     try:
@@ -429,13 +431,13 @@ class Omok(Cog):
                 else:
                     people_in = []
                 if not people_in:
-                    await ctx.send(f"{a2}번 방에 입장했어요! 이 방에서 매칭을 기다리는 중이에요")
+                    await send(ctx, f"{a2}번 방에 입장했어요! 이 방에서 매칭을 기다리는 중이에요")
                     db.execute("UPDATE rooms SET people_in = ? WHERE room_number = ?", str(ctx.author.id), a2)
                     db.execute("UPDATE games SET room_number = ? WHERE UserID = ?", a2, ctx.author.id)
                     db.commit()
                     return
                 if len(people_in) >= 2:
-                    await ctx.send("그 방은 이미 다 차서 입장할 수 없어요!")
+                    await send(ctx, "그 방은 이미 다 차서 입장할 수 없어요!")
                     return
                 else:
                     db.execute("UPDATE rooms SET people_in = ? WHERE room_number = ?",
@@ -448,7 +450,7 @@ class Omok(Cog):
                     opponent_mmr = opponent_mmr[0]
                     mmr_ckdl = math.fabs(your_mmr - opponent_mmr)
                     if fabs(your_mmr - opponent_mmr) > 200:
-                        await ctx.send("현재 이 방에 있는 사람과 실력 차이가 많이 나는 것 같아요! 다른 방에 들어가 주세요")
+                        await send(ctx, "현재 이 방에 있는 사람과 실력 차이가 많이 나는 것 같아요! 다른 방에 들어가 주세요")
                         return
                     else:
                         if your_mmr >= opponent_mmr:
@@ -478,7 +480,7 @@ class Omok(Cog):
                         await black.send("매칭이 잡혔어요! 자동으로 천원점에 첫 수를 두었어요.")
                         await self.ask_omok(white, black, white, now_omok, a2, a3, a3, mmr_ckdl, 1)
             else:
-                await ctx.send("오목 방번호는 4500에서 9999만 이용 가능해요!")
+                await send(ctx, "오목 방번호는 4500에서 9999만 이용 가능해요!")
                 return
         elif a1 == "목록":
             rooms = db.records(
@@ -491,9 +493,9 @@ class Omok(Cog):
                 tjfaud += f"{str(room[0])}: {u}"
                 tjfaud += "\n"
             if not tjfaud:
-                await ctx.send("현재 매칭을 기다리고 있는 오목 방이 없어요!")
+                await send(ctx, "현재 매칭을 기다리고 있는 오목 방이 없어요!")
                 return
-            await ctx.send(tjfaud)
+            await send(ctx, tjfaud)
             # for i in range(3, 100): 남는방
             #     db.execute("INSERT INTO rooms (room_number, room_type) VALUES (?, 0)", i)
             #     db.commit()
@@ -518,7 +520,7 @@ class Omok(Cog):
         elif a1 == "점수":
             mmr = db.record("SELECT omok_mmr FROM games WHERE UserID = ?", ctx.author.id)
             mmr = mmr[0]
-            await ctx.send(embed=Embed(color=0xffd6fe, title=f"{ctx.author.display_name}님의 오목 점수", description=mmr))
+            await send(ctx, embed=Embed(color=0xffd6fe, title=f"{ctx.author.display_name}님의 오목 점수", description=mmr))
         elif a1 in ["퇴장", "매칭취소"]:
             now_room = db.record("SELECT room_number FROM games WHERE userID = ?", ctx.author.id)
             try:
@@ -526,13 +528,13 @@ class Omok(Cog):
             except TypeError:
                 return
             if 4500 <= now_room < 10000:
-                await ctx.send(f"{now_room}번 방에서 빠져나왔어요.")
+                await send(ctx, f"{now_room}번 방에서 빠져나왔어요.")
                 db.execute("UPDATE games SET room_number = NULL WHERE userID = ?", ctx.author.id)
                 db.commit()
         elif a1 == "자동매칭":
             automatch = db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0]
             if automatch & 8 == 0:
-                await ctx.send("잠겨 있는 기능이에요! `커뉴야 뀨 구매 오목 자동 매칭`으로 기능을 먼저 해금하신 후 이용해 주세요")
+                await send(ctx, "잠겨 있는 기능이에요! `커뉴야 뀨 구매 오목 자동 매칭`으로 기능을 먼저 해금하신 후 이용해 주세요")
                 return
             if a4 in ["자유룰", "오목룰"]:
                 r = 4001
@@ -547,7 +549,7 @@ class Omok(Cog):
                 r = 4004
                 t = 69
             else:
-                await ctx.send("존재하지 않는 규칙명이에요!")
+                await send(ctx, "존재하지 않는 규칙명이에요!")
                 return
             auto = db.record("SELECT people_in FROM rooms WHERE room_number = ?", r)[0]
             if auto:
@@ -596,7 +598,7 @@ class Omok(Cog):
                     if len(m) == 1:
                         break
             else:
-                await ctx.send("자동매칭을 잡았어요! 누군가 당신이 원한 룰에 해당하는 방에 들어오거나 같은 룰로 자동매칭을 잡으면 매칭이 잡혀요.")
+                await send(ctx, "자동매칭을 잡았어요! 누군가 당신이 원한 룰에 해당하는 방에 들어오거나 같은 룰로 자동매칭을 잡으면 매칭이 잡혀요.")
                 db.execute("UPDATE games SET room_number = ? WHERE UserID = ?", r, ctx.author.id)
                 db.execute("UPDATE rooms SET People_in = ? WHERE room_number = ?", ctx.author.id, r)
                 db.commit()
@@ -641,12 +643,12 @@ class Omok(Cog):
     @Cog.listener()
     async def on_ready(self):
         if not self.bot.ready:
-            self.bot.cogs_ready.ready_up("omok")
+            print('("omok")')
             # await sleep(1)
             # now_omok = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 2, 2, 2, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
             # print(self.draw_board(now_omok))
             # self.check_banned(1, now_omok, 7, 5)
 
 
-def setup(bot):
-    bot.add_cog(Omok(bot))
+async def setup(bot):
+    await bot.add_cog(Omok(bot))

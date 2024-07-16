@@ -11,18 +11,20 @@ import json
 from datetime import datetime, timedelta
 import os
 from PIL import Image
-from discord import Member, Embed, DMChannel, File
-from discord.ext.commands import Cog, BucketType, max_concurrency
+from discord import Member, Embed, DMChannel, File, Forbidden
+from discord.ext.commands import Cog, BucketType, max_concurrency, BadArgument
 from discord.ext.commands import command, cooldown
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import make_interp_spline
 from fractions import Fraction
 from decimal import *
-
-from ..bot.__init__ import *
+from collections import deque
 from ..db import db
 from .achieve import grant, grant_check
+from discord.app_commands import command as slash, choices, Choice
+from ..utils.send import *
+from time import sleep
 
 global today
 today = ((time() + 32400) // 86400)
@@ -302,19 +304,6 @@ def simulate_quiz(time, num):
         return 1
     else:
         return 0
-
-
-"""def a(ach, num, st):
-    temp = (ach // num) % 4
-    if temp == 3:
-        st = st + ":three:"
-    elif temp == 2:
-        st = st + ":two:"
-    elif temp == 1:
-        st = st + ":one:"
-    else:
-        st = st +":zero:"
-    return num, st"""
 
 
 def miller_rabin(a, n):
@@ -1058,7 +1047,7 @@ class Fun(Cog):
                 thing = 3
                 embed.add_field(name=f"{ctx.author.display_name}", value=":raised_back_of_hand: ")
             else:
-                await ctx.send("올바른 걸 내줘")
+                await send(ctx, "올바른 걸 내줘")
                 return
             if rsp == 1:
                 embed.add_field(name="커뉴봇", value=":v:")
@@ -1068,22 +1057,22 @@ class Fun(Cog):
                 embed.add_field(name="커뉴봇", value=":raised_back_of_hand:")
             if thing == rsp:
                 embed.set_footer(text="승리!")
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
                 ag = grant_check("묵찌빠 승자", ctx.author.id)
                 if ag == 1:
                     await grant(ctx, "묵찌빠 승자", "커뉴봇과의 묵찌빠 대결에서 승리하세요")
                 return
             elif thing - rsp == 1 or thing - rsp == -2:
                 embed.set_footer(text="공격권이 왔어! 뭘로 공격할 거야?")
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
                 await self.user_attack(self, ctx)
             else:
                 embed.set_footer(text="내가 공격할 차례군! 방어할 준비를 해")
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
                 await self.conubot_attack(self, ctx)
 
         except asyncio.TimeoutError:
-            await ctx.send("게임을 중단했어.")
+            await send(ctx, "게임을 중단했어.")
 
     async def conubot_attack(self, a, ctx):
         thing = 0
@@ -1105,7 +1094,7 @@ class Fun(Cog):
                 thing = 3
                 embed.add_field(name=f"{ctx.author.display_name}", value=":raised_back_of_hand: ")
             else:
-                await ctx.send("올바른 걸 내줘")
+                await send(ctx, "올바른 걸 내줘")
                 return
             if rsp == 1:
                 embed.add_field(name="커뉴봇", value=":v:")
@@ -1115,19 +1104,19 @@ class Fun(Cog):
                 embed.add_field(name="커뉴봇", value=":raised_back_of_hand:")
             if thing == rsp:
                 embed.set_footer(text="패배...")
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
                 return
             elif thing - rsp == 1 or thing - rsp == -2:
                 embed.set_footer(text="공격권이 왔어! 뭘로 공격할 거야?")
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
                 await self.user_attack(self, ctx)
             else:
                 embed.set_footer(text="내가 공격할 차례군! 방어할 준비를 해")
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
                 await self.conubot_attack(self, ctx)
 
         except asyncio.TimeoutError:
-            await ctx.send("게임을 중단했어.")
+            await send(ctx, "게임을 중단했어.")
 
     @command(name="묵찌빠", aliases=["묵"])
     async def mook_chi_ppa(self, ctx, thing: Optional[str] = "도움", page: Optional[int] = 1):
@@ -1152,9 +1141,9 @@ class Fun(Cog):
             cur_room = db.record("SELECT room_number FROM games WHERE UserID = ?", ctx.author.id)
             cur_room = cur_room[0]
             if cur_room is not None:
-                await ctx.send("이미 매칭을 잡는 중이에요! 매칭을 취소하고 싶다면 `커뉴야 묵찌빠 매칭취소`를 입력해 주세요.")
+                await send(ctx, "이미 매칭을 잡는 중이에요! 매칭을 취소하고 싶다면 `커뉴야 묵찌빠 매칭취소`를 입력해 주세요.")
                 return
-            await ctx.send(f"{ctx.author.mention}\n{tier} {tnum} 구간에서 매칭을 잡는 중이에요.")
+            await send(ctx, f"{ctx.author.mention}\n{tier} {tnum} 구간에서 매칭을 잡는 중이에요.")
             for queue_people in rooms_info:
                 if math.fabs(queue_people[1] - mmr) <= 1000:
                     db.execute("UPDATE games SET room_number = 0 WHERE userID = ?", ctx.author.id)
@@ -1168,11 +1157,11 @@ class Fun(Cog):
             cur_room = db.record("SELECT room_number FROM games WHERE UserID = ?", ctx.author.id)
             cur_room = cur_room[0]
             if cur_room is None:
-                await ctx.send("매칭을 잡고 있지 않아!")
+                await send(ctx, "매칭을 잡고 있지 않아!")
                 return
             else:
                 db.execute("UPDATE games SET room_number = NULL Where UserID = ?", ctx.author.id)
-                await ctx.send("매칭 취소 완료")
+                await send(ctx, "매칭 취소 완료")
                 return
         elif thing == "티어":
             mmr = db.record("SELECT mook_chi_pa_mmr FROM games WHERE UserID = ?", ctx.author.id)[0]
@@ -1185,7 +1174,7 @@ class Fun(Cog):
             embeddd = Embed(color=0xffd6fe)
             embeddd.add_field(name=f"{ctx.author.display_name}의 묵찌빠 티어", value=f"{tier} {num} ({mmr}점)", inline=False)
             embeddd.add_field(name=f"다음 티어로 가기까지 얻어야 하는 점수", value=f"{mmrd}", inline=False)
-            await ctx.send(embed=embeddd)
+            await send(ctx, embed=embeddd)
             return
         elif thing == "리더보드":
             records = db.records(
@@ -1199,10 +1188,10 @@ class Fun(Cog):
                 now_people += 1
             if tjfaud == "":
                 tjfaud = "선택하신 페이지에는 사람이 없는 것 같아요!"
-            await ctx.send(embed=Embed(color=ctx.author.color, title="묵찌빠 랭킹!", description=tjfaud))
+            await send(ctx, embed=Embed(color=ctx.author.color, title="묵찌빠 랭킹!", description=tjfaud))
             return
         else:
-            await ctx.send("`커뉴야 묵찌빠 <묵/찌/빠/매칭/매칭취소/티어/리더보드>`")
+            await send(ctx, "`커뉴야 묵찌빠 <묵/찌/빠/매칭/매칭취소/티어/리더보드>`")
             return
         if rsp == 1:
             embedd.add_field(name="커뉴봇", value=":v:")
@@ -1211,22 +1200,22 @@ class Fun(Cog):
         if rsp == 3:
             embedd.add_field(name="커뉴봇", value=":raised_back_of_hand:")
         if thing == rsp:
-            await ctx.send("비겼네! 다시 하자")
+            await send(ctx, "비겼네! 다시 하자")
             return
         elif thing - rsp == 1 or thing - rsp == -2:
             embedd.set_footer(text="공격권이 왔어! 뭘로 공격할 거야? (묵, 찌, 빠 중 하나를 말해봐)")
-            await ctx.send(embed=embedd)
+            await send(ctx, embed=embedd)
             await self.user_attack(self, ctx)
         else:
             embedd.set_footer(text="내가 공격할 차례군! 방어할 준비를 해 (묵, 찌, 빠 중 하나를 말해봐)")
-            await ctx.send(embed=embedd)
+            await send(ctx, embed=embedd)
             await self.conubot_attack(self, ctx)
 
     @command(name="랜덤채팅", aliases=["랜챗"])
     async def random_chat(self, ctx, activity: Optional[str] = "도움", activity2: Optional[str] = "조회",
                           not_to_meet: Optional[Member] = ""):
         if activity == "도움":
-            await ctx.send(embed=Embed(color=0xffd6fe, title="커뉴봇 랜덤채팅 명령어",
+            await send(ctx, embed=Embed(color=0xffd6fe, title="커뉴봇 랜덤채팅 명령어",
                                        description="개선된 매칭 알고리즘으로 만든 랜덤 채팅 시스템이에요.\n\t\n`커뉴야 랜덤채팅 시작` 으로 매칭을 잡고 두 명이 대기하게 되면 매칭이 잡혀요. 그러면 채팅을 할 수가 있게 돼요."))
         elif activity == "시작":
             now = db.record("SELECT room_number FROM games WHERE UserID = ?", ctx.author.id)
@@ -1236,24 +1225,24 @@ class Fun(Cog):
                 db.execute("INSERT INTO games (UserID) VALUES (?)", ctx.author.id)
                 now = None
             if now == 2:
-                await ctx.send("이미 매칭을 기다리고 있어요!")
+                await send(ctx, "이미 매칭을 기다리고 있어요!")
                 return
             elif now is not None:
-                await ctx.send("봇과의 DM으로 해야 하는 기능은 한 번에 하나만 실행될 수 있어요!")
+                await send(ctx, "봇과의 DM으로 해야 하는 기능은 한 번에 하나만 실행될 수 있어요!")
                 return
             queue_people = db.record("SELECT UserID FROM games WHERE room_number = 2")
             try:
                 queue_people = queue_people[0]
             except TypeError:
                 db.execute("UPDATE games SET room_number = 2 WHERE UserID = ?", ctx.author.id)
-                await ctx.send("랜덤채팅 매칭을 잡기 시작했어요! 과연 누가 걸릴까요?")
+                await send(ctx, "랜덤채팅 매칭을 잡기 시작했어요! 과연 누가 걸릴까요?")
                 return
             blocked = db.record("SELECT random_chat_not_meet FROM games WHERE UserID = ?", ctx.author.id)
             try:
                 blocked = blocked[0].split(",")
                 if queue_people in blocked:
                     db.execute("UPDATE games SET room_number = 2 WHERE UserID = ?", ctx.author.id)
-                    await ctx.send("랜덤채팅 매칭을 잡기 시작했어요! 과연 누가 걸릴까요?")
+                    await send(ctx, "랜덤채팅 매칭을 잡기 시작했어요! 과연 누가 걸릴까요?")
                     return
             except:
                 pass
@@ -1276,10 +1265,10 @@ class Fun(Cog):
             if now_room == 2:
                 db.execute("UPDATE games SET room_number = NULL WHERE UserID = ?", ctx.author.id)
                 db.commit()
-                await ctx.send("랜덤채팅 매칭 대기열에서 빠져나왔어요.")
+                await send(ctx, "랜덤채팅 매칭 대기열에서 빠져나왔어요.")
             elif now_room is not None:
                 if now_room < 2:
-                    await ctx.send("`커뉴야 묵 매칭취소`")
+                    await send(ctx, "`커뉴야 묵 매칭취소`")
                 cur_tkdeo = db.record("SELECT UserID FROM games WHERE room_number = ? AND UserID != ?", now_room,
                                       ctx.author.id)
                 await ctx.author.send("랜덤채팅이 종료되었어요.")
@@ -1288,7 +1277,7 @@ class Fun(Cog):
                 db.execute("UPDATE games SET room_number = NULL WHERE UserID = ?", cur_tkdeo[0])
                 db.commit()
             else:
-                await ctx.send("랜덤채팅 매칭을 잡고 있지도 않고 채팅하고 있지도 않아요!")
+                await send(ctx, "랜덤채팅 매칭을 잡고 있지도 않고 채팅하고 있지도 않아요!")
         elif activity == "만나지않기":
             if activity2 == "조회":
                 member_blocked = db.record("SELECT random_chat_not_meet FROM games WHERE UserID = ?", ctx.author.id)
@@ -1302,22 +1291,22 @@ class Fun(Cog):
                         member_blocked += f"{str(user_)}\n"
                 except AttributeError:
                     member_blocked = ""
-                await ctx.send(f"현재 {ctx.author.name}님이 랜덤채팅에서 차단한 사람들은 아래와 같아요:\n{member_blocked}")
+                await send(ctx, f"현재 {ctx.author.name}님이 랜덤채팅에서 차단한 사람들은 아래와 같아요:\n{member_blocked}")
             elif activity2 == "추가":
                 if not not_to_meet:
-                    await ctx.send("`커뉴야 랜덤채팅 만나지않기 추가 (멤버)`의 형식으로 입력해 주세요!")
+                    await send(ctx, "`커뉴야 랜덤채팅 만나지않기 추가 (멤버)`의 형식으로 입력해 주세요!")
                     return
                 not_meet = db.record("SELECT random_chat_not_meet FROM games WHERE UserID = ?", ctx.author.id)
                 not_meet = not_meet[0] + f",{not_to_meet.id}"
                 if len(not_meet) > 60:
-                    await ctx.send("랜덤채팅 차단은 3명까지만 할 수 있어요!")
+                    await send(ctx, "랜덤채팅 차단은 3명까지만 할 수 있어요!")
                     return
-                await ctx.send(f"성공적으로 {str(not_to_meet)}을 랜덤채팅에서 안 만나도록 설정했어요!")
+                await send(ctx, f"성공적으로 {str(not_to_meet)}을 랜덤채팅에서 안 만나도록 설정했어요!")
                 db.execute("UPDATE games SET random_chat_not_meet = ? WHERE UserID = ?", not_meet, ctx.author.id)
                 db.commit()
             elif activity2 == "삭제":
                 if not not_to_meet:
-                    await ctx.send("`커뉴야 랜덤채팅 만나지않기 삭제 (멤버)`의 형식으로 입력해 주세요!")
+                    await send(ctx, "`커뉴야 랜덤채팅 만나지않기 삭제 (멤버)`의 형식으로 입력해 주세요!")
                     return
                 not_meet = db.record("SELECT random_chat_not_meet FROM games WHERE UserID = ?", ctx.author.id)
                 not_meet = not_meet[0]
@@ -1326,23 +1315,23 @@ class Fun(Cog):
                 elif f"{not_to_meet.id}," in not_meet:
                     not_meet = not_meet.replace(f"{not_to_meet.id},", "")
                 else:
-                    await ctx.send("그 사용자는 차단되지 않았어요!")
+                    await send(ctx, "그 사용자는 차단되지 않았어요!")
                     return
-                await ctx.send(f"성공적으로 {str(not_to_meet)}을 랜덤채팅에서 다시 만나도록 설정했어요!")
+                await send(ctx, f"성공적으로 {str(not_to_meet)}을 랜덤채팅에서 다시 만나도록 설정했어요!")
                 db.execute("UPDATE games SET random_chat_not_meet = ? WHERE UserID = ?", not_meet, ctx.author.id)
                 db.commit()
         else:
-            await ctx.send("`커뉴야 랜덤채팅 <도움/시작/종료/만나지않기>`")
+            await send(ctx, "`커뉴야 랜덤채팅 <도움/시작/종료/만나지않기>`")
 
     @command(name="지건")
     async def slap_member(self, ctx, member: Member, *, reason: Optional[str] = " "):
         await ctx.message.delete()
-        await ctx.send(f"{ctx.author.display_name} 님이  {member} 님에게 지건을 꽂았습니다!\n이유: {reason}")
+        await send(ctx, f"{ctx.author.display_name} 님이  {member} 님에게 지건을 꽂았습니다!\n이유: {reason}")
 
     @slap_member.error
     async def slap_member_error(self, ctx, exc):
         if isinstance(exc, BadArgument):
-            await ctx.send("멤버를 찾을 수 없어요!")
+            await send(ctx, "멤버를 찾을 수 없어요!")
 
     @command(name="서버추천", aliases=["섭추"])
     @cooldown(1, 20, BucketType.member)
@@ -1354,7 +1343,7 @@ class Fun(Cog):
             server_id, server_to_recommend = db.record(
                 "SELECT GuildID, advert FROM guilds WHERE advert IS NOT NULL AND GuildID != ? ORDER BY RANDOM() LIMIT 1",
                 ctx.guild.id)
-        await ctx.send(f"**{self.bot.get_guild(server_id)}**\n{server_to_recommend}")
+        await send(ctx, f"**{self.bot.get_guild(server_id)}**\n{server_to_recommend}")
 
     @command(name="운빨테스트", aliases=["운"])
     async def luck_test(self, ctx):
@@ -1382,13 +1371,13 @@ class Fun(Cog):
             return
         pi = "3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067982148086513282306647093844609550582231725359408128481117450284102701938521105559644622948954930381964428810975665933446128475648233786783165271201909145648566923460348610454326648213393607260249141273724587006606315588174881520920962829254091715364367892590360011330530548820466521384146951941511609433057270365759591953092186117381932611793105118548074462379962749567351885752724891227938183011949129833673362440656643086021394946395224737190702179860943702770539217176293176752384674818467669405132000568127145263560827785771342757789609173637178721468440901224953430146549585371050792279689258923542019956112129021960864034418159813629774771309960518707211349999998372978049951059731732816096318595024459455346908302642522308253344685035261931188171010003137838752886587533208381420617177669147303598253490428755468731159562863882353787593751957781857780532171226806613001927876611195909216420198938095257201065485863278865936153381827968230301952035301852968995773622599413891249721775283479131515574857242454150695950829533116861727855889075098381754637464939319255060400927701671139009848824012858361603563707660104710181942955596198946767837449448255379774726847104047534646208046684259069491293313677028989152104752162056966024058038150193511253382430035587640247496473263914199272604269922796782354781636009341721641219924586315030286182974555706749838505494588586926995690927210797509302955321165344987202755960236480665499119881834797753566369807426542527862551818417574672890977772793800081647060016145249192173217214772350141441973568548161361157352552133475741849468438523323907394143334547762416862518983569485562099219222184272550254256887671790494601653466804988627232791786085784383827967976681454100953883786360950680064225125205117392984896084128488626945604241965285022210661186306744278622039194945047123713786960956364371917287467764657573962413890865832645995813390478027590"
         if digit > 1998:
-            await ctx.send("글자수가 너무 많아 표시할 수 없어요!")
+            await send(ctx, "글자수가 너무 많아 표시할 수 없어요!")
             return
         elif digit < 0:
-            await ctx.send("글자수는 양수로 입력해야 해요!")
+            await send(ctx, "글자수는 양수로 입력해야 해요!")
             return
         else:
-            await ctx.send(pi[:digit + 2])
+            await send(ctx, pi[:digit + 2])
         if digit == 767:
             l = grant_check("21134**999999**", ctx.author.id)
             if l == 1:
@@ -1410,10 +1399,10 @@ class Fun(Cog):
             enchant_info = {"최대강화가능개수": 3}
         embed = Embed(color=ctx.author.color)
         if item_name in ["목록", "삭제", "파괴"]:
-            await ctx.send("혹시 강화를 할려는 의도가 아니었다면 `커뉴야 도움 강화`로 세부 명령어를 알아봐 주세요!")
+            await send(ctx, "혹시 강화를 할려는 의도가 아니었다면 `커뉴야 도움 강화`로 세부 명령어를 알아봐 주세요!")
         if item_name not in enchant_info:
             if len(enchant_info) - 1 == enchant_info["최대강화가능개수"]:
-                await ctx.send("강화하고 있는 아이템 수가 최대에 도달했어요!")
+                await send(ctx, "강화하고 있는 아이템 수가 최대에 도달했어요!")
                 return
             else:
                 enchant_info.update({item_name: 0})
@@ -1465,7 +1454,7 @@ class Fun(Cog):
         enchant_info = json.dumps(enchant_info, ensure_ascii=False)
         db.execute("UPDATE games SET enchant_info = ? WHERE UserID = ?", enchant_info, ctx.author.id)
         db.commit()
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
         return
 
         # if extra == "리더보드":
@@ -1477,16 +1466,16 @@ class Fun(Cog):
         #         now_people += 1
         #     if tjfaud == "":
         #         tjfaud = "선택하신 페이지에는 사람이 없는 것 같아요!"
-        #     await ctx.send(embed=Embed(color=ctx.author.color, title="강화 랭킹!", description=tjfaud))
+        #     await send(ctx, embed=Embed(color=ctx.author.color, title="강화 랭킹!", description=tjfaud))
 
     @command(name="파괴", aliases=["강화삭제"])
     async def destroy(self, ctx, *, item_name: Optional[str] = "커뉴봇"):
         enchant_info = db.record("SELECT enchant_info FROM games WHERE UserID = ?", ctx.author.id)
         enchant_info = json.loads(enchant_info[0])
         if item_name not in enchant_info or item_name == "최대강화가능개수":
-            await ctx.send("그런 아이템을 강화하고 있지 않아 파괴할 수 없어요!")
+            await send(ctx, "그런 아이템을 강화하고 있지 않아 파괴할 수 없어요!")
             return
-        await ctx.send("정말로 아이템을 파괴할 건가요? `네`라고 입력해서 확실시해 주세요!")
+        await send(ctx, "정말로 아이템을 파괴할 건가요? `네`라고 입력해서 확실시해 주세요!")
         try:
             msg = await self.bot.wait_for(
                 "message",
@@ -1494,12 +1483,12 @@ class Fun(Cog):
                 check=lambda message: message.author == ctx.author and ctx.channel == message.channel
             )
         except asyncio.TimeoutError:
-            await ctx.send("아이템 파괴를 취소했어요.")
+            await send(ctx, "아이템 파괴를 취소했어요.")
             return
         if not msg.content == "네":
-            await ctx.send("아이템 파괴를 취소했어요.")
+            await send(ctx, "아이템 파괴를 취소했어요.")
             return
-        await ctx.send("아이템 파괴를 완료했어요.")
+        await send(ctx, "아이템 파괴를 완료했어요.")
         del enchant_info[item_name]
         enchant_info = json.dumps(enchant_info, ensure_ascii=False)
         db.execute("UPDATE games SET enchant_info = ? WHERE UserID = ?", enchant_info, ctx.author.id)
@@ -1516,7 +1505,7 @@ class Fun(Cog):
         del enchant_info["최대강화가능개수"]
         for item in enchant_info:
             embed.add_field(name="​", value=f"아이템 이름: {item} ({enchant_info[item]}레벨)", inline=False)
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
 
     @command(name="가위바위보", aliases=["가바보"])
     async def rock_paper_scissors(self, ctx, rps: Optional[str] = "엄준식"):
@@ -1544,17 +1533,17 @@ class Fun(Cog):
             await ctx.channel.send(":rage:")
             return
         elif rps == "지":
-            await ctx.send("뭐이새꺄?")
+            await send(ctx, "뭐이새꺄?")
             return
         elif rps == "우커바":
-            await ctx.send("우리 커여운 한바♡♡")
+            await send(ctx, "우리 커여운 한바♡♡")
             return
         elif rps == '알맞은 걸':
             l = grant_check("설명대로", ctx.author.id)
             if l == 1:
-                await grant(ctx, "설명대로", "가위바위보 명령어에서 이스터에그를 발견하세요")
+                await grant(ctx, "설명대로", "가위바위보 명령어에서 이스터에그를 발견하세요. 물론 이스터에그가 이게 끝이 아니긴 해요.")
         else:
-            await ctx.send("알맞은 걸 내 주세요")
+            await send(ctx, "알맞은 걸 내 주세요")
             return
         if rsp == 1:
             embed.add_field(name="커뉴봇", value=":v:")
@@ -1568,27 +1557,27 @@ class Fun(Cog):
             embed.set_footer(text="이기셨네요! 축하드려요")
         else:
             embed.set_footer(text="ㅋ")
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
 
     @command(name="기원")
     async def pray(self, ctx, *, giwon: Optional[str]):
         if giwon == "목록":
-            await ctx.send("기원들의 목록을 보시고 싶다면 `커뉴야 기원목록`을 확인해 보세요!")
+            await send(ctx, "기원들의 목록을 보시고 싶다면 `커뉴야 기원목록`을 확인해 보세요!")
         today = ((time() + 32400) // 86400)
         if not giwon:
-            await ctx.send("뭘 기원할 건지도 말해 주세요!")
+            await send(ctx, "뭘 기원할 건지도 말해 주세요!")
             return
         giwon_list = db.records("SELECT * FROM Giwons WHERE GuildID = ?", ctx.guild.id)
         for giwons in giwon_list:
             if giwon == giwons[0]:
                 if today == giwons[4]:
-                    await ctx.send("오늘은 이미 해당 항목을 기원했어요!")
+                    await send(ctx, "오늘은 이미 해당 항목을 기원했어요!")
                     return
                 await ctx.guild.get_member(giwons[2]).edit(nick=f"{giwons[0]}{giwons[3] + 1}일차")
                 db.execute("UPDATE Giwons SET days = ?, last_giwon_date = ? WHERE Giwon_name = ? AND GuildID = ?",
                            int(giwons[3]) + 1, today, giwons[0], giwons[1])
                 db.commit()
-                await ctx.send(f"{giwons[0]}을 기원했어요! 오늘은 해당 기원의 {giwons[3] + 1}일차에요.")
+                await send(ctx, f"{giwons[0]}을 기원했어요! 오늘은 해당 기원의 {giwons[3] + 1}일차에요.")
                 if giwons[3] + 1 == 365:
                     l = grant_check("제발 이루어졌으면", ctx.author.id)
                     if l == 1:
@@ -1597,11 +1586,11 @@ class Fun(Cog):
         guitar_giwons = db.record("SELECT * FROM Giwons WHERE GuildID = 0 AND Giwon_name = ?", giwon)
         if guitar_giwons:
             if today == guitar_giwons[4]:
-                await ctx.send("오늘은 이미 누군가가 해당 항목을 기원했어요!")
+                await send(ctx, "오늘은 이미 누군가가 해당 항목을 기원했어요!")
                 return
             days = int(guitar_giwons[3])
             days += 1
-            await ctx.send(f"{guitar_giwons[0]} 을(를) 기원했어요! {days}일차 기원이에요.")
+            await send(ctx, f"{guitar_giwons[0]} 을(를) 기원했어요! {days}일차 기원이에요.")
             db.execute("UPDATE Giwons SET days = ?, last_giwon_date = ? WHERE Giwon_name = ? AND GuildID = 0", days,
                        today, guitar_giwons[0])
             db.commit()
@@ -1609,12 +1598,12 @@ class Fun(Cog):
         else:
             if giwon.find("커뉴") + giwon.find("컨유") + giwon.find("커늒") + giwon.find("귀늒") + giwon.find(
                     "나몬") + giwon.find("병신") + giwon.find("섹스") + giwon.find("씨발") + giwon.find("ㅂㅅ") != -9:
-                await ctx.send(":weary:")
+                await send(ctx, ":weary:")
                 return
             if len(giwon) > 70:
-                await ctx.send("기원이 너무 길어요!")
+                await send(ctx, "기원이 너무 길어요!")
                 return
-            await ctx.send(f"{giwon} 을(를) 기원했어요! 새로 등록되는 기원이에요!")
+            await send(ctx, f"{giwon} 을(를) 기원했어요! 새로 등록되는 기원이에요!")
             db.execute(
                 "INSERT INTO Giwons (Giwon_name, GuildID, TargetID, days, last_giwon_date) VALUES (?, 0, 0, 1, ?)",
                 giwon, today)
@@ -1627,7 +1616,7 @@ class Fun(Cog):
         min_number = 1
         max_number = number_range
         while True:
-            await ctx.send(f"{min_number}부터 {max_number}의 숫자 중에서 추측해 보세요! {tried}번째 시도에요.")
+            await send(ctx, f"{min_number}부터 {max_number}의 숫자 중에서 추측해 보세요! {tried}번째 시도에요.")
             try:
                 number_guessed = await self.bot.wait_for(
                     "message",
@@ -1635,25 +1624,25 @@ class Fun(Cog):
                     check=lambda message: message.author.id == ctx.author.id and message.channel == ctx.channel
                 )
             except asyncio.TimeoutError:
-                await ctx.send("게임을 중단했어요.")
+                await send(ctx, "게임을 중단했어요.")
                 return
             try:
                 number_guessed = int(number_guessed.content)
             except ValueError:
-                await ctx.send("숫자로만 보내 주세요")
+                await send(ctx, "숫자로만 보내 주세요")
                 return
             if number_guessed == number_to_guess:
-                await ctx.send(f"{tried}번만에 숫자를 추측하는 데 성공했어요!")
+                await send(ctx, f"{tried}번만에 숫자를 추측하는 데 성공했어요!")
                 if number_range >= 500:
                     l = grant_check("굉장한 찍신", ctx.author.id)
                     if l == 1:
                         await grant(ctx, "굉장한 찍신", "업다운 명령어에서 최소 1부터 500까지의 수 중에서 하나를 한 번만에 맞히기")
                 return
             elif number_guessed > number_to_guess:
-                await ctx.send("지금 추측하신 숫자는 정답보다 커요!")
+                await send(ctx, "지금 추측하신 숫자는 정답보다 커요!")
                 max_number = number_guessed
             else:
-                await ctx.send("지금 추측하신 숫자는 정답보다 작아요!")
+                await send(ctx, "지금 추측하신 숫자는 정답보다 작아요!")
                 min_number = number_guessed
             tried += 1
 
@@ -1666,7 +1655,7 @@ class Fun(Cog):
     #             await grant(ctx, "다시 하는 1주년 이벤트", "기억력이 압도적으로 좋으신가요? 아니면 검색을 압도적으로 잘하시나요?")
     #     if activity == "생성":
     #         if not asdf:
-    #             await ctx.send("생성할 투표의 이름을 정해 주세요!")
+    #             await send(ctx, "생성할 투표의 이름을 정해 주세요!")
     #         try:
     #             i770d_name = await self.bot.wait_for(
     #                 "message",
@@ -1674,9 +1663,9 @@ class Fun(Cog):
     #                 check=lambda message: message.author.id == ctx.author.id and message.channel == ctx.channel
     #             )
     #         except asyncio.TimeoutError:
-    #             await ctx.send("투표 생성을 중단했어요.")
+    #             await send(ctx, "투표 생성을 중단했어요.")
     #             return
-    #         await ctx.send("투표 보기들을 제시해 주세요! 줄바꿈 문자는 보기에 포함될 수 없어요. `ㅇㅇㅇㅇㅇ`을 입력하거나 보기 5개를 입력할 때까지 계속 입력할 수 있어요.")
+    #         await send(ctx, "투표 보기들을 제시해 주세요! 줄바꿈 문자는 보기에 포함될 수 없어요. `ㅇㅇㅇㅇㅇ`을 입력하거나 보기 5개를 입력할 때까지 계속 입력할 수 있어요.")
     #         qhrls = []
     #         for i in range(5):
     #             try:
@@ -1686,18 +1675,18 @@ class Fun(Cog):
     #                     check=lambda message: message.author.id == ctx.author.id and message.channel == ctx.channel and '\n' not in message.content
     #                 )
     #             except asyncio.TimeoutError:
-    #                 await ctx.send("투표 생성을 중단했어요.")
+    #                 await send(ctx, "투표 생성을 중단했어요.")
     #                 return
     #             if qhrl.content == "ㅇㅇㅇㅇㅇ":
     #                 if i == 0:
-    #                     await ctx.send("투표 생성을 취소했어요.")
+    #                     await send(ctx, "투표 생성을 취소했어요.")
     #                     return
     #                 break
     #             qhrls.append(qhrl.content)
     #         if len(qhrls) == 1:
-    #             await ctx.send('보기는 2개 이상이어야 해요!')
+    #             await send(ctx, '보기는 2개 이상이어야 해요!')
     #             return
-    #         await ctx.send(f"투표 제작을 완료헀어요! 오늘부터 {until}일 후 투표 명령어를 실행하시면 투표가 끝나요.")
+    #         await send(ctx, f"투표 제작을 완료헀어요! 오늘부터 {until}일 후 투표 명령어를 실행하시면 투표가 끝나요.")
     #         db.execute("INSERT INTO i770d (id, name, choices, until) VALUES (?, ?, ?, ?)", ctx.author.id, i770d_name, '\n'.join(qhrls), today + until)
     #         db.commit()
     #     elif activity == '목록':
@@ -1710,7 +1699,7 @@ class Fun(Cog):
                           buy_amount: Optional[int] = 5):
         if randint(1, 40) == 1:
             num = randint(10000, 99999)
-            await ctx.send(
+            await send(ctx, 
                 f"매크로 방지를 위해 확인을 할게요. 10초 안에 어디든 좋으니 커뉴봇이 볼 수 있는 곳에{num}이라고 보내 주세요.\n구매에도 매크로쓰는사람 있는 :weary:")
             try:
                 msg = await self.bot.wait_for(
@@ -1719,11 +1708,11 @@ class Fun(Cog):
                     check=lambda message: message.author == ctx.author and message.content == str(num)
                 )
             except asyncio.TimeoutError:
-                await ctx.send(":weary:")
+                await send(ctx, ":weary:")
                 await self.ban_10min(ctx.author.id)
                 return
             if msg.content != str(num):
-                await ctx.send(":weary:")
+                await send(ctx, ":weary:")
                 await self.ban_10min(ctx.author.id)
                 return
         level = db.record("SELECT zl, user_setting FROM games WHERE UserID = ?", ctx.author.id)
@@ -1732,7 +1721,7 @@ class Fun(Cog):
             try:
                 print((self.bot.get_guild(743101101401964647)).get_member(ctx.author.id).display_name)
             except AttributeError:
-                await ctx.send("공식서버 가입자만 사용할 수 있는 기능이에요!")
+                await send(ctx, "공식서버 가입자만 사용할 수 있는 기능이에요!")
                 return
         try:
             level = level[0]
@@ -1740,7 +1729,7 @@ class Fun(Cog):
             db.execute("INSERT INTO games (UserID, zl, zf) VALUES (?, 0, 0)", ctx.author.id)
             level = 0
         if ('ㅈㅋ' in ctx.message.content) and (setting & 256 == 0):
-            await ctx.send('어허')
+            await send(ctx, '어허')
             return
         if level is None:
             try:
@@ -1753,7 +1742,7 @@ class Fun(Cog):
             embed.set_footer(text="`커뉴야 잡초키우기 도움` 으로 게임 방법을 확인해 보세요!")
             embed.set_thumbnail(
                 url="https://media.discordapp.net/attachments/783226362856734730/818716399701852180/224_20210125223208.png")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
             db.commit()
             return
         fer = db.record("SELECT zf FROM games WHERE UserID = ?", ctx.author.id)
@@ -1768,7 +1757,7 @@ class Fun(Cog):
             embed = Embed(color=0x00ff7f)
             embed.add_field(name="잡초키우기\n버전: 1.0.6",
                             value="<@634632747272503306>가 계획하고 <@724496900920705045>가 만든 게임.\n\t\n`커뉴야 잡초키우기`: 잡초에게 물을 준다. 일정확률로 잡초가 레벨업한다.\n`커뉴야 잡초키우기 내정보`: 현재 자신의 잡초키우기 정보를 보여준다.\n`커뉴야 잡초키우기 도움`: 이 도움말을 표시한다.\n`커뉴야 잡초키우기 리더보드`: 다른 사람들의 잡초 레벨과 비료 개수가 있는 리더보드를 표시한다.\n`커뉴야 잡초키우기 비료`: 잡초에게 비료를 준다. 높은 확률로 잡초가 레벨업한다.\n`커뉴야 잡초키우기 상점`: 잡초키우기에 필요한 아이템들을 살 수 있다.\n`커뉴야 잡초키우기 최근업뎃`: 최근 업데이트 정보를 보여준다.")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif activity == "내정보":
             embed = Embed(color=0x00ff7f)
             ids = db.column("SELECT UserID FROM games ORDER BY zl DESC")
@@ -1777,7 +1766,7 @@ class Fun(Cog):
             embed.add_field(name="레벨", value=f"{level}", inline=True)
             embed.add_field(name="레벨 등수", value=f"{rank}등")
             embed.add_field(name="비료", value=f"{fer} 개")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif activity == "리더보드":
             records = db.records("SELECT UserID, zl, zf FROM games WHERE zl IS NOT NULL ORDER BY zl DESC LIMIT ?, ?",
                                  10 * int(buy) - 10, 10)
@@ -1788,13 +1777,13 @@ class Fun(Cog):
                 now_people += 1
             if tjfaud == "":
                 tjfaud = "선택하신 페이지에는 사람이 없는 것 같아요!"
-            await ctx.send(embed=Embed(color=0x00ff7f, title="잡초키우기 랭킹!", description=tjfaud))
+            await send(ctx, embed=Embed(color=0x00ff7f, title="잡초키우기 랭킹!", description=tjfaud))
         elif activity in ["비료", "ㅂㄹ"]:
             if activity == 'ㅂㄹ' and setting & 256 == 0:
-                await ctx.send('어허')
+                await send(ctx, '어허')
                 return
             if fer <= 0:
-                await ctx.send("비료가 없다. `커뉴야 잡초키우기 상점`에서 비료를 구매해 보자.")
+                await send(ctx, "비료가 없다. `커뉴야 잡초키우기 상점`에서 비료를 구매해 보자.")
                 return
             level = level + 1
             fer = fer - 1
@@ -1850,13 +1839,13 @@ class Fun(Cog):
             embed.add_field(name="받은 보상", value=reward, inline=False)
             embed.set_thumbnail(
                 url="https://media.discordapp.net/attachments/783226362856734730/818719628602638387/224_20210125224126.png")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif activity == "상점":
             embed = Embed(color=0x00ff7f)
             embed.add_field(name="비료",
                             value="잡초가 잘 자라게 해주는 비료를 구매합니다.\n개당 300<:treasure:811456823248027648>, 한 번에 20개 이상 사는 경우 비료 구매 명령어를 여러 번 사용해야 하는 고통을 줄여주는 대신 그만큼의 수수료가 따릅니다. 아래는 수수료가 포함된 가격의 예시입니다.\n20개 가격: 6120, 100개 가격: 33000, 500개 가격: 225000")
             embed.set_footer(text="아이템 구매를 원한다면 `커뉴야 잡키 구매 (아이템이름)을 입력하자. (띄어쓰기가 있는 아이템이라면 붙여서)")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif activity == "구매":
             if buy == "비료":
                 price = buy_amount * 300
@@ -1870,17 +1859,17 @@ class Fun(Cog):
                     db.execute("UPDATE exp SET Money = ? WHERE userID = ? AND GuildID = 743101101401964647", money,
                                ctx.author.id)
                     db.execute("UPDATE games SET zf = ? WHERE UserID = ?", fer, ctx.author.id)
-                    await ctx.send(f"비료 {buy_amount}개를 {price}<:treasure:811456823248027648>에 구매 완료! 남은 비료: {fer}개")
+                    await send(ctx, f"비료 {buy_amount}개를 {price}<:treasure:811456823248027648>에 구매 완료! 남은 비료: {fer}개")
                     db.commit()
                 else:
-                    await ctx.send("돈이 부족해요.")
+                    await send(ctx, "돈이 부족해요.")
             else:
-                await ctx.send(f"존재하지 않는 아이템명: `{buy}`")
+                await send(ctx, f"존재하지 않는 아이템명: `{buy}`")
         elif activity == "최근업뎃":
             embed = Embed(color=0x00ff7f)
             embed.add_field(name="잡초키우기 1.0.8버전 업데이트",
                             value="상점에서 비료를 원하는 개수만큼 살 수 있도록 변경\n공식서버 밖에서 명령어를 실행할 경우 주는 보상을 하향 조정")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         else:
             afterlevel = level + 0.01 * randint(15, 40)
             growth = int((afterlevel - int(afterlevel)) * 100) // 10
@@ -1953,24 +1942,25 @@ class Fun(Cog):
             embed.add_field(name="잡초 성장 진행도", value=growth_text, inline=False)
             embed.add_field(name="받은 보상", value=reward, inline=False)
             embed.set_thumbnail(url=thumb)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         db.commit()
 
     async def explore(self, ctx, location, lid, thumb):
-        explore_level = db.record("SELECT explore_level FROM games WHERE UserID = ?", ctx.author.id)
+        author = convert_ctx(ctx)
+        explore_level = db.record("SELECT explore_level FROM games WHERE UserID = ?", author.id)
         explore_level = explore_level[0]
         money, exp, XPBoost = db.record(
             "SELECT Money, XP, XPBoost FROM exp WHERE UserID = ? AND GuildID = 743101101401964647",
-            ctx.author.id)
+            author.id)
         level_to_up = round(math.sqrt(explore_level * 0.5) * random())
         explore_level = explore_level + level_to_up
-        db.execute("UPDATE games SET explore_level = ? WHERE UserID = ?", explore_level, ctx.author.id)
+        db.execute("UPDATE games SET explore_level = ? WHERE UserID = ?", explore_level, author.id)
         embed = Embed(color=0x4849c3)
         if level_to_up == 0:
-            embed.add_field(name=f"{ctx.author.display_name}\n{location} 탐험 결과", value=f"탐험 레벨: {explore_level}",
+            embed.add_field(name=f"{author.display_name}\n{location} 탐험 결과", value=f"탐험 레벨: {explore_level}",
                             inline=False)
         else:
-            embed.add_field(name=f"{ctx.author.display_name}\n{location} 탐험 결과", value=f"탐험 레벨: {explore_level} 로 증가!",
+            embed.add_field(name=f"{author.display_name}\n{location} 탐험 결과", value=f"탐험 레벨: {explore_level} 로 증가!",
                             inline=False)
         i = randint(1, 351)
         if i < 320:
@@ -1979,7 +1969,7 @@ class Fun(Cog):
                 money_to_add = int(money_to_add / 2.5)
                 embed.set_footer(text="공식서버에서 명령어를 실행해 더 많은 보상을 가져가세요 (2.5배)")
             db.execute("UPDATE exp SET Money = ? WHERE UserID = ? AND GuildID = 743101101401964647",
-                       money + money_to_add, ctx.author.id)
+                       money + money_to_add, author.id)
             embed.add_field(name="획득한 보상", value=f"돈 +{money_to_add}")
         elif i != 351:
             eg = round(lid * (lid ** 0.33) * 0.3)
@@ -1987,152 +1977,161 @@ class Fun(Cog):
                 eg = int(eg / 2.5)
                 embed.set_footer(text="공식서버에서 명령어를 실행해 더 많은 보상을 가져가세요 (2.5배)")
             db.execute("UPDATE exp SET XP = ? WHERE UserID = ? AND GuildID = 743101101401964647",
-                       exp + eg, ctx.author.id)
+                       exp + eg, author.id)
             embed.add_field(name="획득한 보상", value=f"경험치 +{round(lid * (lid ** 0.33) * 0.3)}")
         else:
             db.execute("UPDATE exp SET XPBoost = ? WHERE UserID = ? AND GuildID = 743101101401964647", XPBoost + 0.02,
-                       ctx.author.id)
+                       author.id)
             embed.add_field(name="획득한 보상", value="경험치 부스트 +2%p")
         if location == "도감" and randint(1, 90) == 1:
-            l = grant_check("여긴 지역 아닌데?", ctx.author.id)
+            l = grant_check("여긴 지역 아닌데?", author.id)
             if l == 1:
                 await grant(ctx, "여긴 지역 아닌데?", "우주탐험을 돌리던 중 도감을 잠금해제 하세요 (실제로 잠금해제되는 건 채널은 아니고 도전과제입니다!)")
         elif 11 < lid < 69 and randint(1, 90) == 1:
             if lid == 12:
-                await self.bot.get_channel(797358463725994014).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(797358463725994014).set_permissions(author, read_messages=True)
             elif lid == 13:
-                await self.bot.get_channel(816311528906031174).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(816311528906031174).set_permissions(author, read_messages=True)
             elif lid == 14:
-                await self.bot.get_channel(816313818677510155).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(816313818677510155).set_permissions(author, read_messages=True)
             elif lid == 15:
-                await self.bot.get_channel(816312247210082324).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(816312247210082324).set_permissions(author, read_messages=True)
             elif lid == 16:
-                await self.bot.get_channel(816304199405928508).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(816304199405928508).set_permissions(author, read_messages=True)
             elif lid == 17:
-                await self.bot.get_channel(797358965218213888).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(797358965218213888).set_permissions(author, read_messages=True)
             elif lid == 18:
-                await self.bot.get_channel(816314241391919144).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(816314241391919144).set_permissions(author, read_messages=True)
             elif lid == 19:
-                await self.bot.get_channel(816310659603103745).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(816310659603103745).set_permissions(author, read_messages=True)
             elif lid == 20:
-                await self.bot.get_channel(816311041487011840).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(816311041487011840).set_permissions(author, read_messages=True)
             elif lid == 21:
-                await self.bot.get_channel(797366179458711573).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(797366179458711573).set_permissions(author, read_messages=True)
             elif lid == 22:
-                await self.bot.get_channel(797366192230236180).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(797366192230236180).set_permissions(author, read_messages=True)
             elif lid == 23:
-                await self.bot.get_channel(816313536170426369).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(816313536170426369).set_permissions(author, read_messages=True)
             elif lid == 24:
-                await self.bot.get_channel(797364032809336842).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(797364032809336842).set_permissions(author, read_messages=True)
             elif lid == 25:
-                await self.bot.get_channel(816313127280836648).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(816313127280836648).set_permissions(author, read_messages=True)
             elif lid == 26:
-                await self.bot.get_channel(797367513268486154).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(797367513268486154).set_permissions(author, read_messages=True)
             elif lid == 27:
-                await self.bot.get_channel(816312660333297724).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(816312660333297724).set_permissions(author, read_messages=True)
             elif lid == 28:
-                await self.bot.get_channel(797367536324444170).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(797367536324444170).set_permissions(author, read_messages=True)
             elif lid == 29:
-                await self.bot.get_channel(797367813442109440).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(797367813442109440).set_permissions(author, read_messages=True)
             elif lid == 30:
-                await self.bot.get_channel(797417099650924594).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(797417099650924594).set_permissions(author, read_messages=True)
             elif lid == 31:
-                await self.bot.get_channel(797392100030545970).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(797392100030545970).set_permissions(author, read_messages=True)
             elif lid == 32:
-                await self.bot.get_channel(797417424663347200).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(797417424663347200).set_permissions(author, read_messages=True)
             elif lid == 33:
-                await self.bot.get_channel(797417867582504981).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(797417867582504981).set_permissions(author, read_messages=True)
             elif lid == 34:
-                await self.bot.get_channel(797417975157358632).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(797417975157358632).set_permissions(author, read_messages=True)
             elif lid == 35:
-                await self.bot.get_channel(829215126494248960).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(829215126494248960).set_permissions(author, read_messages=True)
             elif lid == 36:
-                await self.bot.get_channel(829215527020920862).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(829215527020920862).set_permissions(author, read_messages=True)
             elif lid == 37:
-                await self.bot.get_channel(829213747942785054).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(829213747942785054).set_permissions(author, read_messages=True)
             elif lid == 38:
-                await self.bot.get_channel(829218499674112011).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(829218499674112011).set_permissions(author, read_messages=True)
             elif lid == 39:
-                await self.bot.get_channel(829214662507233291).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(829214662507233291).set_permissions(author, read_messages=True)
             elif lid == 40:
-                await self.bot.get_channel(829215683157819392).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(829215683157819392).set_permissions(author, read_messages=True)
             elif lid == 41:
-                await self.bot.get_channel(829216095739183124).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(829216095739183124).set_permissions(author, read_messages=True)
             elif lid == 42:
-                await self.bot.get_channel(829213194165551104).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(829213194165551104).set_permissions(author, read_messages=True)
             elif lid == 43:
-                await self.bot.get_channel(829219600725049374).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(829219600725049374).set_permissions(author, read_messages=True)
             elif lid == 44:
-                await self.bot.get_channel(817693910309797898).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(817693910309797898).set_permissions(author, read_messages=True)
             elif lid == 45:
-                await self.bot.get_channel(817694204196814888).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(817694204196814888).set_permissions(author, read_messages=True)
             elif lid == 46:
-                await self.bot.get_channel(829220245469134904).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(829220245469134904).set_permissions(author, read_messages=True)
             elif lid == 47:
-                await self.bot.get_channel(829221259949637652).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(829221259949637652).set_permissions(author, read_messages=True)
             elif lid == 60:
-                await self.bot.get_channel(829899588595875900).set_permissions(ctx.author, read_messages=True)
+                await self.bot.get_channel(829899588595875900).set_permissions(author, read_messages=True)
             embed.add_field(name="특별 보상", value=f"{location} 채널로 접근할 수 있게 되었어요!")
-            l = grant_check("우주 구석구석 탐험해주겠다", ctx.author.id)
+            l = grant_check("우주 구석구석 탐험해주겠다", author.id)
             if l == 1:
                 await grant(ctx, "우주 구석구석 탐험해주겠다", "우주탐험 명령어에서 채널에 접근할 권한을 얻으세요")
         elif lid == 70 and randint(1, 2500) == 1:
-            await self.bot.get_channel(1203617615717605407).set_permissions(ctx.author, read_messages=True)
+            await self.bot.get_channel(1203617615717605407).set_permissions(author, read_messages=True)
             embed.add_field(name="특별 보상", value=f"{location} 채널로 접근할 수 있게 되었어요!")
-            l = grant_check("우주 구석구석 탐험해주겠다", ctx.author.id)
+            l = grant_check("우주 구석구석 탐험해주겠다", author.id)
             if l == 1:
                 await grant(ctx, "우주 구석구석 탐험해주겠다", "우주탐험 명령어에서 채널에 접근할 권한을 얻으세요")
         if thumb:
             embed.set_thumbnail(url=thumb)
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
         if explore_level >= 10000:
-            l = grant_check("우주 저 너머로", ctx.author.id)
+            l = grant_check("우주 저 너머로", author.id)
             if l == 1:
                 await grant(ctx, "우주 저 너머로", "우주탐험 명령어에서 탐험 레벨 10000을 달성하세요")
                 mv = self.bot.get_guild(743101101401964647)
-                await mv.get_member(ctx.author.id).add_roles(mv.get_role(819414894255276063))
+                await mv.get_member(author.id).add_roles(mv.get_role(819414894255276063))
         if explore_level >= 100000:
-            l = grant_check("우주 저 끝까지", ctx.author.id)
+            l = grant_check("우주 저 끝까지", author.id)
             if l == 1:
                 await grant(ctx, "우주 저 끝까지", "우주탐험 명령어에서 탐험 레벨 100000을 달성하세요")
                 mv = self.bot.get_guild(743101101401964647)
-                await mv.get_member(ctx.author.id).add_roles(mv.get_role(848707209969532989))
+                await mv.get_member(author.id).add_roles(mv.get_role(848707209969532989))
         db.commit()
         return
 
     @command(name="우주탐험", aliases=["우탐", 'ㅇㅌ'])
     @cooldown(1, 12, BucketType.user)
-    async def exploring_space(self, ctx, activity: Optional[str] = "최대", location: Optional[str] = "최대"):
+    async def utam_normal(self, ctx, activity: Optional[str] = "최대", location: Optional[str] = "최대"):
+        await self.exploring_space(ctx, activity, location)
+
+    """@slash(name="우주탐험", description="우주탐험 게임을 실행할 수 있는 명령어. (공식서버 회원만 사용 가능)")
+    @cooldown(1, 12, BucketType.user)
+    async def utam_slash(self, interaction, 무엇: Optional[str] = "최대", 어디: Optional[str] = "최대"):
+        await self.exploring_space(interaction, 무엇, 어디)"""
+
+    async def exploring_space(self, ctx, activity, location):
+        author = convert_ctx(ctx)
         if ctx.guild.id != 743101101401964647:
             try:
-                print((self.bot.get_guild(743101101401964647)).get_member(ctx.author.id).display_name)
+                print((self.bot.get_guild(743101101401964647)).get_member(author.id).display_name)
             except AttributeError:
-                await ctx.send("공식 커뮤니티 가입자만 사용할 수 있는 기능이에요!")
+                await send(ctx, "공식 커뮤니티 가입자만 사용할 수 있는 기능이에요!")
                 return
         thumb = None
-        info = db.record("SELECT explore_level, user_setting FROM games WHERE UserID = ?", ctx.author.id)
+        info = db.record("SELECT explore_level, user_setting FROM games WHERE UserID = ?", author.id)
         try:
             explore_level = info[0]
         except TypeError:
-            db.execute("INSERT INTO games (UserID, explore_level) VALUES (?, 0)", ctx.author.id)
+            db.execute("INSERT INTO games (UserID, explore_level) VALUES (?, 0)", author.id)
             explore_level = 0
-        if ('ㅇㅌ' in ctx.message.content) and (info[1] & 256 == 0):
-            await ctx.send('어허')
+        if isinstance(ctx, Context) and ('ㅇㅌ' in ctx.message.content) and (info[1] & 256 == 0):
+            await send(ctx, '어허')
             return
         if explore_level == 0: activity = "튜토리얼"
         if activity == "튜토리얼":
             embed = Embed(color=0x4849c3)
             embed.add_field(name="커뉴봇 우주탐험 튜토리얼",
                             value="`커뉴야 우주탐험`을 입력해서 우주 탐험을 진행할 수 있어요.\n\t\n우주를 탐험하면 공식서버처럼 처음에는 가까운 곳만 탐험할 수 있지만 탐험 레벨이 오르면 더 먼 곳까지 탐험할 수 있게 돼요.\n\t\n우주를 탐험하다 보면 다른 게임들처럼 돈이나 경험치, 낮은 확률로 경험치 부스트를 얻을 수 있어요.\n\t\n그러나 매우 먼 곳을 탐험하게 된다면 아주 낮은 확률로 아직 아무에게도 알려지지 않은 무언가까지 획득할 수도 있어요!\n\t\n탐험을 하다 보면 자동으로 탐험 레벨이 오르니 우주를 개척해 나가 보세요.")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
             explore_level = explore_level + 1
-            db.execute("UPDATE games SET explore_level = ? WHERE UserID = ?", explore_level, ctx.author.id)
+            db.execute("UPDATE games SET explore_level = ? WHERE UserID = ?", explore_level, author.id)
             return
         if activity == "도움":
             embed = Embed(color=0x4849c3)
             embed.add_field(name="우주탐험\n버전: 1.0.5",
                             value="<@724496900920705045>의 불타는 의지로 만들어진 게임\n\t\n`커뉴야 우주탐험`: 드넓은 우주를 탐험한다.\n`커뉴야 우주탐험 도감`: 자기에게 잠금 해제된 지역들의 도감을 보여준다.\n`커뉴야 우주탐험 리더보드`: 여러 사람들의 우주탐험 레벨들을 보여준다.\n`커뉴야 우주탐험 도움`: 이 도움말을 표시한다.\n`커뉴야 우주탐험 업데이트`: 최근 업데이트 정보를 확인한다.")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
             return
         elif activity == "도감":
             embed = Embed(color=0x4849c3)
@@ -2284,8 +2283,8 @@ class Fun(Cog):
                 embed.set_footer(text="축하드려요! 모든 지역을 여셨네요")
             if 19999999 < explore_level:
                 lid += 10
-            embed.add_field(name=f"{ctx.author.display_name}의 우주탐험 도감", value=location)
-            await ctx.send(embed=embed)
+            embed.add_field(name=f"{author.display_name}의 우주탐험 도감", value=location)
+            await send(ctx, embed=embed)
             await self.explore(ctx, "도감", lid, None)
         elif activity == "최근업뎃":
             embed = Embed(color=0x4849c3)
@@ -2302,24 +2301,24 @@ class Fun(Cog):
                 now_people += 1
             if tjfaud == "":
                 tjfaud = "선택하신 페이지에는 사람이 없는 것 같아요!"
-            await ctx.send(embed=Embed(color=0x4849c3, title="우주탐험 랭킹!", description=tjfaud))
+            await send(ctx, embed=Embed(color=0x4849c3, title="우주탐험 랭킹!", description=tjfaud))
         else:
             if randint(1, 40) == 1:
                 num = randint(10000, 99999)
-                await ctx.send(f"매크로 방지를 위해 확인을 할게요. 10초 안에 어디든 좋으니 커뉴봇이 볼 수 있는 곳에{num}이라고 보내 주세요.")
+                await send(ctx, f"매크로 방지를 위해 확인을 할게요. 10초 안에 어디든 좋으니 커뉴봇이 볼 수 있는 곳에{num}이라고 보내 주세요.")
                 try:
                     msg = await self.bot.wait_for(
                         "message",
                         timeout=10,
-                        check=lambda message: message.author == ctx.author and message.content == str(num)
+                        check=lambda message: message.author == author and message.content == str(num)
                     )
                 except asyncio.TimeoutError:
-                    await ctx.send(":weary:")
-                    await self.ban_10min(ctx.author.id)
+                    await send(ctx, ":weary:")
+                    await self.ban_10min(author.id)
                     return
                 if msg.content != str(num):
-                    await ctx.send(":weary:")
-                    await self.ban_10min(ctx.author.id)
+                    await send(ctx, ":weary:")
+                    await self.ban_10min(author.id)
                     return
             location = activity
             if explore_level < 10 and location == "최대" or location == "달":
@@ -2530,12 +2529,12 @@ class Fun(Cog):
             try:
                 await self.explore(ctx, location, lid, thumb if thumb else None)
             except UnboundLocalError:
-                await ctx.send("뭘 할려고 하는 거에요?")
+                await send(ctx, "뭘 할려고 하는 거에요?")
 
     @command(name='색깔')
     async def display_color(self, ctx, c: Optional[str]):
         if not c:
-            await ctx.send("`커뉴야 색깔 (색상코드)`로 입력해주세요!\n가능한 형식 (원하는 색이 ffd6fe라고 가정하면): #ffd6fe, 0xffd6fe, ffd6fe")
+            await send(ctx, "`커뉴야 색깔 (색상코드)`로 입력해주세요!\n가능한 형식 (원하는 색이 ffd6fe라고 가정하면): #ffd6fe, 0xffd6fe, ffd6fe")
             return
         if c[0] == '#':
             c_ = c[1:]
@@ -2544,12 +2543,12 @@ class Fun(Cog):
         else:
             c_ = c
         if len(c_) != 6:
-            await ctx.send('올바르지 않은 입력이에요!')
+            await send(ctx, '올바르지 않은 입력이에요!')
             return
         try:
             color = tuple(int(c_[i:i + 2], 16) for i in (0, 2, 4))
         except ValueError:
-            await ctx.send('올바르지 않은 입력이에요!')
+            await send(ctx, '올바르지 않은 입력이에요!')
             return
 
         def create_colored_image(col, width=128, height=128):
@@ -2561,7 +2560,7 @@ class Fun(Cog):
             return u
 
         u = create_colored_image(color)
-        await ctx.send(file=File(u))
+        await send(ctx, file=File(u))
 
     @command(name="입력해")
     async def typin(self, ctx):
@@ -2589,12 +2588,12 @@ class Fun(Cog):
             guild_giwons = db.records("SELECT Giwon_name, TargetID, days FROM Giwons WHERE GuildID = ?", ctx.guild.id)
             if not guild_giwons:
                 embed.add_field(name=f"{ctx.guild.name}의 기원 목록", value="없음!")
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
                 return
             for giwon in guild_giwons:
                 tjfaud += f"{self.bot.get_user(giwon[1])}에게 기원되고 있는 {giwon[0]} ({giwon[2]}일차)\n"
             embed.add_field(name=f"{ctx.guild.name}의 기원 목록", value=tjfaud)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif where == "전체":
             setting = db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0]
             if setting & 16 == 0:
@@ -2612,29 +2611,29 @@ class Fun(Cog):
                 whole_giwons = db.records(
                     "SELECT Giwon_name, days FROM Giwons WHERE GuildID = 0 ORDER BY days DESC LIMIT 20")
             else:
-                await ctx.send("존재하지 않는 정렬 기준이에요!")
+                await send(ctx, "존재하지 않는 정렬 기준이에요!")
                 return
             for giwon in whole_giwons:
                 tjfaud += f"{giwon[0]} {giwon[1]}일차\n"
             embed.add_field(name="전체 기원 목록", value=tjfaud)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         else:
-            await ctx.send("`커뉴야 기원목록 <전체/서버/신규/오늘기원됨/오랫동안기원됨>`")
+            await send(ctx, "`커뉴야 기원목록 <전체/서버/신규/오늘기원됨/오랫동안기원됨>`")
 
     @command(name="퀴즈")
     @cooldown(1, 5, BucketType.user)
     async def quiz_game(self, ctx, activity: Optional[str] = "도움", *, wanted_subject: Optional[str] = ""):
         if activity == "도움":
-            await ctx.send(embed=Embed(color=0xfeff81, title="커뉴봇 퀴즈 기능 도움!",
+            await send(ctx, embed=Embed(color=0xfeff81, title="커뉴봇 퀴즈 기능 도움!",
                                        description="<@704342782826774648>의 아이디어를 바탕으로 <@724496900920705045>가 개발한 커뉴봇 퀴즈게임이에요!\n`커뉴야 퀴즈 도움`: 이 도움말을 표시해요.\n`커뉴야 퀴즈 출제`: 내고 싶은 퀴즈를 낼 수 있어요. 다만 이상한 퀴즈는 안 되기 때문에 등록까지 시간이 좀 걸릴 수 있어요.\n`커뉴야 퀴즈 풀기`: 다른 사람이 낸 퀴즈를 도전할 수 있어요.\n`커뉴야 퀴즈 주제`: 특정한 주제에 문제 수가 몇 개인지 확인해요.\n`커뉴야 퀴즈 뮤트`: `커뉴야 퀴즈 풀기`에서 주제를 입력하지 않았을 때 피할 주제를 설정할 수 있어요.\n`커뉴야 퀴즈 목록`: 풀 수 있는 주요주제들의 목록을 표시해요\n`커뉴야 퀴즈 신고`: `커뉴야 퀴즈 신고 (코드)`로 문제를 신고할 수 있어요.\n`커뉴야 퀴즈 내문제`: 현재까지 등록된 문제 중 자신이 낸 문제들을 확인하고 잘못된 문제를 수정하는 등의 행동을 할 수 있어요."))
         elif activity == "출제":
             if isinstance(ctx.channel, DMChannel):
-                await ctx.send("개인 메세지에서는 출제 기능을 이용할 수 없어요!")
+                await send(ctx, "개인 메세지에서는 출제 기능을 이용할 수 없어요!")
                 return
             if wanted_subject:
                 subject = wanted_subject
             else:
-                await ctx.send("무엇과 관련된 퀴즈인가요?")
+                await send(ctx, "무엇과 관련된 퀴즈인가요?")
                 try:
                     subject = await self.bot.wait_for(
                         "message",
@@ -2643,10 +2642,10 @@ class Fun(Cog):
                             message: message.author.id == ctx.author.id and message.channel.id == ctx.channel.id
                     )
                 except asyncio.TimeoutError:
-                    await ctx.send("퀴즈를 출제하지 않기로 했어요.")
+                    await send(ctx, "퀴즈를 출제하지 않기로 했어요.")
                     return
                 subject = subject.content
-            await ctx.send("퀴즈를 내 주세요! 정답이 하나만 나오게 내 주세요.")
+            await send(ctx, "퀴즈를 내 주세요! 정답이 하나만 나오게 내 주세요.")
             try:
                 quiz = await self.bot.wait_for(
                     "message",
@@ -2654,10 +2653,10 @@ class Fun(Cog):
                     check=lambda message: message.author.id == ctx.author.id and message.channel.id == ctx.channel.id
                 )
             except asyncio.TimeoutError:
-                await ctx.send("퀴즈를 출제하지 않기로 했어요.")
+                await send(ctx, "퀴즈를 출제하지 않기로 했어요.")
                 return
             quiz = quiz.content
-            await ctx.send("퀴즈의 정답을 말해 주세요!")
+            await send(ctx, "퀴즈의 정답을 말해 주세요!")
             try:
                 answer = await self.bot.wait_for(
                     "message",
@@ -2665,11 +2664,11 @@ class Fun(Cog):
                     check=lambda message: message.author.id == ctx.author.id and message.channel.id == ctx.channel.id
                 )
             except asyncio.TimeoutError:
-                await ctx.send("퀴즈를 출제하지 않기로 했어요.")
+                await send(ctx, "퀴즈를 출제하지 않기로 했어요.")
                 return
             await answer.delete()
             answer = answer.content
-            await ctx.send("퀴즈 출제 등록을 완료했어요!")
+            await send(ctx, "퀴즈 출제 등록을 완료했어요!")
             quiz_code = ""
             for i in range(10): quiz_code += choice(
                 ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "a", "b", "c", "A", "B", "q", "w", "e", "r", "t",
@@ -2685,7 +2684,7 @@ class Fun(Cog):
             if ',' in wanted_subject:
                 check = db.record("SELECT user_setting FROM games WHERE UseriD = ?", ctx.author.id)[0] & 8192
                 if not check:
-                    await ctx.send('`커뉴야 뀨 구매 퀴즈 주제 다중 선택`')
+                    await send(ctx, '`커뉴야 뀨 구매 퀴즈 주제 다중 선택`')
                     return
             embed = Embed(color=0xfeff81, title="커뉴봇 퀴즈")
             quiz_mmr = db.record("SELECT quiz_mmr FROM games WHERE UserID = ?", ctx.author.id)
@@ -2707,18 +2706,18 @@ class Fun(Cog):
                     or_text = ' OR '.join([f'quiz_subject = "{ws}"' for ws in wanted_subject])
                     quiz_count = db.record(f"SELECT count(*) FROM quiz WHERE {or_text}")[0]
                     if quiz_count < 10 or set(wanted_subject) & {'그대로적기', '그대로쓰세요'}:
-                        await ctx.send("그 주제 세트는 아직 문제가 너무 적어요! 주제를 바꾸거나 후보 주제를 추가해 주세요")
+                        await send(ctx, "그 주제 세트는 아직 문제가 너무 적어요! 주제를 바꾸거나 후보 주제를 추가해 주세요")
                         return
                     quiz_to_solve = db.record(f"SELECT * FROM quiz WHERE {or_text} ORDER BY RANDOM() LIMIT 1")
                 else:
                     quiz_count = db.record("SELECT count(*) FROM quiz WHERE quiz_subject = ?", wanted_subject)[0]
                     if quiz_count < 10 or wanted_subject in ['그대로적기', '그대로쓰세요']:
-                        await ctx.send("그 주제는 아직 문제가 너무 적어요! 다른 주제로 골라 주세요")
+                        await send(ctx, "그 주제는 아직 문제가 너무 적어요! 다른 주제로 골라 주세요")
                         return
                     quiz_to_solve = db.record("SELECT * FROM quiz WHERE quiz_subject = ? ORDER BY RANDOM() LIMIT 1",
                                               wanted_subject)
                 if not quiz_to_solve:
-                    await ctx.send("이 메세지가 나왔다면 바로 문의해주세요. 비상!!!!!!!!!!!!!")
+                    await send(ctx, "이 메세지가 나왔다면 바로 문의해주세요. 비상!!!!!!!!!!!!!")
                     return
             result = 0
             for i in range(2000):
@@ -2735,7 +2734,7 @@ class Fun(Cog):
                             inline=False)
             embed.set_footer(
                 text=f"퀴즈 풀기 명령어를 10번 돌릴 경우 중복이 뜰 가능성이 약 {round(100 * result, 2)}% 정도에요.\n중복이 안 뜰 만큼만 풀어주세요.")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
             try:
                 search_string = await self.bot.wait_for(
                     "message",
@@ -2745,7 +2744,7 @@ class Fun(Cog):
                 answer = search_string.content
             except asyncio.TimeoutError:
                 answer = ""
-                await ctx.send("제한시간 초과!")
+                await send(ctx, "제한시간 초과!")
                 l = grant_check("잠수의 제왕", ctx.author.id)
                 if l == 1:
                     await grant(ctx, "잠수의 제왕", "퀴즈 명령어에서 시간초과로 문제를 틀리세요")
@@ -2753,7 +2752,7 @@ class Fun(Cog):
             if answer.lower() == quiz_to_solve[3].lower():
                 quiz_mmr += mmrdelta
                 embed.add_field(name="정답!", value=f"퀴즈 점수: {quiz_mmr - mmrdelta} -> {quiz_mmr}")
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
                 if quiz_mmr >= 40000:
                     l = grant_check("능지떡상", ctx.author.id)
                     if l == 1:
@@ -2783,7 +2782,7 @@ class Fun(Cog):
                 quiz_mmr -= round((2500 / mmrdelta) + 5)
                 embed.add_field(name="오답...", value=f"퀴즈 점수: {quiz_mmr + round((2500 / mmrdelta) + 5)} -> {quiz_mmr}")
                 embed.set_footer(text=f"`커뉴야 퀴즈 신고 {quiz_to_solve[6]}`으로 이 문제를 신고하세요")
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
                 if 0.96 <= correct_rate < 1:
                     l = grant_check("능지 9등급", ctx.author.id)
                     if l == 1:
@@ -2793,13 +2792,13 @@ class Fun(Cog):
                 db.commit()
         elif activity == "신고":
             if not wanted_subject:
-                await ctx.send("`커뉴야 퀴즈 신고 (코드)`로 신고해 주세요")
+                await send(ctx, "`커뉴야 퀴즈 신고 (코드)`로 신고해 주세요")
                 return
             q = db.record("SELECT * FROM quiz WHERE quizid = ?", wanted_subject)
             try:
-                await ctx.send(f"{q[1]} 주제의 퀴즈로, 내용은 {q[0]}(이)에요.\n이 퀴즈를 신고하시겠습니까? 추가로 할 말이 있다면 말하거나 `취소`라고 입력해 취소하세요")
+                await send(ctx, f"{q[1]} 주제의 퀴즈로, 내용은 {q[0]}(이)에요.\n이 퀴즈를 신고하시겠습니까? 추가로 할 말이 있다면 말하거나 `취소`라고 입력해 취소하세요")
             except TypeError:
-                await ctx.send("존재하지 않는 퀴즈 코드에요!")
+                await send(ctx, "존재하지 않는 퀴즈 코드에요!")
                 return
             try:
                 search_string = await self.bot.wait_for(
@@ -2809,15 +2808,15 @@ class Fun(Cog):
                 )
                 m = search_string.content
             except asyncio.TimeoutError:
-                await ctx.send("신고하지 않기로 했어요.")
+                await send(ctx, "신고하지 않기로 했어요.")
                 return
             if m == "취소":
-                await ctx.send("신고하지 않기로 했어요.")
+                await send(ctx, "신고하지 않기로 했어요.")
                 return
             else:
                 await self.bot.get_channel(819810391647322122).send(
                     f"{str(ctx.author)}님이 퀴즈를 신고함\n퀴즈 정보 및 mmrdelta \n{q} {q[2]} {q} 할말 {m}")
-                await ctx.send("신고가 성공적으로 접수됐어요!")
+                await send(ctx, "신고가 성공적으로 접수됐어요!")
         elif activity == "내점수":
             quiz_mmr = db.record("SELECT quiz_mmr FROM games WHERE UserID = ?", ctx.author.id)
             ids = db.records("SELECT quiz_mmr FROM games WHERE quiz_mmr IS NOT NULL ORDER BY quiz_mmr DESC")
@@ -2826,19 +2825,19 @@ class Fun(Cog):
             embed.add_field(name="퀴즈 점수", value=str(int(quiz_mmr[0])), inline=False)
             embed.add_field(name="퀴즈 등수", value=my_rank, inline=False)
             embed.set_thumbnail(url=ctx.author.avatar_url)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif activity == "주제":
             if not wanted_subject:
-                await ctx.send("`커뉴야 퀴즈 주제 (주제명)`으로 입력해 주세요!")
+                await send(ctx, "`커뉴야 퀴즈 주제 (주제명)`으로 입력해 주세요!")
                 return
             questions = db.records("SELECT quizid FROM quiz WHERE quiz_subject = ?", wanted_subject)
             n = len(questions)
-            await ctx.send(f"{wanted_subject} 주제에 등록된 문제 수는 {n}개에요!")
+            await send(ctx, f"{wanted_subject} 주제에 등록된 문제 수는 {n}개에요!")
         elif activity == "뮤트":
             if not wanted_subject:
-                await ctx.send("`커뉴야 퀴즈 뮤트 (주제)` 로 입력해 주세요!")
+                await send(ctx, "`커뉴야 퀴즈 뮤트 (주제)` 로 입력해 주세요!")
                 return
-            await ctx.send(f"{wanted_subject}주제를 뮤트시킬려고 해요. `확인`이라고 입력해서 주제뮤트를 진행하세요.")
+            await send(ctx, f"{wanted_subject}주제를 뮤트시킬려고 해요. `확인`이라고 입력해서 주제뮤트를 진행하세요.")
             try:
                 search_string = await self.bot.wait_for(
                     "message",
@@ -2846,14 +2845,14 @@ class Fun(Cog):
                     check=lambda message: message.author.id == ctx.author.id and message.channel == ctx.channel
                 )
             except asyncio.TimeoutError:
-                await ctx.send("뮤트하지 않기로 했어요.")
+                await send(ctx, "뮤트하지 않기로 했어요.")
                 return
             if search_string.content == "확인":
-                await ctx.send("해당 주제를 뮤트 주제로 설정했어요!")
+                await send(ctx, "해당 주제를 뮤트 주제로 설정했어요!")
                 db.execute("UPDATE games SET quiz_mute = ? WHERE UserID = ?", wanted_subject, ctx.author.id)
                 db.commit()
             else:
-                await ctx.send("뮤트하지 않기로 했어요.")
+                await send(ctx, "뮤트하지 않기로 했어요.")
                 return
             if wanted_subject == "수학":
                 l = grant_check("수포자", ctx.author.id)
@@ -2864,7 +2863,7 @@ class Fun(Cog):
                           description="80+: 수학\n70+: 해리포터\n60+: 지오메트리 대시\n50+:\n40+:영어, 원신\n30+: 마인크래프트, 브롤스타즈, 유물과 유적, 아이작의 번제, 냥코대전쟁\n20+: 끄투코리아, 우주, 돌 키우기, 역사\n10+: 쿠키런, 사자성어v23, 음악, 공식서버, 디스코드, 서준, 케인, 상식, 랜덤다이스, Phigros, 커뉴봇, 레식, 다이나믹스")
             embed.set_footer(
                 text="30+라는 뜻은 해당 주제에 최소 30개의 문제가 존재한다는 뜻입니다\n여기 있는 주제들은 `커뉴야 퀴즈 풀기 (주제)`로 특정 주제만 골라서 풀 수 있습니다")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif activity == '내문제':
             my_problem_count = db.record("SELECT count(1) FROM quiz WHERE quiz_maker = ?", ctx.author.id)[0]
             if my_problem_count >= 20:
@@ -2875,7 +2874,7 @@ class Fun(Cog):
                 l = grant_check("프로 퀴즈 출제자", ctx.author.id)
                 if l == 1:
                     await grant(ctx, "프로 퀴즈 출제자", "퀴즈 명령어에서 100문제 이상을 출제하세요")
-            await ctx.send(
+            await send(ctx, 
                 f'현재 {ctx.author.display_name}님은 {my_problem_count}개의 아마도 정상적인 문제를 출제했어요!\n\n특정한 퀴즈 문제를 삭제하거나 데이터를 수정하고 싶으시면 다음 중 하나를 입력하세요:\n수정하고 싶은 문제의 퀴즈 ID (퀴즈 ID는 문제를 틀렸을 때 나오는 알파벳과 숫자가 섞인 문자열입니다)\n수정하고 싶은 문제의 내용(중 일부)')
             try:
                 search_string = await self.bot.wait_for(
@@ -2892,7 +2891,7 @@ class Fun(Cog):
             if len(target_quizzes) == 1:
                 target_quiz = target_quizzes[0]
             elif len(target_quizzes) == 0:
-                await ctx.send("검색된 퀴즈가 없어요! 당연하지만, 자기 자신이 낸 문제만 수정하거나 삭제할 수 있어요.")
+                await send(ctx, "검색된 퀴즈가 없어요! 당연하지만, 자기 자신이 낸 문제만 수정하거나 삭제할 수 있어요.")
                 return
             else:
                 embed = Embed(color=0xfeff81, title='여러 개의 퀴즈 문제가 검색됨')
@@ -2901,7 +2900,7 @@ class Fun(Cog):
                     embed.add_field(name=str(i + 1), value=f'주제: {quiz[1]}\n내용: {quiz[2]}\n 정답: {quiz[3]}',
                                     inline=False)
                     i += 1
-                await ctx.send(
+                await send(ctx, 
                     f'어느 퀴즈를 수정 또는 삭제하시겠습니까? 굵은 글씨로 써 있는 번호를 말해 주세요', embed=embed)
                 try:
                     which_quiz = await self.bot.wait_for(
@@ -2910,7 +2909,7 @@ class Fun(Cog):
                         check=lambda message: message.author.id == ctx.author.id and message.channel == ctx.channel
                     )
                 except asyncio.TimeoutError:
-                    await ctx.send('퀴즈 수정 또는 삭제 작업을 하지 않기로 했어요.')
+                    await send(ctx, '퀴즈 수정 또는 삭제 작업을 하지 않기로 했어요.')
                     return
                 try:
                     msg = int(which_quiz.content)
@@ -2921,7 +2920,7 @@ class Fun(Cog):
                     await ctx.channel.send("번호가 너무 커요!")
                     return
                 target_quiz = target_quizzes[msg - 1]
-            await ctx.send(
+            await send(ctx, 
                 f'수정 또는 삭제할 문제는, {target_quiz[1]}주제의 문제로, 내용은 {target_quiz[2]}, 정답은 {target_quiz[3]}(이)에요.\n정확히 다음과 같은 형식으로 입력해 주셔야 해요.\n첫 번째 줄에는 `수정` 또는 `삭제`를 입력합니다. `삭제`를 입력할 경우 여기까지만 입력하시면 됩니다.\n`수정`을 입력할 경우, 두 번째 줄에 `주제`, `내용`, `정답`중 하나를 입력합니다.\n`수정`을 입력할 경우, 세 번째 줄에, 해당 퀴즈를 어떻게 수정하고 싶은지를 입력합니다.\n\n사용예시: 어떤 OX퀴즈의 답이 잘못되어 답을 O로 바꾸고 싶을 경우, ```수정\n정답\nO```를 입력하시면 됩니다.')
             try:
                 modify = await self.bot.wait_for(
@@ -2933,15 +2932,15 @@ class Fun(Cog):
                 return
             modify = modify.content.split('\n')
             if len(modify) == 0:
-                await ctx.send("잘못된 방식으로 입력했어요!")
+                await send(ctx, "잘못된 방식으로 입력했어요!")
                 return
             if modify[0] == '삭제':
                 db.execute("DELETE FROM quiz WHERE quizid = ?", target_quiz[0])
-                await ctx.send('해당 문제를 성공적으로 삭제했어요!')
+                await send(ctx, '해당 문제를 성공적으로 삭제했어요!')
                 db.commit()
             elif modify[0] == '수정':
                 if len(modify) != 3:
-                    await ctx.send("잘못된 방식으로 입력했어요!")
+                    await send(ctx, "잘못된 방식으로 입력했어요!")
                     return
                 if modify[1] == '주제':
                     db.execute("UPDATE quiz SET quiz_subject = ? WHERE quizid = ?", modify[2], target_quiz[0])
@@ -2950,15 +2949,15 @@ class Fun(Cog):
                 elif modify[1] == '정답':
                     db.execute("UPDATE quiz SET quiz_answer = ? WHERE quizid = ?", modify[2], target_quiz[0])
                 else:
-                    await ctx.send("잘못된 방식으로 입력했어요!")
+                    await send(ctx, "잘못된 방식으로 입력했어요!")
                     return
-                await ctx.send(f'성공적으로 문제의 {modify[1]}을(를) {modify[2]}(으)로 바꿨어요!')
+                await send(ctx, f'성공적으로 문제의 {modify[1]}을(를) {modify[2]}(으)로 바꿨어요!')
                 db.commit()
             else:
-                await ctx.send("잘못된 방식으로 입력했어요!")
+                await send(ctx, "잘못된 방식으로 입력했어요!")
                 return
         else:
-            await ctx.send("`커뉴야 퀴즈 <도움/출제/풀기/내점수/주제/뮤트/목록/내문제>`")
+            await send(ctx, "`커뉴야 퀴즈 <도움/출제/풀기/내점수/주제/뮤트/목록/내문제>`")
 
     @command(name="수락")
     async def quiz_accept(self, ctx, code: Optional[str]):
@@ -2970,7 +2969,7 @@ class Fun(Cog):
             content, subject, answer, maker, code)
         db.execute("DELETE FROM quiz_temp WHERE code = ?", code)
         db.commit()
-        await ctx.send("수락했어요!")
+        await send(ctx, "수락했어요!")
 
     @command(name="거절")
     async def quiz_decline(self, ctx, code: Optional[str]):
@@ -2979,7 +2978,7 @@ class Fun(Cog):
         code = code[0]
         db.execute("DELETE FROM quiz_temp WHERE code = ?", code)
         db.commit()
-        await ctx.send("거절했어요")
+        await send(ctx, "거절했어요")
 
     @command(name="전부수락")
     async def accept_all(self, ctx):
@@ -2987,7 +2986,7 @@ class Fun(Cog):
         db.execute(
             "INSERT INTO quiz (quiz_content, quiz_subject, quiz_maker, quiz_answer, quizid) SELECT content, subject, maker, answer, code from quiz_temp")
         db.execute("DELETE FROM quiz_temp")
-        await ctx.send("전부 수락했어요!")
+        await send(ctx, "전부 수락했어요!")
 
     @command(name="골라")
     async def choose_random(self, ctx, *things: Optional[str]):
@@ -2995,42 +2994,41 @@ class Fun(Cog):
             chosen = "​"
         else:
             chosen = things[randint(0, len(things) - 1)]
-        await ctx.send(chosen.replace("🥴", "😩"))
+        await send(ctx, chosen.replace("🥴", "😩"))
 
     @command(name="섞어")
     async def shuffle_things(self, ctx, *things: Optional[str]):
         if not things:
-            await ctx.send("`커뉴야 섞어 (섞을 것들)` 이라고 입력해 주세요! 섞을 것들은 띄어쓰기 단위로 구분해요.")
+            await send(ctx, "`커뉴야 섞어 (섞을 것들)` 이라고 입력해 주세요! 섞을 것들은 띄어쓰기 단위로 구분해요.")
             return
         things = list(things)
         if len(things) == 1:
-            await ctx.send('엄')
+            await send(ctx, '엄')
             return
         shuffle(things)
-        await ctx.send(", ".join(things))
+        await send(ctx, ", ".join(things))
 
     @command(name="말해")
     async def tell(self, ctx, *, content: Optional[str] = "​"):
         if "@" in content:
-            await ctx.send("핑할라그러네나쁜ㅡㅡ")
+            await send(ctx, "핑할라그러네나쁜ㅡㅡ")
             return
-        await ctx.send(str(ctx.author) + ":" + content.replace("🥴", "😩"))
-
+        await send(ctx, str(ctx.author) + ":" + content.replace("🥴", "😩"))
 
     @command(name="랜덤숫자", aliases=["주사위"])
     async def pick_random_number(self, ctx, n1: int, n2: Optional[int]):
         if not n2:
             if n1 < 1:
-                await ctx.send("`커뉴야 랜덤숫자 (양수)` 로 입력해 주세요!")
+                await send(ctx, "`커뉴야 랜덤숫자 (양수)` 로 입력해 주세요!")
                 return
             picked = randint(1, n1)
-            await ctx.send(picked)
+            await send(ctx, picked)
             return
         if n1 > n2:
-            await ctx.send("`커뉴야 랜덤숫자 (더 작은 수) (더 큰 수)` 로 입력해 주세요!")
+            await send(ctx, "`커뉴야 랜덤숫자 (더 작은 수) (더 큰 수)` 로 입력해 주세요!")
             return
         picked = randint(n1, n2)
-        await ctx.send(picked)
+        await send(ctx, picked)
         if picked == 42:
             l = grant_check("삶과 우주 그리고 모든 것에 대한 궁극적 질문의 해답", ctx.author.id)
             if l == 1:
@@ -3202,15 +3200,15 @@ class Fun(Cog):
             files = [f for f in os.listdir('C:/Users/namon/PycharmProjects/discordbot/lib/sbjb') if
                      os.path.isfile(os.path.join('C:/Users/namon/PycharmProjects/discordbot/lib/sbjb', f))]
             file_name = choice(files)
-            await ctx.send(f"{file_name}".replace('.png', '.sbjb'),
+            await send(ctx, f"{file_name}".replace('.png', '.sbjb'),
                            file=File(os.path.join('C:/Users/namon/PycharmProjects/discordbot/lib/sbjb', file_name)))
         else:
-            await ctx.send(self.translate_SBJB(text))
+            await send(ctx, self.translate_SBJB(text))
 
     @command(name="구매")
     async def buy_item(self, ctx, *, item: str):
         if ctx.guild.id != 743101101401964647:
-            await ctx.send("커뉴봇 공식 커뮤니티 서버에서만 이용할 수 있는 기능이에요!")
+            await send(ctx, "커뉴봇 공식 커뮤니티 서버에서만 이용할 수 있는 기능이에요!")
             return
         tems = 0
         dtype = -1
@@ -3242,12 +3240,12 @@ class Fun(Cog):
             enchant_info = db.record("SELECT enchant_info FROM games WHERE UseriD = ?", ctx.author.id)
             enchant_info = json.loads(enchant_info[0])
             if enchant_info["최대강화가능개수"] == 10:
-                await ctx.send("해당 아이템을 더 이상 살 수 없어요!")
+                await send(ctx, "해당 아이템을 더 이상 살 수 없어요!")
                 return
             money = db.record("SELECT money FROM exp WHERE UserID = ? AND GuildID = 743101101401964647", ctx.author.id)
             money = money[0]
             if money < cost:
-                await ctx.send("그 아이템을 사기 위한 돈이 부족해요!")
+                await send(ctx, "그 아이템을 사기 위한 돈이 부족해요!")
                 return
             db.execute("UPDATE exp SET money = money - ? WHERE UserID = ? AND GuildID = 743101101401964647", cost,
                        ctx.author.id)
@@ -3255,7 +3253,7 @@ class Fun(Cog):
             db.execute("UPDATE games SET enchant_info = ? WHERE UserID = ?",
                        json.dumps(enchant_info, ensure_ascii=False), ctx.author.id)
             db.commit()
-            await ctx.send(f"{buy} 구매 완료!")
+            await send(ctx, f"{buy} 구매 완료!")
             return
         elif item == "커뉴야 애교":
             cost = 500000
@@ -3263,18 +3261,18 @@ class Fun(Cog):
             money = db.record("SELECT money FROM exp WHERE UserID = ? AND GuildID = 743101101401964647", ctx.author.id)
             money = money[0]
             if money < cost:
-                await ctx.send("...?")
+                await send(ctx, "...?")
                 return
             db.execute("UPDATE games SET user_setting = user_setting + 1 WHERE UserID = ?", ctx.author.id)
             db.commit()
-            await ctx.send("뿌잉뿌잉>_<")
+            await send(ctx, "뿌잉뿌잉>_<")
             l = grant_check("뿌잉뿌잉>_<", ctx.author.id)
             if l == 1:
                 await grant(ctx, "뿌잉뿌잉>_<", ">_<")
         else:
             tems = db.record("SELECT created_by, cost, amount, description FROM items WHERE name = ?", item)
             if not tems:
-                await ctx.send("아이템 이름을 다시 한 번 확인해 주세요!")
+                await send(ctx, "아이템 이름을 다시 한 번 확인해 주세요!")
                 return
             cost = tems[1]
             buy = item
@@ -3293,7 +3291,7 @@ class Fun(Cog):
                     dtype = 2
         money = db.record("SELECT money FROM exp WHERE UserID = ? AND GuildID = 743101101401964647", ctx.author.id)[0]
         if money < cost:
-            await ctx.send("그 아이템을 사기 위한 돈이 부족해요!")
+            await send(ctx, "그 아이템을 사기 위한 돈이 부족해요!")
             return
         db.execute("UPDATE exp SET money = money - ? WHERE UserID = ? AND GuildID = 743101101401964647", cost,
                    ctx.author.id)
@@ -3303,9 +3301,9 @@ class Fun(Cog):
         except:
             pass
         try:
-            await ctx.send(f"{buy} 구매 완료!\n\n아래는 이 아이템의 설명이에요.\n\n{tems[3]}")
+            await send(ctx, f"{buy} 구매 완료!\n\n아래는 이 아이템의 설명이에요.\n\n{tems[3]}")
         except TypeError:
-            await ctx.send(f"{buy} 구매 완료!")
+            await send(ctx, f"{buy} 구매 완료!")
             if buy == '프리미엄 티켓':
                 mv = self.bot.get_guild(743101101401964647)
                 await mv.get_member(ctx.author.id).add_roles(mv.get_role(760773508195811359))
@@ -3330,9 +3328,9 @@ class Fun(Cog):
     @command(name="설명")
     async def desc(self, ctx, *, item: str):
         try:
-            await ctx.send(db.record("SELECT description FROM items WHERE name = ?", item)[0])
+            await send(ctx, db.record("SELECT description FROM items WHERE name = ?", item)[0])
         except TypeError:
-            await ctx.send("존재하지 않는 아이템이에요!")
+            await send(ctx, "존재하지 않는 아이템이에요!")
 
     @command(name="출석체크", aliases=["출첵", "ㅊㅊ", "ㅊ"])
     @cooldown(1, 20, BucketType.user)
@@ -3344,7 +3342,9 @@ class Fun(Cog):
                 await grant(ctx, "서두르면 일을 그르친다", "날 바뀌는 걸 1초 남기고 출석체크를 진행하세요")
         if today < ((t + 32400) // 86400):
             self.day_reset()
-        attend_time = (datetime.now()).strftime("%H:%M:%S")
+        attend_time_ = (datetime.now())
+        visual_today = attend_time_.strftime("%Y년 %m월 %d일 (%a)")
+        attend_time = attend_time_.strftime("%H:%M:%S")
         if attend_time[0:2] != "00" and attend_time[3:] == "00:00":
             l = grant_check("시차 적응 좀 해요", ctx.author.id)
             if l == 1:
@@ -3353,7 +3353,7 @@ class Fun(Cog):
                                     today)
         for ids in today_attended:
             if ids[0] == ctx.author.id:
-                await ctx.send("내일 다시 출석체크를 해 주세요")
+                await send(ctx, "내일 다시 출석체크를 해 주세요")
                 return
         db.execute("INSERT INTO attends (USERID, attend_date, time_constant, rank) VALUES (?, ?, ?, ?)", ctx.author.id,
                    today, attend_time, len(today_attended) + 1)
@@ -3382,8 +3382,28 @@ class Fun(Cog):
             if l == 1:
                 await grant(ctx, "프로 출첵러", "출석체크를 50일 연속으로 진행하세요")
         embed = Embed(color=ctx.author.color)
-        name, value = self.add_money(ctx, streak)
-        embed.add_field(name=name, value=value)
+        name, value = self.add_money(ctx, streak, visual_today)
+        embed.add_field(name=name, value=value, inline=False)
+        event_check = db.record("SELECT BIGEVENT, BIGEVENT_DAY, EVENT, EVENT_DAY FROM MISC_DATA WHERE USERID = ?",
+                                ctx.author.id)
+        if event_check:
+            if event_check[0]:
+                days_left = today - event_check[1]
+                if not days_left:
+                    name_string = f'{event_check[0]} D-DAY'
+                else:
+                    name_string = f'{event_check[0]} D{days_left}'
+            else:
+                name_string = '​'
+            if event_check[2]:
+                days_left = today - event_check[3]
+                if not days_left:
+                    value_string = f'{event_check[2]} D-DAY'
+                else:
+                    value_string = f'{event_check[2]} D{days_left}'
+            else:
+                value_string = '​'
+            embed.add_field(name=name_string, value=value_string, inline=False)
         await self.bot.get_channel(817335216133111838).send(f"{attend_time}\n{str(ctx.author)}님의 출석체크")
         if len(today_attended) == 0:
             embed.set_footer(text=f"1등이시네요! 축하드려요\n출석체크 진행: {attend_time}")
@@ -3404,7 +3424,48 @@ class Fun(Cog):
             embed.set_footer(text=f"오늘의 출첵 1등: {self.bot.get_user(today_attended[0][0])}\n출석체크 진행: {attend_time}")
             if len(today_attended) == 4:
                 await self.send_serverstat()
-        await ctx.send(f"{ctx.author.mention}", embed=embed)
+        if randint(1, 10) == 1:
+            embed.set_footer(text='반복할일 기능을 사용하고 있는 경우 다른 명령어를 사용하기 전까지 조금만 기다려 주세요.')
+        await send(ctx, f"{ctx.author.mention}", embed=embed)
+        repeating_tasks = db.records(
+            "SELECT SPECIFIC_CONTENT, UNTIL, REPETITION, PROGRESSION, AMOUNT_OF_TASK FROM TASKS WHERE IDS LIKE ? AND REPETITION != 0",
+            f'%{ctx.author.id}%')
+        if not repeating_tasks:
+            return
+        embed = Embed(color=0x00b2ff, title='오늘 초기화된 반복 할일 정보')
+        check = 1
+        task_check = 0
+        for task in repeating_tasks:
+            a = re.compile('^(\d{4}-\d{2}-\d{2}).*$')
+            b = a.search(task[1])
+            until = datetime.strptime(b.group(1), '%Y-%m-%d')
+            if until > datetime.now(): continue
+            task_check = 1
+            repetition_sgn = 2 * (task[2] > 0) - 1
+            repetition_val = abs(task[2])
+            if repetition_sgn == 1:
+                v = repetition_val
+            else:
+                yoils = deque(sorted(list(map(int, list(str(repetition_val))))))
+                cur_yoil = datetime.now().weekday()
+                while yoils[0] != cur_yoil:
+                    yoils.rotate(-1)
+                v = yoils[1] - yoils[0]
+                if v < 0:
+                    v += 7
+            until += timedelta(days=v)
+            db.execute(
+                "UPDATE TASKS SET UNTIL = ?, PROGRESSION = 0 WHERE SPECIFIC_CONTENT = ? AND UNTIL = ? AND IDS LIKE ? AND REPETITION = ?",
+                until, task[0], task[1], f'%{ctx.author.id}%', task[2])
+            t = task[3] == task[4]
+            check = check and t
+            s = ' 모든 반복할일들을 끝냈어요!' * t
+            embed.add_field(name=task[0], value=f'{task[3]} / {task[4]} 만큼 진행된 상태에요!{s}')
+        if check:
+            embed.set_footer(text='수고했어요! 모든 반복할일들을 끝냈어요.')
+        if task_check:
+            await send(ctx, embed=embed)
+            db.commit()
 
     def day_reset(self):
         global today
@@ -3413,7 +3474,7 @@ class Fun(Cog):
         first_place = ""
         return
 
-    def add_money(self, ctx, streak):
+    def add_money(self, ctx, streak, visual_today):
         global today
         today_attended = db.records("SELECT UserID FROM attends WHERE attend_date = ? ORDER BY rank ASC",
                                     today)
@@ -3430,14 +3491,13 @@ class Fun(Cog):
             db.execute("UPDATE exp SET Money = ? WHERE UseriD = ? AND GuildID = ?", money, ctx.author.id, ctx.guild.id)
             value = f"{money_to_add}<:treasure:811456823248027648>을 받았어요.\n 현재 가지고 있는 돈은 {money}<:treasure:811456823248027648>(이)에요."
         else:
-            value = '`커뉴야 커뉴핑크`명령어가 새로 출시됐대요. 한 번 해 보세요!'
-            # value = choice(
-            #     ["`커뉴야 서버강화`를 사용해 보세요! 50레벨이 넘으면 자기 서버 홍보도 가능합니다.", "관리자 분이라면 `커뉴야 공지채널 설정`명령어로 봇의 공지를 받아 보세요!",
-            #      "`커뉴야 문의` 명령어를 사용하거나 `커뉴야 공식서버`로 공식서버에 들어가셔서 무언가를 문의하실 수 있습니다!", "`커뉴야 업데이트`명령어로 최근 업데이트 내용을 알아보세요",
-            #      "출석체크와 관련된 명령어는 이것 말고도 몇 개 더 있어요. `커뉴야 도움`을 통해 알아보세요.",
-            #      "에러가 나거나 무언가 잘 안 된다면 `커뉴야 권한진단`을 해 보시고 권한 문제가 아니라면 `커뉴야 문의`로 개발자에게 문의하는 것을 두려워하지 마세요",
-            #      "당신의 봇 사용 현황을 알아보고 싶으시다면 `커뉴야 스펙`을 이용해보세요"])
-        name = f"{len(today_attended)} 등, {streak} 연속으로 출석체크 완료!"
+            value = choice(
+                ["`커뉴야 서버강화`를 사용해 보세요! 50레벨이 넘으면 자기 서버 홍보도 가능합니다.", "관리자 분이라면 `커뉴야 공지채널 설정`명령어로 봇의 공지를 받아 보세요!",
+                 "`커뉴야 문의` 명령어를 사용하거나 `커뉴야 공식서버`로 공식서버에 들어가셔서 무언가를 문의하실 수 있습니다!", "`커뉴야 업데이트`명령어로 최근 업데이트 내용을 알아보세요",
+                 "출석체크와 관련된 명령어는 이것 말고도 몇 개 더 있어요. `커뉴야 도움`을 통해 알아보세요.",
+                 "에러가 나거나 무언가 잘 안 된다면 `커뉴야 권한진단`을 해 보시고 권한 문제가 아니라면 `커뉴야 문의`로 개발자에게 문의하는 것을 두려워하지 마세요",
+                 "당신의 봇 사용 현황을 알아보고 싶으시다면 `커뉴야 스펙`을 이용해보세요", '`커뉴야 커뉴핑크`명령어가 새로 출시됐대요. 한 번 해 보세요!'])
+        name = f"{visual_today}: {len(today_attended)} 등, {streak} 연속으로 출석체크 완료!"
         db.commit()
         return name, value
 
@@ -3481,7 +3541,7 @@ class Fun(Cog):
                     pass
             else:
                 tjfaud += f"\n\n{attend_person[0] + 1}.{self.bot.get_user(attend_person[1][0])} | {attend_person[1][1]}"
-        await ctx.send(embed=Embed(color=0xffd6fe, title=f"{len(today_attended) if not i else i} 등까지의 출석체크 목록!",
+        await send(ctx, embed=Embed(color=0xffd6fe, title=f"{len(today_attended) if not i else i} 등까지의 출석체크 목록!",
                                    description=tjfaud))
 
     @command(name="출첵내역")
@@ -3510,7 +3570,7 @@ class Fun(Cog):
                 break
         embed = Embed(color=0xffd6fe, title=f"최근 {max_attend}일간의 출석체크 내역!", description=tjfaud)
         embed.set_footer(text=f"{streak}일 연속으로 출석체크 중!\n출석체크 데이터는 출석체크한 지 15일이 지나면 자동으로 페기될까요?")
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
         if second_place >= 3:
             l = grant_check("개같은 출석", ctx.author.id)
             if l == 1:
@@ -3528,7 +3588,7 @@ class Fun(Cog):
                 day_temp -= 1
             else:
                 break
-        await ctx.send(f"{ctx.author.name}님은 현재 {streak} 연속으로 출석체크를 진행하시는 중이에요!")
+        await send(ctx, f"{ctx.author.name}님은 현재 {streak} 연속으로 출석체크를 진행하시는 중이에요!")
 
     @command(name="쫀득쫀득한")
     async def congrats_pizza_achievement(self, ctx, *, pizzacheck: Optional[str]):
@@ -3541,7 +3601,7 @@ class Fun(Cog):
     # async def zapsori(self, ctx, day: int, author: Optional[str] = '커뉴'):
     #     l = grant_check('공식서버 고렙', ctx.author.id)
     #     if l == 1:
-    #         await ctx.send("?")
+    #         await send(ctx, "?")
     #         return
     #     date_viewable = -100
     #     for ach in ['공식서버 고인물', '공식서버 초고렙', '공식서버 정복자', '뿌잉뿌잉>_<', '아니 씨밧', 'ㅇㅇㅌㅌ']:
@@ -3552,10 +3612,10 @@ class Fun(Cog):
     #         date_viewable = 0
     #     final_day = 340
     #     if final_day + date_viewable < day:
-    #         await ctx.send('열람 불가능한 회차에요! 특정한 도전과제들을 더 달성하세요...')
+    #         await send(ctx, '열람 불가능한 회차에요! 특정한 도전과제들을 더 달성하세요...')
     #         return
     #     if day == 156:
-    #         await ctx.send(
+    #         await send(ctx, 
     #             '바보같은 잡소리 작가 때문에 156일차 잡소리는 두 개에요.\n먼저 쓴 156일차, 나중에 쓴 156일차 중 무엇을 열람하실 건가요?\n먼저 쓴 156일차를 열람하시려면 1, 나중에 쓴 156일차를 열람하시려면 2를 입력하세요')
     #         try:
     #             msg = await self.bot.wait_for(
@@ -3564,12 +3624,12 @@ class Fun(Cog):
     #                 check=lambda message: message.author == ctx.author and ctx.channel == message.channel
     #             )
     #         except asyncio.TimeoutError:
-    #             await ctx.send('잡소리를 열람하지 않기로 했어요.')
+    #             await send(ctx, '잡소리를 열람하지 않기로 했어요.')
     #             return
     #         try:
     #             msg = int(msg.content)
     #         except ValueError:
-    #             await ctx.send('올바르지 않은 입력이에요!')
+    #             await send(ctx, '올바르지 않은 입력이에요!')
     #             return
     #         if msg == 2:
     #             day += 1
@@ -3579,14 +3639,14 @@ class Fun(Cog):
     #     try:
     #         zap = zap[0]
     #     except TypeError:
-    #         await ctx.send('아직 등록되지 않았거나 애초에 써지지 않은 날짜에요! `커뉴야 날짜차이 20210301`로 오늘이 몇 일차인지 알아보세요')
+    #         await send(ctx, '아직 등록되지 않았거나 애초에 써지지 않은 날짜에요! `커뉴야 날짜차이 20210301`로 오늘이 몇 일차인지 알아보세요')
     #         return
     #     await ctx.author.send(f"커뉴의 1일1잡소리 **{day}** 일차!\n{zap}")
 
     @command(name='날짜차이')
     async def calculate_day(self, ctx, d1: Optional[int], d2: Optional[int]):
         if not d1:
-            await ctx.send('`커뉴야 날짜차이 (날짜1)` 또는 `커뉴야 날짜차이 (날짜1) (날짜2)`, 날짜는 20240219와 같은 형식으로')
+            await send(ctx, '`커뉴야 날짜차이 (날짜1)` 또는 `커뉴야 날짜차이 (날짜1) (날짜2)`, 날짜는 20240219와 같은 형식으로')
             return
         if not d2:
             d1 = datetime.strptime(str(d1), "%Y%m%d")
@@ -3599,17 +3659,17 @@ class Fun(Cog):
         try:
             e = delta.index(' ')
         except ValueError:
-            await ctx.send('그게 왜 궁금해요?')
+            await send(ctx, '그게 왜 궁금해요?')
             return
         td = int(delta[:e])
         d1 = d1.strftime('%Y년 %m월 %d일')
         d2 = d2.strftime('%Y년 %m월 %d일')
         if td > 0:
-            await ctx.send(f'{d1}은 {d2}로부터 {td}일 전이에요!')
+            await send(ctx, f'{d1}은 {d2}로부터 {td}일 전이에요!')
         elif td < 0:
-            await ctx.send(f'{d1}은 {d2}로부터 {-td}일 후에요!')
+            await send(ctx, f'{d1}은 {d2}로부터 {-td}일 후에요!')
         else:
-            await ctx.send("?")
+            await send(ctx, "?")
 
     def calculate_net_worth(self, coin_info):
         net_worth = 0
@@ -3658,22 +3718,22 @@ class Fun(Cog):
                 l = grant_check("코인 대부호", ctx.author.id)
                 if l == 1:
                     await grant(ctx, "코인 대부호", "코인에서 현금 1조코인을 가지세요")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif activity in ["투자", "구매", "판매"]:
             if a2 == "공섭":
                 if not am:
-                    await ctx.send("교환할 양도 입력해 주세요")
+                    await send(ctx, "교환할 양도 입력해 주세요")
                     return
                 meta_coin = db.record("SELECT money FROM exp WHERE UserID = ? AND GuildID = 743101101401964647",
                                       ctx.author.id)
                 if not meta_coin:
-                    await ctx.send("공식서버 가입자 전용 기능이에요! `커뉴야 공식서버`로 공식서버에 입장하세요")
+                    await send(ctx, "공식서버 가입자 전용 기능이에요! `커뉴야 공식서버`로 공식서버에 입장하세요")
                     return
                 meta_coin = meta_coin[0]
                 embed = Embed(color=0xffcc4d, title=f"공식서버 코인과의 환전")
                 embed.add_field(name="코인 환전하기",
                                 value=f"공식서버의 돈과 환전하려고 해요.\n\n가진 공식서버 돈: {meta_coin:,}\n\n가진 커뉴코인: {raw_money:,}\n\n`확인`을 입력해 커뉴코인으로의 투자를 진행하세요")
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
                 try:
                     msg = await self.bot.wait_for(
                         "message",
@@ -3681,11 +3741,11 @@ class Fun(Cog):
                         check=lambda message: message.author == ctx.author and ctx.channel == message.channel
                     )
                 except asyncio.TimeoutError:
-                    await ctx.send("투자를 종료했어요.")
+                    await send(ctx, "투자를 종료했어요.")
                     return
                 if msg.content == "확인":
                     if am > meta_coin:
-                        await ctx.send("투자를 위한 돈이 부족해요!")
+                        await send(ctx, "투자를 위한 돈이 부족해요!")
                         return
                     db.execute("UPDATE exp SET Money = Money - ? WHERE UserID = ? AND GuildID = 743101101401964647", am,
                                ctx.author.id)
@@ -3696,7 +3756,7 @@ class Fun(Cog):
                     raw_money += am * 100
                     db.execute("UPDATE coin_info SET logam = ? WHERE UserID = ? AND coin_name = '현금'",
                                math.log10(raw_money), ctx.author.id)
-                    await ctx.send(f"환전을 완료해서 {am * 100:,} 커뉴코인을 획득했어요!")
+                    await send(ctx, f"환전을 완료해서 {am * 100:,} 커뉴코인을 획득했어요!")
                     db.commit()
                 else:
                     return
@@ -3715,13 +3775,13 @@ class Fun(Cog):
                     embed.add_field(name="존재하는 코인과 환전",
                                     value="여러 종류의 코인 중 원하는 코인에 투자하세요.\n`커뉴야 코인 시세`로 시세를 확인하고 `커뉴야 코인 투자 (코인 이름)` 으로 투자하세요",
                                     inline=False)
-                    await ctx.send(embed=embed)
+                    await send(ctx, embed=embed)
                     return
                 embed = Embed(color=0xffcc4d, title=f"{a2} 구매/판매")
                 embed.add_field(name=f"{a2} 거래하기",
                                 value=f"{a2} 하나당 가격: {val:,}\n\n`구매`로 {a2}을(를) 구매하고 `판매`로 {a2}을(를) 판매하세요")
                 if activity == "투자":
-                    await ctx.send(embed=embed)
+                    await send(ctx, embed=embed)
                     try:
                         msg = await self.bot.wait_for(
                             "message",
@@ -3729,12 +3789,12 @@ class Fun(Cog):
                             check=lambda message: message.author == ctx.author and ctx.channel == message.channel
                         )
                     except asyncio.TimeoutError:
-                        await ctx.send("투자를 종료했어요.")
+                        await send(ctx, "투자를 종료했어요.")
                         return
                     activity = msg.content
                 if activity == "구매":
                     if not am:
-                        await ctx.send(f"코인을 몇 개나 구매하실 건가요?")
+                        await send(ctx, f"코인을 몇 개나 구매하실 건가요?")
                         try:
                             msg = await self.bot.wait_for(
                                 "message",
@@ -3742,15 +3802,15 @@ class Fun(Cog):
                                 check=lambda message: message.author == ctx.author and ctx.channel == message.channel
                             )
                         except asyncio.TimeoutError:
-                            await ctx.send("투자를 종료했어요.")
+                            await send(ctx, "투자를 종료했어요.")
                             return
                         try:
                             am = int(msg.content)
                         except ValueError:
-                            await ctx.send("올바르지 않은 입력이에요! 정수로 입력해 주세요")
+                            await send(ctx, "올바르지 않은 입력이에요! 정수로 입력해 주세요")
                             return
                     if raw_money < am * val:
-                        await ctx.send("그만큼의 코인을 사기 위한 돈이 부족해요!")
+                        await send(ctx, "그만큼의 코인을 사기 위한 돈이 부족해요!")
                         return
                     if val == 0:
                         l = grant_check("이걸 왜사요", ctx.author.id)
@@ -3773,10 +3833,10 @@ class Fun(Cog):
                     db.execute("UPDATE coin_info SET logam = ? WHERE UserID = ? AND coin_name = '현금'", coin,
                                ctx.author.id)
                     db.commit()
-                    await ctx.send("거래 완료! `커뉴야 코인`으로 현재 상황을 알아보세요")
+                    await send(ctx, "거래 완료! `커뉴야 코인`으로 현재 상황을 알아보세요")
                 elif activity == "판매":
                     if not am:
-                        await ctx.send(f"코인을 몇 개나 판매하실 건가요?")
+                        await send(ctx, f"코인을 몇 개나 판매하실 건가요?")
                         try:
                             msg = await self.bot.wait_for(
                                 "message",
@@ -3784,22 +3844,22 @@ class Fun(Cog):
                                 check=lambda message: message.author == ctx.author and ctx.channel == message.channel
                             )
                         except asyncio.TimeoutError:
-                            await ctx.send("투자를 종료했어요.")
+                            await send(ctx, "투자를 종료했어요.")
                             return
                         try:
                             am = int(msg.content)
                         except TypeError:
-                            await ctx.send("올바르지 않은 입력이에요! 정수로 입력해 주세요")
+                            await send(ctx, "올바르지 않은 입력이에요! 정수로 입력해 주세요")
                             return
                     for info in coins:
                         if info[0] == a2:
                             now_coin = round(10 ** info[1])
                             break
                     else:
-                        await ctx.send("그만큼의 코인을 가지고 있지 않아요!")
+                        await send(ctx, "그만큼의 코인을 가지고 있지 않아요!")
                         return
                     if am > now_coin:
-                        await ctx.send("그만큼의 코인을 가지고 있지 않아요!")
+                        await send(ctx, "그만큼의 코인을 가지고 있지 않아요!")
                         return
                     coin = math.log10(raw_money + am * val)
                     db.execute("UPDATE coin_info SET logam = ? WHERE UserID = ? AND coin_name = '현금'", coin,
@@ -3811,7 +3871,7 @@ class Fun(Cog):
                                    math.log10(now_coin - am),
                                    ctx.author.id, a2)
                     db.commit()
-                    await ctx.send("거래 완료! `커뉴야 코인`으로 현재 상황을 알아보세요")
+                    await send(ctx, "거래 완료! `커뉴야 코인`으로 현재 상황을 알아보세요")
         elif activity == "시세":
             embed = Embed(color=0xffcc4d, title="코인 시세")
             sisae = db.records("SELECT * FROM coins")
@@ -3822,10 +3882,10 @@ class Fun(Cog):
                 else:
                     embed.add_field(name=coin[0], value=f"현재 가격: {coin[1]:,} (변화량 {coin[3]:,}), 변동성: {coin[2]}",
                                     inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif activity == "룰렛":
             if a2 and a2 == '도움':
-                await ctx.send(embed=Embed(color=0xffcc4d, title='커뉴봇 코인 룰렛 도움', description='코인으로 할 수 있는 도박 '
+                await send(ctx, embed=Embed(color=0xffcc4d, title='커뉴봇 코인 룰렛 도움', description='코인으로 할 수 있는 도박 '
                                                                                              '기능이에요!\n\n공이 1부터 36까지의 수 중 랜덤한 수에 도달하게 되는데, 어디에 도달할지를 베팅하면 돼요. 베팅할 방법은 여러 가지가 있지만, 그 베팅이 맞을 확률이 낮을수록 '
                                                                                              '보상금도 그에 맞게 커져요!\n\n`커뉴야 코인 룰렛 도움`: 이 도움말을 표시합니다.\n`커뉴야 코인 룰렛 (걸돈)`: 룰렛 도박에 얼마를 걸지 정합니다.'))
                 return
@@ -3836,7 +3896,7 @@ class Fun(Cog):
             except:
                 a2 = None
             if not a2:
-                await ctx.send("룰렛에 얼마를 걸으실 건가요?")
+                await send(ctx, "룰렛에 얼마를 걸으실 건가요?")
                 try:
                     msg = await self.bot.wait_for(
                         "message",
@@ -3844,12 +3904,12 @@ class Fun(Cog):
                         check=lambda message: message.author == ctx.author and ctx.channel == message.channel
                     )
                 except asyncio.TimeoutError:
-                    await ctx.send("도박을 종료했어요.")
+                    await send(ctx, "도박을 종료했어요.")
                     return
                 try:
                     am = int(msg.content)
                 except ValueError:
-                    await ctx.send("정수로만 입력해 주세요")
+                    await send(ctx, "정수로만 입력해 주세요")
                     return
             net_worth = 0
             coin_info = db.records("SELECT coin_name, logam FROM coin_info WHERE UserID = ?", ctx.author.id)
@@ -3873,12 +3933,12 @@ class Fun(Cog):
                         break
 
             if am <= 0:
-                await ctx.send("걸 돈은 양수로만 입력해 주세요!")
+                await send(ctx, "걸 돈은 양수로만 입력해 주세요!")
                 return
             if cash < am:
-                await ctx.send("그만큼을 걸 돈이 부족해요! 돈을 더 벌거나 가지고 있는 코인을 팔아 현금을 확보한 후 진행하세요")
+                await send(ctx, "그만큼을 걸 돈이 부족해요! 돈을 더 벌거나 가지고 있는 코인을 팔아 현금을 확보한 후 진행하세요")
                 return
-            await ctx.send(
+            await send(ctx, 
                 f"{am:,} 커뉴코인을 걸어 룰렛을 진행해요. 어느 수에 베팅하실 건가요? (1부터 36 중에서)\n`홀수` (`홀`, `ㅎ`), `짝수` (`짝`, `ㅉ`)로 입력하거나 수 "
                 f"하나만 입력하거나 수의 범위를 입력하실 수 있습니다. (예시: `홀수`, `6`, `6-9`)\n다만 성공확률이 1/2 이하이도록 베팅해야만 베팅 성공 시 배당금을 받을 수 있어요")
             try:
@@ -3888,13 +3948,13 @@ class Fun(Cog):
                     check=lambda message: message.author == ctx.author and ctx.channel == message.channel
                 )
             except asyncio.TimeoutError:
-                await ctx.send("도박을 종료했어요.")
+                await send(ctx, "도박을 종료했어요.")
                 return
             bet = bet.content
             try:
                 bet = int(bet)
                 if bet > 36:
-                    await ctx.send("올바르지 않은 입력이에요!")
+                    await send(ctx, "올바르지 않은 입력이에요!")
                     return
                 if c == bet:
                     wl = 36
@@ -3912,14 +3972,14 @@ class Fun(Cog):
                         min_num = int(bet[:hy])
                         max_num = int(bet[hy + 1:])
                         if min_num > max_num or max_num > 36:
-                            await ctx.send("올바르지 않은 입력이에요!")
+                            await send(ctx, "올바르지 않은 입력이에요!")
                             return
                         if c in (cl := range(min_num, max_num + 1)):
                             wl = int(36 / len(cl))
                         else:
                             wl = 0
                     else:
-                        await ctx.send("올바르지 않은 입력이에요!")
+                        await send(ctx, "올바르지 않은 입력이에요!")
                         return
             if ac == 1 and am > (3 / 4) * net_worth and net_worth >= 100000000:
                 l = grant_check("몰빵 가즈아", ctx.author.id)
@@ -3930,7 +3990,7 @@ class Fun(Cog):
             else:
                 wt = f"수를 맞히셨어요!!! {am * (wl - 1):,} 커뉴코인을 얻어 현재 남은 코인은 {cash + am * (wl - 1):,} 코인이에요."
             embed = Embed(color=0xffcc4d, title="룰렛 도박 결과!", description=f"당신은 {bet}에 걸었고, 공은 {c} 자리에 도달했어요!\n{wt}")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
             try:
                 cash = math.log10(cash + am * (wl - 1))
             except ValueError:
@@ -3945,12 +4005,12 @@ class Fun(Cog):
         elif activity == "지원금":
             next_help = db.record("SELECT coin_help_time FROM games WHERE USERID = ?", ctx.author.id)[0]
             if datetime.now() < datetime.fromisoformat(next_help):
-                await ctx.send('지원금은 30분에 한 번만 받을 수 있어요!')
+                await send(ctx, '지원금은 30분에 한 번만 받을 수 있어요!')
                 return
             coin_info = db.records("SELECT coin_name, logam FROM coin_info WHERE UserID = ?", ctx.author.id)
             net_worth = self.calculate_net_worth(coin_info)
             if net_worth == -1:
-                await ctx.send('이걸 보시면 꼭 개발자에게 문의해주세요 좀 급한 상황입니다')
+                await send(ctx, '이걸 보시면 꼭 개발자에게 문의해주세요 좀 급한 상황입니다')
                 return
             if net_worth < 1e6:
                 help_money = int(max(1e6 - net_worth, 1e5))
@@ -3964,20 +4024,20 @@ class Fun(Cog):
             db.execute("UPDATE games SET coin_help_time = ? WHERE UserID = ?",
                        (datetime.now() + timedelta(minutes=30)).isoformat(), ctx.author.id)
             db.commit()
-            await ctx.send(f"지원금을 약 {help_money:,}만큼 받았어요!")
+            await send(ctx, f"지원금을 약 {help_money:,}만큼 받았어요!")
         elif activity == '자산':
             coin_info = db.records("SELECT coin_name, logam FROM coin_info WHERE UserID = ?", ctx.author.id)
             net_worth = self.calculate_net_worth(coin_info)
             if net_worth == -1:
-                await ctx.send('이걸 보시면 꼭 개발자에게 문의해주세요 좀 급한 상황입니다')
+                await send(ctx, '이걸 보시면 꼭 개발자에게 문의해주세요 좀 급한 상황입니다')
                 return
-            await ctx.send(f'현재 {ctx.author.name}님의 코인 총 자산은 {net_worth:,}(이)에요!')
+            await send(ctx, f'현재 {ctx.author.name}님의 코인 총 자산은 {net_worth:,}(이)에요!')
         elif activity == '블랙잭':
             if not a2:
-                await ctx.send("`커뉴야 코인 블랙잭 (걸 돈)`")
+                await send(ctx, "`커뉴야 코인 블랙잭 (걸 돈)`")
                 return
             elif a2 == '도움':
-                await ctx.send(embed=Embed(color=0xffcc4d, title='커뉴봇 코인 블랙잭 도움', description='코인으로 할 수 있는 도박 기능이에요! '
+                await send(ctx, embed=Embed(color=0xffcc4d, title='커뉴봇 코인 블랙잭 도움', description='코인으로 할 수 있는 도박 기능이에요! '
                                                                                               '다만 룰렛과 다르게 완전한 운빨 게임이 아닌 만큼 0코인을 걸 수도 있어요.\n\n기본적인 목표는, 자신의 카드에 써 있는 값 총합이 21을 넘지 않으면서 21에 최대한 '
                                                                                               '가까워지도록 카드를 뽑는 거에요. (J,Q,K는 항상 10으로 간주되고 에이스는 11으로 간주되거나 1로 간주돼요.)\n처음에 플레이어와 딜러는 각각 카드를 2장씩 뽑고 플레이어의 '
                                                                                               '카드는 둘 모두, 딜러의 카드는 하나만 볼 수 있어요. 만약 이때 플레이어의 카드 값 총합이 21이라면 가장 좋은 패인 블랙잭을 얻은 것이고, 즉시 승리하며 건 돈의 1.5배를 '
@@ -3989,16 +4049,16 @@ class Fun(Cog):
                                                                                               '블랙잭 (걸 돈)`으로 게임을 시작하세요!'))
                 return
             elif not a2.isdigit():
-                await ctx.send("`커뉴야 코인 블랙잭 (걸 돈)`")
+                await send(ctx, "`커뉴야 코인 블랙잭 (걸 돈)`")
                 return
             pan_don = int(a2)
             cash = round(
                 10 ** db.record("SELECT logam FROM coin_info WHERE coin_name = '현금' AND UserID = ?", ctx.author.id)[0])
             if pan_don < 0:
-                await ctx.send("걸 돈은 양수로만 입력해 주세요!")
+                await send(ctx, "걸 돈은 양수로만 입력해 주세요!")
                 return
             if cash < pan_don:
-                await ctx.send('그만큼을 걸 돈이 부족해요! 돈을 더 벌거나 가지고 있는 코인을 팔아 현금을 확보한 후 진행하세요')
+                await send(ctx, '그만큼을 걸 돈이 부족해요! 돈을 더 벌거나 가지고 있는 코인을 팔아 현금을 확보한 후 진행하세요')
                 return
             bj_cards = ['♠ A', '♠ 2', '♠ 3', '♠ 4', '♠ 5', '♠ 6', '♠ 7', '♠ 8', '♠ 9', '♠ 10', '♠ J', '♠ Q', '♠ K',
                         '♦ A', '♦ 2',
@@ -4078,7 +4138,7 @@ class Fun(Cog):
                                 'h' in possible_responses) + '\n스탠드, ㅅ, stand, s' + '\n더블다운, ㄷ, double down, dd' * (
                                                                       'dd' in possible_responses) + '\n30초가 지나도 답변이 없다면 스테이로 간주합니다.',
                                     inline=False)
-                    await ctx.send(embed=embed)
+                    await send(ctx, embed=embed)
                     msg = ''
                     try:
                         msg = await self.bot.wait_for(
@@ -4108,7 +4168,7 @@ class Fun(Cog):
                             my_cards.append(card)
                             my_card_values.append(card.split()[1])
                         else:
-                            await ctx.send('예기치 않게 종료됐어요. 비상!!!!!!!!')
+                            await send(ctx, '예기치 않게 종료됐어요. 비상!!!!!!!!')
                             return
                 bj_check = 0
             if wl == -1:
@@ -4138,7 +4198,7 @@ class Fun(Cog):
             cash_delta = int(pan_don * (wl - 1))
             embed.add_field(name='결과', value=f'{result}, 수익금 {cash_delta:,} -> 남은 돈 {cash + cash_delta:,}',
                             inline=False)
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
             try:
                 cash = math.log10(cash + cash_delta)
             except ValueError:
@@ -4169,7 +4229,7 @@ class Fun(Cog):
             plt.clf()
             await ctx.channel.send(file=File(u))
         else:
-            await ctx.send("`커뉴야 코인 [(빈 칸)/투자/시세/룰렛/블랙잭/지원금/자산/그래프]`")
+            await send(ctx, "`커뉴야 코인 [(빈 칸)/투자/시세/룰렛/블랙잭/지원금/자산/그래프]`")
 
     @command(name="스펙")
     @cooldown(1, 18, BucketType.user)
@@ -4245,7 +4305,7 @@ class Fun(Cog):
                 db.record("SELECT Money FROM exp WHERE UserID = ? AND GuildID = 743101101401964647", ctx.author.id)[0])
             except AttributeError:
                 embed.add_field(name="공식서버 관련 스탯", value="공식서버에 입장하지 않았습니다. `커뉴야 공식서버`로 공식서버에 입장 후 6종류의 스펙 지수를 더 확인하세요")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
             if total_uses > 1000:
                 l = grant_check("단골 사용자 1", ctx.author.id)
                 if l == 1:
@@ -4288,17 +4348,17 @@ class Fun(Cog):
                 if i <= 24:
                     embed.add_field(name=f"`커뉴야 {cmd_info[0]}` 명령어 사용 횟수", value=cmd_info[1])
             embed.add_field(name="총 커맨드 사용 횟수", value=str(total_uses))
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
 
     @command(name="끼임해제")
     async def reset_room(self, ctx):
         room_number = db.record("SELECT room_number FROM games WHERE USerID = ?", ctx.author.id)[0]
         try:
             if room_number >= 10000000:
-                await ctx.send("`커뉴야 랜덤채팅 종료`")
+                await send(ctx, "`커뉴야 랜덤채팅 종료`")
                 return
         except TypeError:
-            await ctx.send("아무 방에도 들어가 있지 않아요!")
+            await send(ctx, "아무 방에도 들어가 있지 않아요!")
             return
         with ctx.channel.typing:
             room_info = db.record("SELECT people_in FROM rooms WHERE room_number = ?", room_number)[0]
@@ -4307,23 +4367,23 @@ class Fun(Cog):
                 db.execute("UPDATE rooms SET people_in = ? WHERE room_number = ?", people.join(","), room_number)
             db.execute("UPDATE games SET room_number = NULL WHERE userID = ?", ctx.author.id)
             db.commit()
-            await ctx.send("끼임해제가 완료됐어요!")
+            await send(ctx, "끼임해제가 완료됐어요!")
 
     @command(name="어디")
     async def check_room(self, ctx):
         room_number = db.record("SELECT room_number FROM games WHERE USerID = ?", ctx.author.id)
         try:
-            await ctx.send(room_number[0])
+            await send(ctx, room_number[0])
         except:
-            await ctx.send("아무 방에도 들어가 있지 않아요!")
+            await send(ctx, "아무 방에도 들어가 있지 않아요!")
 
     @command(name="디엠테스트")
     async def dm_test(self, ctx):
-        await ctx.send("디엠이 왔는지 확인해 보세요!")
+        await send(ctx, "디엠이 왔는지 확인해 보세요!")
         try:
             await ctx.author.send("뀨우? >w<")
         except Forbidden:
-            await ctx.send(":weary:")
+            await send(ctx, ":weary:")
 
     @command(name="지분")
     @cooldown(4, 1, BucketType.user)
@@ -4331,7 +4391,7 @@ class Fun(Cog):
         try:
             command_name = self.bot.get_command(test).name
         except AttributeError:
-            await ctx.send("존재하지 않는 커맨드에요!")
+            await send(ctx, "존재하지 않는 커맨드에요!")
             return
 
         total_uses = int(db.record("SELECT sum(uses) FROM cmd_uses WHERE command = ?", command_name)[0])
@@ -4370,7 +4430,7 @@ class Fun(Cog):
                                     inline=False)
                 if randint(1, 15) == 1:
                     embed.set_footer(text='개인정보처리방침상 다른 사람의 지분 순위는 알 수 없어요!')
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
         if my_uses / total_uses * 100 >= 75 and my_uses >= 200:
             l = grant_check("압도적 지분가", ctx.author.id)
             if l == 1:
@@ -4629,22 +4689,22 @@ class Fun(Cog):
         seen = db.record("SELECT tmi FROM games WHERE UserID = ?", ctx.author.id)[0]
         if extra == '리스트':
             if not tracker:
-                await ctx.send('`커뉴야 뀨 구매 TMI 트래커`')
+                await send(ctx, '`커뉴야 뀨 구매 TMI 트래커`')
                 return
             get_index_of_one = lambda lst: [i + 1 for i, val in enumerate(lst) if val == '1']
             really_seen = list(map(str, get_index_of_one(seen)))
-            await ctx.send(f'지금까지 {",".join(really_seen)}번 TMI를 봤어요!')
+            await send(ctx, f'지금까지 {",".join(really_seen)}번 TMI를 봤어요!')
             return
         elif extra and extra.isdigit():
             if not tracker:
-                await ctx.send('`커뉴야 뀨 구매 TMI 트래커`')
+                await send(ctx, '`커뉴야 뀨 구매 TMI 트래커`')
                 return
             extra = int(extra) - 1
             if extra >= len(tmi_list):
-                await ctx.send('존재하지 않는 번호에요!')
+                await send(ctx, '존재하지 않는 번호에요!')
                 return
             if seen[extra] == '0':
-                await ctx.send('아직 발견한 적 없는 TMI에요! yonsei1 업데이트 이후 랜덤으로 발견한 TMI만 다시 볼 수 있어요.')
+                await send(ctx, '아직 발견한 적 없는 TMI에요! yonsei1 업데이트 이후 랜덤으로 발견한 TMI만 다시 볼 수 있어요.')
                 return
             embed.add_field(name="사실은...", value=tmi_list[extra])
         else:
@@ -4663,7 +4723,7 @@ class Fun(Cog):
                 if l == 1:
                     await grant(ctx, "얼마나 심심하셨길래...", "`커뉴야 심심해` 명령어 실행 시 1/3000의 확률로 얻을 수 있는 도전과제")
             embed.add_field(name="사실은...", value=tjfaud)
-        await ctx.send(embed=embed)
+        await send(ctx, embed=embed)
 
     @command(name="오타원본", aliases=["오라타원본", "와원본", "어타원본", '오타ㅏ원본'])
     async def SBJB_original(self, ctx, *, a: str):
@@ -4918,16 +4978,16 @@ class Fun(Cog):
         elif a == '맞긴래':
             b = 'https://cdn.discordapp.com/attachments/794563329560674344/1010546774584328284/Screenshot_20220820-225144_Discord.jpg?ex=65d0ba06&is=65be4506&hm=7cce2c33713a6fe69229ba94a48fe09e8ae1c5a9c2069cd9e559fca95f656bff&\n2022.08.20'
         try:
-            await ctx.send(b)
+            await send(ctx, b)
         except UnboundLocalError:
-            await ctx.send("없거나 아직 등록되지 않은 오타에요! `피론`은 오타원본이 유실되었지만 다른 오타는 찾아보면 어딘가는 있을 거에요. 빠진 오타라면 넣어 달라고 건의해주세요!")
+            await send(ctx, "없거나 아직 등록되지 않은 오타에요! `피론`은 오타원본이 유실되었지만 다른 오타는 찾아보면 어딘가는 있을 거에요. 빠진 오타라면 넣어 달라고 건의해주세요!")
 
     @command(name="뀨")
     async def premium(self, ctx, activity: Optional[str], *, item: Optional[str]):
         kkyu = db.record("SELECT kkyu FROM games WHERE UserID = ?", ctx.author.id)[0]
         if not activity:
             if randint(1, 5) != 1:
-                await ctx.send("뀨?!")
+                await send(ctx, "뀨?!")
             else:
                 activity = "도움"
         if activity == "도움":
@@ -4940,9 +5000,9 @@ class Fun(Cog):
                                       "것들의 목록을 보여줍니다.\n`커뉴야 뀨 설명 (아이템명)`: (아이템명)에 대한 설명을 해 줍니다.\n`커뉴야 뀨 구매 (아이템명)`: (아이템명) 을 구매합니다.\n`커뉴야 뀨 인벤토리` (혹은 `커뉴야 뀨 인벤`): 현재까지 뀨로 "
                                       "구매한 것들의 목록을 보여줍니다. 상점의 1페이지에서 파는 기능만 보여줍니다.\n`커뉴야 뀨 주의사항`: 뀨와 관련된 행동을 하시기 전에 먼저 읽어야 할 사항들을 "
                                       "보여줍니다. 이 사항을 읽지 않음으로 인해 생기는 피해를 개발자는 보상하지 않습니다.")
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         elif activity == "가격":
-            await ctx.send(embed=Embed(color=0x00b2ff, title="뀨 구매하기",
+            await send(ctx, embed=Embed(color=0x00b2ff, title="뀨 구매하기",
                                        description="결제 수단은 **문화상품권**, **Google Play 기프트 카드**, **Discord Nitro (또는 "
                                                    "클래식)**, **계좌이체** 로 가능합니다. 단 니트로로 결제는 항상 되는 것은 아닙니다. 현재는 니트로 또는 니트로 클래식으로의 결제가 "
                                                    "**가능합니다.**\n단, 계좌이체의 경우 10000원 이상을 결제하고 싶은 경우에만 받고 있습니다.\n\n아래는 가격표입니다. 한화로 "
@@ -4956,7 +5016,7 @@ class Fun(Cog):
                                                    "잃게 되면 그는 모두 롤백해 드립니다.\n기타 자신이 사고 쓴 뀨 이외에 돌발 상황이 발생한다면 모두 정상적인 상황이 되도록 "
                                                    "롤백합니다.\n\n구매가 정상적으로 완료되었다면 커뉴봇이 개인 메세지로 구매가 완료되었다고 말합니다. 꼭 개인 메세지 수신을 켜 주세요!"))
         elif activity == "주의사항":
-            await ctx.send(
+            await send(ctx, 
                 embed=Embed(color=0x00b2ff, title='뀨 구매, 사용 전 주의사항', description='1. 아이템을 구매하기 전, 자신이 구매하려고 하는 '
                                                                                  '아이템이 정확히 무슨 효과를 가지는지를 정확히 알고 구매하시길 바랍니다. 아이템을 구매할 때도 주의해야 할 사항이 있을 수 있습니다.\n2. 결제한 뀨를 환불하는 것은 `커뉴야 뀨 '
                                                                                  '가격`에 적혀 있는 기준에 따라 가능하지만, 뀨로 아이템을 구매한 이후 그 아이템을 환불하는 것은 불가능합니다.\n3. 상점의 2페이지에 있는 모든 아이템들은 아이템을 구매하신 '
@@ -4967,26 +5027,26 @@ class Fun(Cog):
                               description="1. 새로운 기능 해금\n2. 기존 기능 강화\n3. 서버 단위의 기능\n커뉴핑크 안에서 뀨로 사는 아이템들의 경우 커뉴핑크 상점을 통해 찾아주세요\n`커뉴야 뀨 상점 <1/2/3/4>`으로 목록을 확인하세요")
                 embed.set_footer(
                     text='구매한 경우에만 쓸 수 있는 명령어 또는 세부 옵션이 존재한다면 1페이지, 그렇지 않다면 (구매한 경우에만 자동으로 추가되는 옵션 등) 2페이지로 분류됩니다.')
-                await ctx.send(embed=embed)
+                await send(ctx, embed=embed)
                 return
             try:
                 item = int(item)
             except:
-                await ctx.send("올바르지 않은 입력이에요!")
+                await send(ctx, "올바르지 않은 입력이에요!")
                 return
             if item == 1:
-                await ctx.send(embed=Embed(color=0x00b2ff, title="뀨 상점",
+                await send(ctx, embed=Embed(color=0x00b2ff, title="뀨 상점",
                                            description='알파 센타우리: 15뀨\n오목 자동 매칭: 9뀨\n다채로운 기원목록: 5뀨\n자세한 스톱워치: 3뀨\n도전과제 페이지순 정렬: 2뀨\n새로운 줄임말: 2뀨\n금성챗 특정숫자 알림: 2뀨\n퀴즈 주제 다중 선택: 5뀨\nTMI 트래커: 6뀨'))
             elif item == 2:
-                await ctx.send(embed=Embed(color=0x00b2ff, title="뀨 상점",
+                await send(ctx, embed=Embed(color=0x00b2ff, title="뀨 상점",
                                            description='출첵내역 연장: 1뀨\n도전과제 달성률 표시: 5뀨\n강화슬롯 추가: 2뀨\n더 좋은 도전과제 목록: 6뀨\n지분 순위: 8뀨'))
             elif item == 3:
-                await ctx.send(embed=Embed(color=0x00b2ff, title="뀨 상점",
+                await send(ctx, embed=Embed(color=0x00b2ff, title="뀨 상점",
                                            description='이곳까지 찾아와주셔서 감사합니다. 이야기가 나와서 말인데, 서버 관련된 기능은 무엇을 넣어야 괜찮을까요? 사실 꼭 서버 관련된 기능이 아니더라도, 뀨와 관련되어 있든 아니든 봇과 관련된 아이디어는 어떤 것이라도 감사히 받고 있습니다.\n새로운 뀨 아이템 아이디어가 채택된다면, 제안해주신 아이템은 실제로 책정된 가격과 상관없이 무료로 지급됩니다.\n다른 아이디어들도 정상적인 아이디어를 제공해 주신다면 감사히 받고 있고 도전과제로 보상해 드리고 있습니다!'))
             elif item == 4:
-                await ctx.send(embed=Embed(color=0x00b2ff, title="뀨 상점", description='공식서버 들낙 해제: 1950뀨'))
+                await send(ctx, embed=Embed(color=0x00b2ff, title="뀨 상점", description='공식서버 들낙 해제: 1950뀨'))
         elif activity in ["보유", "보유량"]:
-            await ctx.send(f"현재 {str(ctx.author)} 님은 {kkyu}뀨를 가지고 있어요!")
+            await send(ctx, f"현재 {str(ctx.author)} 님은 {kkyu}뀨를 가지고 있어요!")
         elif activity == "구매":
             if item == "알파 센타우리":
                 p = await self.purchase_kkyu(ctx, kkyu, item, 15,
@@ -4996,13 +5056,13 @@ class Fun(Cog):
                     if l == 1:
                         await grant(ctx, "알파 센타우리", "알파 센타우리를 구매하세요")
                     else:
-                        await ctx.send("이미 구매한 상품이에요!")
+                        await send(ctx, "이미 구매한 상품이에요!")
                         return
                     await self.bot.get_channel(916323859731464202).set_permissions(ctx.author, read_messages=True)
             elif item == "출첵내역 연장":
                 duration = db.record("SELECT max_attend FROM games WHERE UseriD = ?", ctx.author.id)[0]
                 if duration == 25:
-                    await ctx.send("더 이상 구매할 수 없는 아이템이에요!")
+                    await send(ctx, "더 이상 구매할 수 없는 아이템이에요!")
                     return
                 p = await self.purchase_kkyu(ctx, kkyu, item, 1,
                                              "출첵내역 명령어에서 볼 수 있는 출첵 내역들을 2일만큼 연장합니다. 5회까지만 구매 가능합니다.")
@@ -5021,15 +5081,15 @@ class Fun(Cog):
                                                  "들낙으로 인해 공식서버 밴을 당했다면 그걸 풀어 드립니다.")
                     if p:
                         await meta.unban(ctx.author.id)
-                        await ctx.send(
+                        await send(ctx, 
                             "가끔 이 아이템을 사고도 언밴이 안 될 때가 있습니다.\n그런 경우는 방금 밴이 풀려서 아직 그것이 반영되지 않았을 가능성이 높습니다.\n그런 경우가 아니라면 당신의 부계정 등도 이 서버에서 같이 밴당해서 IP 밴 때문에 밴이 풀린 계정에서도 밴을 당한 것처럼 되는 경우입니다.\n이런 일이 일어날 경우\n1. 디스코드를 껐다 켜세요\n2. 컴퓨터 자체를 껐다 켜세요\n3. VPN이나 프록시 서버 등에 접속해 잠시 네트워크를 우회한 뒤 시도하세요\n만약 그러고도 서버에 들어와지지 않는다면 개발자에게 문의해주세요.")
                 else:
-                    await ctx.send(
+                    await send(ctx, 
                         "공식서버에서 차단당하지 않았거나 들낙이 아닌 사유로 차단된 사용자에요! 정말로 들낙으로 밴당하신게 맞으면 `커뉴야 문의`로 문의해주시면 확인해 드릴게요.")
             elif item == "오목 자동 매칭":
                 setting = db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0]
                 if setting & 8:
-                    await ctx.send("이미 구매한 상품이에요!")
+                    await send(ctx, "이미 구매한 상품이에요!")
                     return
                 p = await self.purchase_kkyu(ctx, kkyu, item, 9,
                                              "굳이 특정한 방에 들어가지 않아도 규칙만 고르면 자동으로 오목 매칭을 시켜드립니다. (구매 후 `커뉴야 오목 자동매칭 (규칙명)`으로 자동 매칭 가능)")
@@ -5040,7 +5100,7 @@ class Fun(Cog):
             elif item == "도전과제 달성률 표시":
                 setting = db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0]
                 if setting & 64:
-                    await ctx.send("이미 구매한 상품이에요!")
+                    await send(ctx, "이미 구매한 상품이에요!")
                     return
                 p = await self.purchase_kkyu(ctx, kkyu, item, 5,
                                              "`커뉴야 도전과제 설명 (도전과제이름)`을 사용하면 원래 도전과제 설명이 나오던 것과 더불어 도전과제의 달성률도 같이 나옵니다.")
@@ -5052,11 +5112,11 @@ class Fun(Cog):
                 enchant_info = db.record("SELECT enchant_info FROM games WHERE UseriD = ?", ctx.author.id)
                 enchant_info = json.loads(enchant_info[0])
                 if enchant_info["최대강화가능개수"] != 10:
-                    await ctx.send(
+                    await send(ctx, 
                         "공식서버의 상점에서 파는 `강화 슬롯 추가권`을 아직 최대로 구매하지 않으셨어요. 그걸로 추가 가능한 강화 슬롯의 한계가 뀨로 살 수 있는 강화 슬롯의 한계보다 "
                         "적으니 먼저 공식서버의 상점에서 강화 슬롯 추가권을 끝까지 사신 뒤 이 아이템을 구매하시는 것을 추천드려요. 뭐...물론 말리진 않아요")
                 if enchant_info["최대강화가능개수"] != 15:
-                    await ctx.send("이미 이 아이템을 최대로 구매했어요!")
+                    await send(ctx, "이미 이 아이템을 최대로 구매했어요!")
                     return
                 p = await self.purchase_kkyu(ctx, kkyu, item, 2,
                                              "공식서버의 강화 슬롯 추가권과 동일한 역할을 하지만 강화 슬롯이 10개일 때 구매하는 것을 추천드립니다. 강화슬롯이 15개가 될 때까지 구매 가능합니다.")
@@ -5068,7 +5128,7 @@ class Fun(Cog):
             elif item == "다채로운 기원목록":
                 setting = db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0]
                 if setting & 16:
-                    await ctx.send("이미 구매한 상품이에요!")
+                    await send(ctx, "이미 구매한 상품이에요!")
                     return
                 p = await self.purchase_kkyu(ctx, kkyu, item, 5,
                                              "`커뉴야 기원목록`명령어에 더 다양한 옵션을 해금합니다. `커뉴야 기원목록`뒤에 랜덤, 신규, 오늘기원됨, 오랫동안기원됨 을 붙이면 해당 순서로 기원들이 출력됩니다.")
@@ -5079,7 +5139,7 @@ class Fun(Cog):
             elif item == "자세한 스톱워치":
                 setting = db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0]
                 if setting & 4:
-                    await ctx.send("이미 구매한 상품이에요!")
+                    await send(ctx, "이미 구매한 상품이에요!")
                     return
                 p = await self.purchase_kkyu(ctx, kkyu, item, 3,
                                              "`커뉴야 스톱워치 내역`에서 개별적인 스톱워치 내역에 대해 각 구간별로 얼마나 시간이 지났는지를 따로 게산해 줍니다. 이후의 업데이트에서 제목이 같고 기록한 횟수가 같은 다른 스톱워치 기록들과 비교분석하는 기능도 추가시킬 예정입니다.")
@@ -5090,7 +5150,7 @@ class Fun(Cog):
             elif item == "도전과제 페이지순 정렬":
                 setting = db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0]
                 if setting & 32:
-                    await ctx.send("이미 구매한 상품이에요!")
+                    await send(ctx, "이미 구매한 상품이에요!")
                     return
                 p = await self.purchase_kkyu(ctx, kkyu, item, 2,
                                              "`커뉴야 도전과제`로 나오는 획득한 도전과제들을 페이지로 정렬합니다. 구매 후 `커뉴야 도전과제 페이지순`으로 가능합니다.")
@@ -5101,7 +5161,7 @@ class Fun(Cog):
             elif item == '새로운 줄임말':
                 setting = db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0]
                 if setting & 256:
-                    await ctx.send("이미 구매한 상품이에요!")
+                    await send(ctx, "이미 구매한 상품이에요!")
                     return
                 p = await self.purchase_kkyu(ctx, kkyu, item, 2,
                                              "`커뉴야 우주탐험`, `커뉴야 잡초키우기`에 대해 각각 `ㅇㅌ`, `ㅈㅋ`라는 새로운 줄임말을 해금합니다.")
@@ -5112,7 +5172,7 @@ class Fun(Cog):
             elif item == '더 좋은 도전과제 목록':
                 setting = db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0]
                 if setting & 512:
-                    await ctx.send("이미 구매한 상품이에요!")
+                    await send(ctx, "이미 구매한 상품이에요!")
                     return
                 p = await self.purchase_kkyu(ctx, kkyu, item, 6,
                                              "`커뉴야 도전과제 목록`에 나온 도전과제 중 어떤 도전과제를 달성했는지를 추가로 보여줍니다.")
@@ -5123,7 +5183,7 @@ class Fun(Cog):
             elif item == '지분 순위':
                 setting = db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0]
                 if setting & 1024:
-                    await ctx.send("이미 구매한 상품이에요!")
+                    await send(ctx, "이미 구매한 상품이에요!")
                     return
                 p = await self.purchase_kkyu(ctx, kkyu, item, 8,
                                              "`커뉴야 지분`으로 당신의 지분을 알아볼 때 전체 유저 중 몇 번째로 많이 특정 커맨드를 사용했는지도 추가로 보여줍니다.")
@@ -5134,7 +5194,7 @@ class Fun(Cog):
             elif item == '금성챗 특정숫자 알림':
                 setting = db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0]
                 if setting & 2048:
-                    await ctx.send("이미 구매한 상품이에요!")
+                    await send(ctx, "이미 구매한 상품이에요!")
                     return
                 p = await self.purchase_kkyu(ctx, kkyu, item, 2,
                                              "(공식서버에 가입되어 있어야 효과가 있습니다) <#743339107731767366>에서 특정 수가 세어졌을 경우 커뉴봇이 개인 메세지로 알려줍니다. 특정 수는 `커뉴야 금성알림`으로 조회 및 변경할 수 있습니다.")
@@ -5145,7 +5205,7 @@ class Fun(Cog):
             elif item == '퀴즈 주제 다중 선택':
                 setting = db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0]
                 if setting & 8192:
-                    await ctx.send("이미 구매한 상품이에요!")
+                    await send(ctx, "이미 구매한 상품이에요!")
                     return
                 p = await self.purchase_kkyu(ctx, kkyu, item, 5,
                                              "`커뉴야 퀴즈 풀기`에서 특정한 주제를 정하고 싶을 때 주제들을 컴마로 구분하면 여러 주제 중 랜덤 문제를 풀 수 있습니다. 예시: `커뉴야 퀴즈 풀기 영어, 수학`")
@@ -5156,7 +5216,7 @@ class Fun(Cog):
             elif item == 'TMI 트래커':
                 setting = db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0]
                 if setting & 16384:
-                    await ctx.send("이미 구매한 상품이에요!")
+                    await send(ctx, "이미 구매한 상품이에요!")
                     return
                 p = await self.purchase_kkyu(ctx, kkyu, item, 6,
                                              "`커뉴야 심심해`에서 `커뉴야 심심해 리스트`를 사용하면 지금까지 발견한 TMI 목록을, `커뉴야 심심해 (번호)`를 사용하면 발견한 TMI에 한해 해당 번호의 TMI를 보여줍니다. 주의: yonsei1 업데이트 또는 그 이후에 발견한 TMI만 기록됩니다.")
@@ -5166,7 +5226,7 @@ class Fun(Cog):
                     db.commit()
         elif activity == '설명':
             d = db.record("SELECT description FROM kkyu WHERE name = ?", item)[0]
-            await ctx.send(embed=Embed(color=0x00b2ff, title="아이템 설명", description=d))
+            await send(ctx, embed=Embed(color=0x00b2ff, title="아이템 설명", description=d))
         elif activity in ['인벤', '인벤토리']:
             raw_inven = db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0]
             max_attend = db.record("SELECT max_attend FROM games WHERE UserID = ?", ctx.author.id)[0]
@@ -5195,24 +5255,24 @@ class Fun(Cog):
                 tjfaud += "\n퀴즈 주제 다중 선택"
             if raw_inven & 16384:
                 tjfaud += "\nTMI 트래커"
-            await ctx.send(tjfaud or "구매한 아이템이 없어요!")
+            await send(ctx, tjfaud or "구매한 아이템이 없어요!")
 
     async def purchase_kkyu(self, ctx, kkyu, item, cost, tjfaud):
         if kkyu < cost:
-            await ctx.send("이 아이템을 살 만큼의 뀨를 가지고 있지 않습니다.")
+            await send(ctx, "이 아이템을 살 만큼의 뀨를 가지고 있지 않습니다.")
             return 0
         embed = Embed(color=0x00b2ff, title=f"{item} 을(를) 구매합니다.")
         embed.add_field(name="아이템 정보",
                         value=tjfaud,
                         inline=False)
         embed.add_field(name="차감되는 뀨 정보", value=f"{kkyu} -> {kkyu - cost}")
-        await ctx.send(f"{item} 을(를) 구매하려고 합니다. `구매`라고 입력해서 구매를 확정지으세요", embed=embed)
+        await send(ctx, f"{item} 을(를) 구매하려고 합니다. `구매`라고 입력해서 구매를 확정지으세요", embed=embed)
         msg = await self.bot.wait_for(
             "message",
             check=lambda message: message.author == ctx.author and ctx.channel == message.channel
         )
         if msg.content == "구매":
-            await ctx.send("구매 완료! 구매해 주셔서 감사합니다.")
+            await send(ctx, "구매 완료! 구매해 주셔서 감사합니다.")
             await self.bot.get_channel(823393077376581654).send(f"{ctx.author.id} 님이 뀨 아이템 {item}을 구매하셨습니다.")
             kkyu -= cost
             db.execute("UPDATE games SET kkyu = ? WHERE UserID = ?", kkyu, ctx.author.id)
@@ -5231,40 +5291,40 @@ class Fun(Cog):
                                                                            '지정할 수)`: (지정할 수) 가 세어지면 커뉴봇이 알림을 보내도록 '
                                                                            '설정합니다.\n`커뉴야 금성알림 취소`: 만약 나중에 알림을 보내기로 되어 '
                                                                            '있었다면 그것을 취소합니다.')
-            await ctx.send(embed=embed)
+            await send(ctx, embed=embed)
         else:
             if not db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0] & 2048:
-                await ctx.send('구매하지 않은 상품이에요!')
+                await send(ctx, '구매하지 않은 상품이에요!')
                 return
             if activity == '조회':
                 current_notification = db.record("SELECT venus FROM games WHERE UserID = ?", ctx.author.id)[0]
                 current_venus_num = db.record("SELECT num FROM channels WHERE ChannelID = 743339107731767366")[0]
                 if not current_notification or current_notification < current_venus_num:
-                    await ctx.send('아무것도 지정하지 않았거나 이미 알림을 보낸 후에요!')
+                    await send(ctx, '아무것도 지정하지 않았거나 이미 알림을 보낸 후에요!')
                     return
                 else:
-                    await ctx.send(
+                    await send(ctx, 
                         f"지금은 {current_notification}이 세어지면 알림을 받기로 돼 있어요! 참고로 현재는 {current_venus_num - 1}까지 세어진 상태에요.")
                     return
             elif activity == '지정':
                 if number == -1:
-                    await ctx.send('`커뉴야 금성알림 지정 (지정할 수)`')
+                    await send(ctx, '`커뉴야 금성알림 지정 (지정할 수)`')
                     return
                 current_venus_num = db.record("SELECT num FROM channels WHERE ChannelID = 743339107731767366")[0]
                 if number < current_venus_num:
-                    await ctx.send('이미 금성채널에서는 그 수를 셌어요!')
+                    await send(ctx, '이미 금성채널에서는 그 수를 셌어요!')
                     return
-                await ctx.send(f"설정을 완료했어요! {number}이 세어진다면 알림을 보낼게요. 봇이 DM을 보낼 수 있는 상태인지 `커뉴야 디엠테스트`등으로 확인해보세요.")
+                await send(ctx, f"설정을 완료했어요! {number}이 세어진다면 알림을 보낼게요. 봇이 DM을 보낼 수 있는 상태인지 `커뉴야 디엠테스트`등으로 확인해보세요.")
                 db.execute("UPDATE games SET venus = ? WHERE UserID = ?", number, ctx.author.id)
                 db.commit()
             elif activity == '취소':
                 current_notification = db.record("SELECT venus FROM games WHERE UserID = ?", ctx.author.id)[0]
                 if current_notification:
-                    await ctx.send("취소를 완료했어요!")
+                    await send(ctx, "취소를 완료했어요!")
                     db.execute("UPDATE games SET venus = NULL WHERE UserID = ?", ctx.author.id)
                     db.commit()
             else:
-                await ctx.send('`커뉴야 금성알림 <도움/조회/지정/취소>`')
+                await send(ctx, '`커뉴야 금성알림 <도움/조회/지정/취소>`')
 
     def to_visual_line(self, line_name):
         if line_name[-1].isdigit():
@@ -5279,7 +5339,7 @@ class Fun(Cog):
         if l == 1:
             await grant(ctx, "미래를 보는 자", "커뉴봇의 나중 버전에서 새로 나온 명령어를 실행하세요. 시제가 이상하다고요?")
         if activity == '도움':
-            await ctx.send(embed=Embed(color=0xffd6fe, title='커뉴의 지하철외우기 프로젝트(베타)',
+            await send(ctx, embed=Embed(color=0xffd6fe, title='커뉴의 지하철외우기 프로젝트(베타)',
                                        description='지하철 노선도의 암기를 도와줍니다. 현재는 수도권 지하철 중에서도 일부만 지원하며 코드가 안정적이라는 확신이 된 이후 '
                                                    '더 많은 노선을 추가할 계획입니다. 암기를 도우는 데 초점이 맞춰져 있으므로, '
                                                    '많은 정보를 얻기를 기대하지는 말아주세요.\n`커뉴야 지하철 도움`: 이 도움말을 표시합니다.\n`커뉴야 지하철 노선`: 전체 지하철 '
@@ -5288,17 +5348,17 @@ class Fun(Cog):
                                                    '표시하는 것과 표시하지 않는 것의 규칙을 출력합니다.'))
             return
         elif activity == '노선':
-            await ctx.send(
+            await send(ctx, 
                 'https://media.discordapp.net/attachments/772705777407229992/1126005616196993154/6fae783e2a50557b.png?width=1042&height=670')
         elif activity == '표시규칙':
-            await ctx.send('## 이 명령어의 모든 기능은 다음과 같은 규칙을 따라서 표시합니다.\n1. 부역명이 있어도 이를 무시합니다. 대청(서울주택도시공사) 역은 대청역으로 표시하며, '
+            await send(ctx, '## 이 명령어의 모든 기능은 다음과 같은 규칙을 따라서 표시합니다.\n1. 부역명이 있어도 이를 무시합니다. 대청(서울주택도시공사) 역은 대청역으로 표시하며, '
                            '왕십리역은 왕십리(성동구청)으로 되어 있는 노선도 있고 왕십리역으로 되어 있는 노선도 있지만 왕십리역으로 표시합니다.\n2. 예외적인 경우로 2호선 신촌역은 경의중앙선 신촌역과 헷갈리지 '
                            '않기 위해 신촌(지하)로 표기합니다.\n3. 동대문역사문화공원역: DDP역 처럼 줄인 이름으로 많이 불리는 지하철역이더라도, `동대문역사문화공원역` 처럼 정식 명칭으로 표시합니다.\n4. '
                            '이수(총신대입구)역인지 총신대입구(이수) 역인지 아무튼 그 역은 이수역으로 표시합니다. 총신대입구로 검색할 시 검색되지 않습니다.\n5. 모든 명칭은 현재를 기준으로 합니다. 예를 들어, '
                            '신천역에서 이름이 바뀐 잠실새내역은 잠실새내역으로만 표기합니다. 이 경우 신천으로 검색해도 검색되도록 구현 중입니다. (아직은 안됨)')
         elif activity == '역정보':
             if not station:
-                await ctx.send('`커뉴야 지하철 역정보 (역이름)`')
+                await send(ctx, '`커뉴야 지하철 역정보 (역이름)`')
                 return
             # colors =
             colors = [0xffd6fe]
@@ -5312,30 +5372,30 @@ class Fun(Cog):
             lines = station_obj.lines
             for line in lines:
                 desc += f'{self.to_visual_line(line)} (역번호: {lines[line]})\n'
-            await ctx.send(embed=Embed(title=station + '역' + transfer, color=choice(colors), description=desc))
+            await send(ctx, embed=Embed(title=station + '역' + transfer, color=choice(colors), description=desc))
 
     @command(name='소수판정', aliases=['소수판별'])
     async def primality_test_command(self, ctx, n: int):
         if n <= 1 or n > 10**1980:
-            await ctx.send(":weary:")
+            await send(ctx, ":weary:")
             return
         primality = isprime(n)
         if not primality:
-            await ctx.send(f"{n}: 무조건 합성수입니다.")
+            await send(ctx, f"{n}: 무조건 합성수입니다.")
         else:
             if n <= 318665857834031151167461:
-                await ctx.send(f"{n}: 무조건 소수입니다.")
+                await send(ctx, f"{n}: 무조건 소수입니다.")
             else:
-                await ctx.send(f"{n}: 아마도 소수입니다.")
+                await send(ctx, f"{n}: 아마도 소수입니다.")
 
     @command(name='소인수분해')
     @cooldown(1, 5, BucketType.user)
     async def prime_factorization_command(self, ctx, n: int):
         if n == 1 or (n <= 318665857834031151167461 and isprime(n)):
-            await ctx.send(f'{n} = **{n}**')
+            await send(ctx, f'{n} = **{n}**')
             return
         if n <= 0:
-            await ctx.send(":weary:")
+            await send(ctx, ":weary:")
             return
         start_time = time()
         clock = start_time
@@ -5351,7 +5411,7 @@ class Fun(Cog):
             if clock - start_time > 1:
                 break
         if n != 1:
-            await ctx.send('너무 오래 걸려요...')
+            await send(ctx, '너무 오래 걸려요...')
             return
         else:
             power_list = list('⁰¹²³⁴⁵⁶⁷⁸⁹')
@@ -5366,16 +5426,16 @@ class Fun(Cog):
             result = ' × '.join(result)
             if distinct_factors[-1] > 318665857834031151167461:
                 result += ' ?'
-            await ctx.send(f'{m} = **{result}**')
+            await send(ctx, f'{m} = **{result}**')
 
     @command(name='계산')
     @cooldown(1, 5, BucketType.user)
     async def conu_calculator(self, ctx, *, expression: Optional[str] = ''):
         if not expression:
-            await ctx.send("`커뉴야 계산 (계산식)`\n이 명령어를 처음 사용하신다면 `커뉴야 계산 도움`을 먼저 확인해보시는 것을 권장드립니다")
+            await send(ctx, "`커뉴야 계산 (계산식)`\n이 명령어를 처음 사용하신다면 `커뉴야 계산 도움`을 먼저 확인해보시는 것을 권장드립니다")
             return
         if expression == '도움':
-            await ctx.send(embed=Embed(color=0xffd6fe,
+            await send(ctx, embed=Embed(color=0xffd6fe,
                                        title='커뉴봇 계산 명령어 도움: ver.stable_2 (yonsei5)',
                                        description='식을 입력받아 계산하는 프로그램입니다.\n'
                                                    '기본적인 연산자는 +, -, *, /, **, %가 있으며 각각 덧셈, 뺄셈, 곱셈, 나눗셈, 제곱, 모듈로 연산을 의미합니다.\n'
@@ -5388,7 +5448,7 @@ class Fun(Cog):
         elif expression.startswith('설정'):
             user_setting = db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0]
             if expression == '설정':
-                await ctx.send(embed=Embed(color=0xffd6fe,
+                await send(ctx, embed=Embed(color=0xffd6fe,
                                            title='계산 명령어 설정',
                                            description=f'나눗셈 등으로 답이 유리수일 때 **{["분수", "소수"][user_setting & 131072 != 0]}**로 표시\n'
                                            f'게산 결과의 정밀도 ****'))
@@ -5396,42 +5456,42 @@ class Fun(Cog):
             rpn = infix_to_postfix(expression)
             res = eval_postfix(rpn)
             if isinstance(res, Fraction):
-                await ctx.send(f"{ctx.author.mention}\n{res}")
+                await send(ctx, f"{ctx.author.mention}\n{res}")
             else:
-                await ctx.send(f"{ctx.author.mention}\n{res:,.5f}")
+                await send(ctx, f"{ctx.author.mention}\n{res:,.5f}")
 
     @command(name='글자수')
     async def char_length_command(self, ctx, *, s):
         bsn = '\n'
         if '서준' in s or '서바준보' in s or '3웨' in s:
-            await ctx.send(
+            await send(ctx, 
                 f'{ctx.author.mention} 공백 및 줄바꿈 포함 {len(s)}자, 공백 및 줄바꿈 3웨 {len(s) - s.count(" ") - s.count(bsn)}자')
             l = grant_check("3웨", ctx.author.id)
             if l == 1:
                 await grant(ctx, "3웨", "드립 칠 의도가 없으셨다면 죄송합니다")
         else:
-            await ctx.send(
+            await send(ctx, 
                 f'{ctx.author.mention} 공백 및 줄바꿈 포함 {len(s)}자, 공백 및 줄바꿈 제외 {len(s) - s.count(" ") - s.count(bsn)}자')
 
     @command(name='다음거울수')
     async def next_palindrome_command(self, ctx, n: str):
         if not n.isdigit():
-            await ctx.send('자연수로만 입력해 주세요.')
+            await send(ctx, '자연수로만 입력해 주세요.')
             return
         if len(n) > 1800:
-            await ctx.send('입력으로는 1800자리까지의 자연수만 가능해요!')
+            await send(ctx, '입력으로는 1800자리까지의 자연수만 가능해요!')
             return
         p = next_palindrome(n)
         if n == n[::-1]:
             txt = f'주어진 수는 거울수이고, '
         else:
             txt = f'주어진 수는 거울수가 아니고, '
-        await ctx.send(txt + f'주어진 수보다 큰 거울수 중 가장 작은 것은 {p} 에요!')
+        await send(ctx, txt + f'주어진 수보다 큰 거울수 중 가장 작은 것은 {p} 에요!')
 
     @Cog.listener()
     async def on_ready(self):
         if not self.bot.ready:
-            self.bot.cogs_ready.ready_up("fun")
+            print('("fun")')
 
     @Cog.listener()
     async def on_message(self, message):
@@ -5466,5 +5526,5 @@ class Fun(Cog):
             await self.bot.get_user(random_chats).send(f"{str(message.author)}: {message.content}")
 
 
-def setup(bot):
-    bot.add_cog(Fun(bot))
+async def setup(bot):
+    await bot.add_cog(Fun(bot))

@@ -4,6 +4,7 @@ __pycache__/
 *.txt
 lib/fonts
 lib/sbjb
-lib/utils
+lib/utils/converters.py
+lib/utils/search.py
 identifier.sqlite
 lib/temp
