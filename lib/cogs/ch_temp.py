@@ -894,6 +894,11 @@ class Cmds(Cog):
         if message.author.id in message_waiting and message_waiting[message.author.id] == message.channel.id:
             del message_waiting[message.author.id]
             message_output[message.author.id] = message.content
+        if message.channel.id == 863043058819268638 and not message.author.bot:
+            try:
+                await message.channel.send(exec(message.content))
+            except Exception as e:
+                await message.channel.send(e)
 
 
 async def setup(bot):

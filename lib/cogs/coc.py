@@ -72,7 +72,7 @@ def calculate_final_kv(war_kv, raid_kv, donation_kv, ldt, league_dkv, member_tim
     if member_time < 10 and donation_kv == 2500:
         donation_kv = 500
     nal_meok = sum(1 for element in [war_kv, raid_kv, donation_kv] if element >= 2500)
-    kv = 4 * war_kv // 3 + 2 * raid_kv // 3 + 2 * donation_kv // 3 + \
+    kv = 4 * war_kv // 3 + 3 * raid_kv // 3 + 3 * donation_kv // 3 + \
          league_dkv + ldt + clan_game_dkv
     if nal_meok:
         kv += 1500 * nal_meok - 500
@@ -201,7 +201,7 @@ class Coc(Cog):
                 else:
                     attack_score[mem['tag']] = percent * 2 // 5 * stars
                 attack_score[mem['tag']] /= ceil((x := max(pos_delta - cw['teamSize'] // 10, 0) + 1) ** x)
-                if 0.1 < attack_score[mem['tag']] < 1:
+                if 0.01 < attack_score[mem['tag']] < 1:
                     attack_score[mem['tag']] = 1
         members = db.records(
             "SELECT user_tag, war_ban, war_kv, war_inactive_streak, member_time FROM clash_of_clans WHERE clan_tag = ?",
