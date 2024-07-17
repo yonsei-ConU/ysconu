@@ -1029,8 +1029,8 @@ async def handle_shortcut(interaction, 내용, 큰분류, 중간분류, 작은�
                 f"여기 있는 {['큰분류', '중간분류', '작은분류', '교재'][i]}들 중 어느 걸 선택할지 굵은 글씨로 써있는 번호만 말해 주세요.", embed=embed)
             message_waiting[interaction.user.id] = interaction.channel.id
             while interaction.user.id in message_waiting:
-                await sleep(1)
-            await sleep(0.5)
+                await asyncio.sleep(1)
+            await asyncio.sleep(0.5)
             msg = message_output[interaction.user.id]
             try:
                 msg = int(msg)
@@ -1134,8 +1134,8 @@ async def stop_study(interaction, resting, record_grades):
         await interaction.channel.send("기록할 성적을 **a/b** 의 꼴로 입력해 주세요.")
         message_waiting[interaction.user.id] = interaction.channel.id
         while interaction.user.id in message_waiting:
-            await sleep(1)
-        await sleep(0.5)
+            await asyncio.sleep(1)
+        await asyncio.sleep(0.5)
         msg = message_output[interaction.user.id]
         check = 1
         if re.search('\d+/\d+', msg):
@@ -1181,8 +1181,8 @@ async def fetch_work(interaction, search):
         await interaction.channel.send("어느 걸 선택할지 굵은 글씨로 써있는 번호만 말해주세요.", embed=embed)
         message_waiting[interaction.user.id] = interaction.channel.id
         while interaction.user.id in message_waiting:
-            await sleep(1)
-        await sleep(0.5)
+            await asyncio.sleep(1)
+        await asyncio.sleep(0.5)
         msg = message_output[interaction.user.id]
         try:
             msg = int(msg)
