@@ -5383,7 +5383,7 @@ class Fun(Cog):
         if not primality:
             await send(ctx, f"{n}: 무조건 합성수입니다.")
         else:
-            if n <= 318665857834031151167461:
+            if n < 318665857834031151167461:
                 await send(ctx, f"{n}: 무조건 소수입니다.")
             else:
                 await send(ctx, f"{n}: 아마도 소수입니다.")
@@ -5391,8 +5391,11 @@ class Fun(Cog):
     @command(name='소인수분해')
     @cooldown(1, 5, BucketType.user)
     async def prime_factorization_command(self, ctx, n: int):
-        if n == 1 or (n <= 318665857834031151167461 and isprime(n)):
+        if n == 1 or (n < 318665857834031151167461 and isprime(n)):
             await send(ctx, f'{n} = **{n}**')
+            return
+        if n == 318665857834031151167461:
+            await send(ctx, '318665857834031151167461 = **399165290221 × 798330580441**')
             return
         if n <= 0:
             await send(ctx, ":weary:")
