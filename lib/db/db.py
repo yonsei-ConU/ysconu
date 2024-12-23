@@ -66,6 +66,7 @@ def execute(command, *values):
 	a = cur.execute(command, tuple(values))
 	return a.rowcount
 
+
 def multiexec(command, valueset):
 	cur.executemany(command, valueset)
 
