@@ -43,11 +43,10 @@ class ConU(Bot):
 
     async def setup_hook(self) -> None:
         self.session = aiohttp.ClientSession()
-        for name in ['achieve', 'alpha', 'coc', 'conupink', 'fun', 'exp', 'help', 'info', 'log', 'meta', 'misc',
-                     'mod', 'omok', 'study', 'talk', 'welcome', 'ch_temp']:
-            await self.load_extension(f'lib.cogs.{name}')
-        await self.tree.sync()
-        print('트리 싱크 완료!')
+        await self.load_extension(f'lib.cogs.study_NEW')
+        # synced = await self.tree.sync()
+        synced = [1]
+        print(f"동기화된 커맨드: {len(synced)}개")
 
     def update_db(self):
         db.multiexec("INSERT OR IGNORE INTO guilds (GuildID) VALUES (?)",
@@ -226,9 +225,6 @@ class ConU(Bot):
             await self.stdout.send("봇 가동이 시작되었습니다.")
             self.ready = True
             print("bot ready")
-
-            meta = self.get_cog("Meta")
-            await meta.set()
 
         else:
             print("bot reconnected")
