@@ -1,7 +1,6 @@
 import asyncio
 import re
 from calendar import monthrange
-from random import randint
 from typing import Optional
 from time import *
 import matplotlib.pyplot as plt
@@ -12,7 +11,7 @@ from anytree import RenderTree
 from anytree.exporter import JsonExporter
 from anytree.importer import JsonImporter
 from collections import deque
-from discord import File, HTTPException, Object, app_commands, Member, Embed, ui, Interaction, ButtonStyle
+from discord import File, HTTPException, app_commands, Member, Embed, ui, Interaction, ButtonStyle
 from discord.app_commands import Choice
 from discord.ext.commands import Cog
 from scipy.interpolate import make_interp_spline
@@ -20,7 +19,6 @@ from ..db import db
 from datetime import datetime, timedelta
 
 # -*- coding: utf-8 -*-
-KKYU = ' <:kkyu_with_3_hearts:988807940330893352>'
 today = (time() + 32400) // 86400
 study_messages = dict()
 study_times = dict()

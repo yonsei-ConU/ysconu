@@ -490,7 +490,7 @@ def harmonic(n):
         if n == int(n):
             n = int(n)
     except ValueError:
-        return
+        return 0
     if n < 1000:
         r = Decimal("0")
         for i in range(1, n + 1):
@@ -4684,7 +4684,17 @@ class Fun(Cog):
                     "227. 방학에도 하루에 8시간씩 공부하는 대학 새내기가 있다는데요?",
                     "228. TMI가 n번까지 있을 때 모든 TMI를 한 번씩 보기 위해서 명령어를 쳐야 하는 횟수의 기댓값은 n(1+1/2+...+1/n)이에요. 지금은 230개의 TMI가 있고 저 값은 1384 정도에요.",
                     "229. 228번 TMI에 나오는 공식은 기댓값의 선형성으로 어렵지 않게 증명할 수 있어요.",
-                    "230. 여기서 나오는 TMI들이 말하는 시점은 비선형적이에요. 이 기능이 4차원이라고 할 수 있겠네요."]
+                    "230. 여기서 나오는 TMI들이 말하는 시점은 비선형적이에요. 이 기능이 4차원이라고 할 수 있겠네요.",
+                    "231. 연세6 업데이트가 저번에 있었고, 진짜로 슬래시 커맨드를 지원하게 됐어요!",
+                    "232. 이걸 봐도 심심하시다면 어려운 이스터 에그 도전과제 아이디어를 투고해보세요!",
+                    "233. 서버비 수금이 안 되면 내년에 서비스 종료해버릴 거에요",
+                    "234. TMI에는 가끔씩 멍청이들은 이해하기 힘들거나 드립인지도 모를 고수준 드립이 나올 때가 있어요.",
+                    "235. 개발자랑 친해지면 가끔 얘가 밥사준대요.",
+                    "236. 꽤 자주, 공식서버가 어떻게 지금까지 터지지 않고 유지될 수 있는지 서버장인 개발자도 궁금해질 때가 있어요.",
+                    "237. 공식서버가 시작된지 약 1년이 지난 시점 `역사관`이라는 걸 준비하던 때가 있었어요. 하지만 결국 열지 못했죠.",
+                    "238. 내가 이걸 왜 하고 있을까? 누구 좋으라고? 나 좋으라고? 프로젝트 나가고 싶다고 하면 나보고 오라고 할 사람이 한둘이 아닐 텐데?",
+                    "239. 어차피 업데이트를 뭘 해도 신경 안 쓸 거죠? 그래 주세요.",
+                    "240. 318665857834031151167461은 합성수에요."]
         embed = Embed(color=0xffd6fe, title="TMI를 말해드릴게요... 번호는 만든 순서임...",)
         seen = db.record("SELECT tmi FROM games WHERE UserID = ?", ctx.author.id)[0]
         if extra == '리스트':
@@ -5437,6 +5447,7 @@ class Fun(Cog):
         if not expression:
             await send(ctx, "`커뉴야 계산 (계산식)`\n이 명령어를 처음 사용하신다면 `커뉴야 계산 도움`을 먼저 확인해보시는 것을 권장드립니다")
             return
+        user_setting = db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0]
         if expression == '도움':
             await send(ctx, embed=Embed(color=0xffd6fe,
                                        title='커뉴봇 계산 명령어 도움: ver.stable_2 (yonsei5)',
@@ -5449,17 +5460,32 @@ class Fun(Cog):
                                                    '명령어에 관한 설정들을 바꾸고 싶다면 `커뉴야 계산 설정`\n'
                                                    'eval 함수는 사용하지 않아요. 이게 무슨 뜻인지 모르신다면 무시하셔도 좋습니다.'))
         elif expression.startswith('설정'):
-            user_setting = db.record("SELECT user_setting FROM games WHERE UserID = ?", ctx.author.id)[0]
             if expression == '설정':
                 await send(ctx, embed=Embed(color=0xffd6fe,
                                            title='계산 명령어 설정',
                                            description=f'나눗셈 등으로 답이 유리수일 때 **{["분수", "소수"][user_setting & 131072 != 0]}**로 표시\n'
-                                           f'게산 결과의 정밀도 ****'))
+                                                       f'변경을 원하면 `커뉴야 계산 설정 <분수표기/소수표기>\n'
+                                                       f'게산 결과의 정밀도 ****'))
+            elif expression == '설정 분수표기':
+                if user_setting & 131072:
+                    db.execute("UPDATE games SET user_setting = ? WHERE UserID = ?", user_setting - 131072, ctx.author.id)
+                    await ctx.send('완료')
+                else:
+                    await ctx.send('엄')
+            elif expression == '설정 소수표기':
+                if not user_setting & 131072:
+                    db.execute("UPDATE games SET user_setting = ? WHERE UserID = ?", user_setting + 131072, ctx.author.id)
+                    await ctx.send('완료')
+                else:
+                    await ctx.send('엄')
         else:
             rpn = infix_to_postfix(expression)
             res = eval_postfix(rpn)
             if isinstance(res, Fraction):
-                await send(ctx, f"{ctx.author.mention}\n{res}")
+                if user_setting & 131072:
+                    await send(ctx, f"{ctx.author.mention}\n{float(res):,.5f}")
+                else:
+                    await send(ctx, f"{ctx.author.mention}\n{res}")
             else:
                 await send(ctx, f"{ctx.author.mention}\n{res:,.5f}")
 

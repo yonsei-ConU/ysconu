@@ -1871,7 +1871,7 @@ class Mod(Cog):
         if message.content.startswith("우커바"):
             await message.channel.send("우리 커여운 한바♡♡")
         elif channel_type & 4 == 4:
-            if len(message.content) == 1 or (message.author.bot and channel_type & 8 == 8):
+            if len(message.content) == 1:
                 return
             custom_emoji = re.compile("<a?:\w*:\d{18,19}>")
             c = custom_emoji.match(message.content)
@@ -1884,7 +1884,7 @@ class Mod(Cog):
         elif message.content == "민트초코":
             await message.channel.send(
                 "달콤하고 쌉싸름한게 진짜 인생에 큰 행복이며 겁나 맛있으니 민초안먹는 흑우는 없을거라 믿는다 와 진짜 민트초코는 전설이다 민트초코 하와이안 피자 싸움수준 ㄹㅇ 실화냐? 민트초코압승이지 아ㅋㅋ")
-        if message.content.startswith("커누야") or message.content.startswith("커뉴애") or message.content.startswith(
+        elif message.content.startswith("커누야") or message.content.startswith("커뉴애") or message.content.startswith(
                 "zㅓ뉴야") or message.content.startswith("zj뉴야") or message.content.startswith("zjsbdi"):
             await message.channel.send("<:ThinkingWeary:802379135036555284>")
         if servertype & 4 == 4:

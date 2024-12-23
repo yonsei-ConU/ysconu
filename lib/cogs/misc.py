@@ -40,12 +40,38 @@ class Misc(Cog):
         #         await send(ctx, "`커뉴야 업데이트 설정 (방식별/기능별)`")
         #         return
         if not extra1:
+            embed = Embed(color=0xffd6fe, title="커뉴봇 yonsei7 업데이트 (날짜: 2024년 ?월 ?일)")
+            embed.add_field(name='이번 업데이트의 방향성',
+                            value="그러게요",
+                            inline=False)
+            embed.add_field(name="1. 새로운 기능",
+                            value="",
+                            inline=False)
+            embed.add_field(name="2. 개선된 기능",
+                            value="",
+                            inline=False)
+            embed.add_field(name="3. 수정된 버그",
+                            value="커스텀 이모지 하나만 세로채널에 보냈을 때 봇이 다른 메세지를 추가로 보내던 버그 수정",
+                            inline=False)
+            embed.add_field(name="4. 삭제된 기능",
+                            value="",
+                            inline=False)
+            embed.set_footer(
+                text="커뉴야 심심해 명령어로 나오는 TMI 개수: 230개 -> 240개\n도전과제 개수: 123개 -> 123개 ()\n이전 업데이트 yonsei6\n다음 업데이트 미출시")
+            await send(ctx, embed=embed)
+        elif extra1 == '세로채널':
+            embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 세로채널")
+            embed.add_field(name='yonsei7', value='커스텀 이모지 하나만 세로채널에 보냈을 때 봇이 다른 메세지를 추가로 보내던 버그 수정', inline=False)
+            embed.add_field(name='yonsei1', value='근래에 만들어진 커스텀 이모지 하나만 세로채널에 보냈을 때 봇이 메세지를 삭제하던 버그 수정', inline=False)
+            await send(ctx, embed=embed)
+        elif extra1 == 'yonsei6':
             embed = Embed(color=0xffd6fe, title="커뉴봇 yonsei6 업데이트 (날짜: 2024년 7월 17일)")
             embed.add_field(name='이번 업데이트의 방향성',
                             value="슬래시 커맨드 지원, 커뉴스터디 추가",
                             inline=False)
             embed.add_field(name="1. 새로운 기능",
-                            value="커뉴스터디 추가 (이전에 있었던 `할거`를 비롯한 기능의 상위 버전으로, 다양한 명령어와 알잘딱한 파싱 능력을 보여 줍니다. 단, 슬래시 커맨드 전용. 처음 사용하는 유저라면 `커뉴야 도움 공부`를 확인해보세요.)",
+                            value="커뉴스터디 추가 (이전에 있었던 `할거`를 비롯한 기능의 상위 버전으로, 다양한 명령어와 알잘딱한 파싱 능력을 보여 줍니다. 단, 슬래시 커맨드 "
+                                  "전용. 처음 사용하는 유저라면 `커뉴야 도움 공부`를 확인해보세요.)",
                             inline=False)
             embed.add_field(name="2. 개선된 기능",
                             value="몇몇 명령어에서 슬래시 커맨드를 사용할 수 있게 됨\n`커뉴야 출첵`을 약간 리워크, 커뉴스터디 기능과 양립 가능",
@@ -57,7 +83,7 @@ class Misc(Cog):
                             value="사용 빈도가 극히 낮던 일부 대화 명령어를 삭제",
                             inline=False)
             embed.set_footer(
-                text="커뉴야 심심해 명령어로 나오는 TMI 개수: 230개 -> 230개\n도전과제 개수: 123개 -> 123개 ()\n이전 업데이트 yonsei5\n다음 업데이트 미출시")
+                text="커뉴야 심심해 명령어로 나오는 TMI 개수: 230개 -> 230개\n도전과제 개수: 123개 -> 123개 ()\n이전 업데이트 yonsei5\n다음 업데이트 yonsei7")
             await send(ctx, embed=embed)
         elif extra1 == '커뉴핑크':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 커뉴핑크")
@@ -314,10 +340,6 @@ class Misc(Cog):
         elif extra1 == '이름색역할':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 이름색역할")
             embed.add_field(name='yonsei1', value='근래에 만들어진 역할을 이름색 역할으로 정하려고 할 때 봇이 인식하지 못하던 버그 수정', inline=False)
-            await send(ctx, embed=embed)
-        elif extra1 == '세로채널':
-            embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 세로채널")
-            embed.add_field(name='yonsei1', value='근래에 만들어진 커스텀 이모지 하나만 세로채널에 보냈을 때 봇이 메세지를 삭제하던 버그 수정', inline=False)
             await send(ctx, embed=embed)
         elif extra1 == '알파센타우리':
             embed = Embed(color=0xffd6fe, title="커뉴봇 기능 업데이트 내역: 알파센타우리")
