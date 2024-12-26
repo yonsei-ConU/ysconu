@@ -44,8 +44,8 @@ class ConU(Bot):
     async def setup_hook(self) -> None:
         self.session = aiohttp.ClientSession()
         await self.load_extension(f'lib.cogs.study_NEW')
-        # synced = await self.tree.sync()
-        synced = [1]
+        synced = await self.tree.sync()
+        # synced = [2]
         print(f"동기화된 커맨드: {len(synced)}개")
 
     def update_db(self):
