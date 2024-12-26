@@ -5,7 +5,7 @@ from datetime import datetime
 from discord import app_commands, ui, SelectOption, Interaction
 from typing import Optional
 from types import GeneratorType
-
+from collections import deque, defaultdict
 
 root = {}
 
@@ -31,54 +31,85 @@ def bootstrap(f, stack=[]):
 
 
 class Node:
-    def __init__(self, name, node_type, parent, created_by):
-        self.id = str(uuid.uuid4())
+    def __init__(self, name, node_type, parent, created_by, _id=None):
+        if _id is None:
+            self.id = str(uuid.uuid4())
+        else:
+            self.id = _id
         self.name = name
         self.node_type = node_type
-        self.parent = parent
         self.created_by = created_by
         self.children = []
-        if not parent:
+        if parent is None:
+            self._parent = None
             self.path = 'root'
             self.name = 'root'
-            db.execute("INSERT OR IGNORE INTO NODE_DATA (id, name, node_type, parent, created_by)"
-                       "VALUES (?, ?, ?, ?, ?)", self.id, self.name, self.node_type, None, self.created_by)
-        else:
-            self.path = f"{parent.path} > {self.name}"
-            self.parent.children.append(self)
+        elif parent:
+            self.parent = parent
+        if _id is None and self.__class__ is Node:
+            self.insert_to_db()
+
+    def insert_to_db(self):
+        db.execute("INSERT OR IGNORE INTO NODE_DATA (id, name, node_type, parent, created_by)"
+                   "VALUES (?, ?, ?, ?, ?)", self.id, self.name, self.node_type, None, self.created_by)
+        db.commit()
+
+    @property
+    def parent(self):
+        return self._parent
+
+    @parent.setter
+    def parent(self, parent):
+        self._parent = parent
+        self.path = f"{parent.path} > {self.name}"
+        self._parent.children.append(self)
 
 
 class CategoryNode(Node):
-    def __init__(self, name, node_type, parent, created_by):
-        super().__init__(name, node_type, parent, created_by)
+    def __init__(self, name, node_type, parent, created_by, _id=None):
+        super().__init__(name, node_type, parent, created_by, _id)
+        if _id is None:
+            self.insert_to_db()
+
+    def insert_to_db(self):
         db.execute("INSERT OR IGNORE INTO NODE_DATA (id, name, node_type, parent, created_by)"
-                   "VALUES (?, ?, ?, ?, ?)", self.id, name, node_type, parent.id, created_by)
+                   "VALUES (?, ?, ?, ?, ?)", self.id, self.name,
+                   self.node_type, self._parent.id, self.created_by)
         db.commit()
 
 
 class TaskNode(Node):
-    def __init__(self, name, node_type, parent, created_by, deadline, amount_of_task):
-        super().__init__(name, node_type, parent, created_by)
+    def __init__(self, name, node_type, parent, created_by, deadline, amount_of_task, _id=None):
+        super().__init__(name, node_type, parent, created_by, _id)
         self.deadline = deadline
         self.amount_of_task = amount_of_task
         self.progress = 0
+        if _id is None:
+            self.insert_to_db()
+
+    def insert_to_db(self):
         db.execute("INSERT OR IGNORE INTO NODE_DATA (id, name, node_type, parent, created_by,"
                    "deadline, amount_of_task, progress) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                   self.id, name, node_type, parent.id, created_by, deadline, amount_of_task, self.progress)
+                   self.id, self.name, self.node_type, self._parent.id,
+                   self.created_by, self.deadline, self.amount_of_task, self.progress)
         db.commit()
 
 
 class RecordNode(Node):
-    def __init__(self, name, node_type, parent, created_by):
-        super().__init__(name, node_type, parent, created_by)
+    def __init__(self, name, node_type, parent, created_by, _id=None):
+        super().__init__(name, node_type, parent, created_by, _id)
         self.started_at = datetime.now().isoformat()
         self.finished_at = None
         self.grade_got = 0
         self.grade_full = 0
+        if _id is None:
+            self.insert_to_db()
+
+    def insert_to_db(self):
         db.execute("INSERT OR IGNORE INTO NODE_DATA (id, name, node_type, parent, created_by,"
                    "started_at, finished_at, grade_got, grade_full) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                   self.id, name, node_type, parent.id, created_by, self.started_at, self.finished_at,
-                   self.grade_got, self.grade_full)
+                   self.id, self.name, self.node_type, self._parent.id,
+                   self.created_by, self.started_at, self.finished_at, self.grade_got, self.grade_full)
         db.commit()
 
 
@@ -128,7 +159,7 @@ class ParentSelectView(ui.View):
         idx = int(self.select.values[0])
         _, parent_node = self.parents[idx]
 
-        new_node = Node(
+        new_node = CategoryNode(
             name=self.child_name,
             node_type=0,
             parent=parent_node,
@@ -137,7 +168,6 @@ class ParentSelectView(ui.View):
 
         await interaction.response.send_message(
             f"Created **{self.child_name}** under **{parent_node.name}**.\n(Path: `{new_node.path}`)",
-            ephemeral=True
         )
 
         self.stop()
@@ -164,15 +194,13 @@ class StudyNew(Cog):
             _, parent_node = parents[0]
             new_node = CategoryNode(child_name, 0, parent_node, interaction.user.id)
             await interaction.response.send_message(
-                f"Created **{child_name}** under **{parent_node.name}**.\n(Path: `{new_node.path}`)",
-                ephemeral=True
+                f"Created **{child_name}** under **{parent_node.name}**.\n(Path: `{new_node.path}`)"
             )
         else:
             view = ParentSelectView(parents, child_name, interaction.user.id)
             await interaction.response.send_message(
                 f"There are {len(parents)} nodes with name {parent_name}",
-                view=view,
-                ephemeral=True
+                view=view
             )
 
     @Cog.listener()
@@ -184,3 +212,22 @@ class StudyNew(Cog):
 async def setup(bot):
     await bot.add_cog(StudyNew(bot))
     print('NEW study cog ready')
+    node_data = db.records("SELECT * FROM NODE_DATA")
+    g = defaultdict(list)
+    for (node_id, name, node_type, parent, created_at, created_by, deadline, amount_of_task, progress,
+         started_at, finished_at, grade_got, grade_full) in node_data:
+        if parent is None:
+            root[created_by] = Node(name, node_type, None, created_by, node_id)
+        elif deadline is not None:
+            g[parent].append(TaskNode(name, node_type, parent, created_by, deadline, amount_of_task, node_id))
+        elif progress is not None:
+            g[parent].append(RecordNode(name, node_type, parent, created_by, node_id))
+        else:
+            g[parent].append(CategoryNode(name, node_type, '', created_by, node_id))
+    for r in root:
+        q = deque([root[r]])
+        while q:
+            cur = q.popleft()
+            for nxt in g.get(cur.id, []):
+                q.append(nxt)
+                nxt.parent = cur
