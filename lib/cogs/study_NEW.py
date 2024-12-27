@@ -140,7 +140,7 @@ class ParentSelectView(ui.View):
         options = [
             SelectOption(
                 label=node_obj.name,
-                description=node_obj.path[:50],
+                description=node_obj.path,
                 value=str(i)
             )
             for i, (path, node_obj) in enumerate(parents)
@@ -185,7 +185,7 @@ class TaskParentSelectView(ui.View):
         options = [
             SelectOption(
                 label=node_obj.name,
-                description=node_obj.path[:50],
+                description=node_obj.path,
                 value=str(i)
             )
             for i, (path, node_obj) in enumerate(parents)
@@ -215,7 +215,7 @@ class TaskParentSelectView(ui.View):
 
         new_node = TaskNode(
             name=self.child_name,
-            node_type=1,  # Assuming 1 represents TaskNode
+            node_type=1,
             parent=parent_node,
             created_by=self.user_id,
             deadline=deadline_dt,
@@ -228,6 +228,42 @@ class TaskParentSelectView(ui.View):
         )
 
         self.stop()
+
+
+class StudyParentSelectView(ui.View):
+    def __init__(self, parents, study_name, user_id):
+        super().__init__(timeout=60)
+        self.parents = parents
+        self.child_name = study_name
+        self.user_id = user_id
+
+        options = [
+            SelectOption(
+                label=node_obj.name,
+                description=node_obj.path,
+                value=str(i)
+            )
+            for i, (path, node_obj) in enumerate(parents)
+        ]
+
+        self.select = ui.Select(
+            placeholder="Choose one node to continue.",
+            min_values=1,
+            max_values=1,
+            options=options
+        )
+        self.select.callback = self.select_callback
+        self.add_item(self.select)
+
+    async def select_callback(self, interaction: Interaction):
+        idx = int(self.select.values[0])
+        _, parent_node = self.parents[idx]
+        self.stop()
+        await process_study(interaction, parent_node, self.child_name, self.user_id)
+
+
+async def process_study(interaction, parent_node, study_name, user_id):
+    await interaction.response.send_message("ConU is dmdmo ddxx")
 
 
 class StudyNew(Cog):
@@ -282,7 +318,7 @@ class StudyNew(Cog):
             interaction: Interaction,
             parent_name: str,
             task_name: str,
-            deadline: str,
+            deadline: Optional[str] = '9999-12-31T23:59:59',
             amount_of_task: Optional[int] = 1
     ):
         """
@@ -294,12 +330,7 @@ class StudyNew(Cog):
         - deadline: The deadline for the task in ISO format (e.g., 2024-12-31T23:59:59).
         - amount_of_task: The number of tasks.
         """
-        if not parent_name:
-            if interaction.user.id not in root:
-                root[interaction.user.id] = Node('', -1, None, interaction.user.id)
-            parents_tmp = [('root', root[interaction.user.id])]
-        else:
-            parents_tmp = find_node_by_name(parent_name, interaction.user.id)
+        parents_tmp = find_node_by_name(parent_name, interaction.user.id)
 
         # Filter out parents that already have a child with the same name
         parents = []
@@ -345,6 +376,33 @@ class StudyNew(Cog):
                 view=view
             )
 
+    @app_commands.command(
+        name='start_study',
+        description='Begins a study session. '
+                    'A record node will be created after the session.')
+    async def start_study_command(self, interaction: Interaction, parent_name: str, study_name: str):
+        parents_tmp = find_node_by_name(parent_name, interaction.user.id)
+        parents = []
+        for path, p in parents_tmp:
+            if any(child.name == study_name for child in p.children):
+                continue
+            parents.append((path, p))
+
+        if not parents:
+            await interaction.response.send_message(
+                f'Parent node "{parent_name}" not found or already has a child named "{study_name}".',
+                ephemeral=True
+            )
+            return
+        elif len(parents) == 1:
+            await process_study(interaction, parents[0][1], study_name, interaction.user.id)
+        else:
+            view = StudyParentSelectView(parents, study_name, interaction.user.id)
+            await interaction.response.send_message(
+                f"There are {len(parents)} nodes with the name \"{parent_name}\". Please select the parent node:",
+                view=view
+            )
+
     @Cog.listener()
     async def on_ready(self):
         if not self.bot.ready:
@@ -360,10 +418,10 @@ async def setup(bot):
          started_at, finished_at, grade_got, grade_full) in node_data:
         if parent is None:
             root[created_by] = Node(name, node_type, None, created_by, node_id)
-        elif deadline is not None:
-            g[parent].append(TaskNode(name, node_type, parent, created_by, deadline, amount_of_task, node_id))
+        elif amount_of_task is not None:
+            g[parent].append(TaskNode(name, node_type, '', created_by, deadline, amount_of_task, node_id))
         elif progress is not None:
-            g[parent].append(RecordNode(name, node_type, parent, created_by, node_id))
+            g[parent].append(RecordNode(name, node_type, '', created_by, node_id))
         else:
             g[parent].append(CategoryNode(name, node_type, '', created_by, node_id))
     for r in root:
