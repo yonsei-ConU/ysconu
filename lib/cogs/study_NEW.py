@@ -1,13 +1,15 @@
 from discord.ext.commands import Cog
 from ..db import db
 import uuid
-from datetime import datetime
-from discord import app_commands, ui, SelectOption, Interaction
+from datetime import datetime, timedelta
+from discord import app_commands, ui, SelectOption, Interaction, Embed, ButtonStyle
 from typing import Optional
 from types import GeneratorType
 from collections import deque, defaultdict
+from asyncio import sleep
 
 root = {}
+study_sessions = {}
 
 
 def bootstrap(f, stack=[]):
@@ -98,18 +100,20 @@ class TaskNode(Node):
 class RecordNode(Node):
     def __init__(self, name, node_type, parent, created_by, _id=None):
         super().__init__(name, node_type, parent, created_by, _id)
-        self.started_at = datetime.now().isoformat()
+        self.started_at = datetime.now()
         self.finished_at = None
         self.grade_got = 0
         self.grade_full = 0
-        if _id is None:
-            self.insert_to_db()
 
-    def insert_to_db(self):
+    def insert_to_db(self, timestamps):
         db.execute("INSERT OR IGNORE INTO NODE_DATA (id, name, node_type, parent, created_by,"
                    "started_at, finished_at, grade_got, grade_full) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                    self.id, self.name, self.node_type, self._parent.id,
                    self.created_by, self.started_at, self.finished_at, self.grade_got, self.grade_full)
+        for start, end in timestamps:
+            record_id = str(uuid.uuid4())
+            db.execute("INSERT INTO STUDY_INTERVALS (id, record_id, start_ts, end_ts) VALUES (?, ?, ?, ?)",
+                    record_id, self.id, start, end)
         db.commit()
 
 
@@ -263,7 +267,200 @@ class StudyParentSelectView(ui.View):
 
 
 async def process_study(interaction, parent_node, study_name, user_id):
-    await interaction.response.send_message("ConU is dmdmo ddxx")
+    new_node = RecordNode(study_name, 2, parent_node, user_id)
+    view = ButtonsWhileStudying(user=interaction.user)
+    rest_view = ButtonsWhilePausing(user=interaction.user)
+    embed = Embed(color=0xffd6fe, title='Study Info')
+    embed.add_field(name='Study Name', value=study_name, inline=False)
+    embed.add_field(name='Node Path', value=new_node.path, inline=False)
+    embed.add_field(name='Started At', value=new_node.started_at, inline=False)
+    embed.add_field(name='Time Elapsed', value='0h 0m 0s', inline=False)
+    embed.add_field(name='Time Studied', value='0h 0m 0s', inline=False)
+    study_sessions[user_id] = {"node": new_node, "intervals": [(new_node.started_at, None)], "pausing": False}
+    await interaction.response.send_message(embed=embed, view=view)
+    await sleep(5)
+    while user_id in study_sessions:
+        elapsed = (datetime.now() - study_sessions[user_id]["node"].started_at).seconds
+        studied = 0
+        for t1, t2 in study_sessions[user_id]["intervals"]:
+            studied += (t2 - t1).seconds if t2 else (datetime.now() - t1).seconds
+        embed = Embed(color=0xffd6fe, title='Study Info')
+        embed.add_field(name='Study Name', value=study_name, inline=False)
+        embed.add_field(name='Node Path', value=new_node.path, inline=False)
+        embed.add_field(name='Started At', value=new_node.started_at, inline=False)
+        embed.add_field(name='Time Elapsed', value=to_visual_elapsed(elapsed), inline=False)
+        embed.add_field(name='Time Studied', value=to_visual_elapsed(studied), inline=False)
+        if study_sessions[user_id]["pausing"]:
+            await interaction.edit_original_response(embed=embed, view=rest_view)
+        else:
+            await interaction.edit_original_response(embed=embed, view=view)
+        await sleep(5)
+
+
+class ButtonsWhileStudying(ui.View):
+    def __init__(self, user):
+        super().__init__(timeout=86400.0)
+        self.user = user
+
+    async def interaction_check(self, interaction: Interaction, /) -> bool:
+        if self.user:
+            if interaction.user != self.user:
+                await interaction.response.send_message('This session is not yours...', ephemeral=True)
+                return False
+        return True
+
+    @ui.button(label='Pause', style=ButtonStyle.green)
+    async def button_pause(self, interaction, button):
+        await pause_study(interaction)
+
+    @ui.button(label='Stop (record results)', style=ButtonStyle.red)
+    async def button_stop1(self, interaction, button):
+        await stop_study(interaction, True)
+
+    @ui.button(label='Stop (do not record results)', style=ButtonStyle.red)
+    async def button_stop2(self, interaction, button):
+        await stop_study(interaction, False)
+
+    @ui.button(label='Abort', style=ButtonStyle.red)
+    async def button_stop3(self, interaction, button):
+        await force_stop_study(interaction)
+
+
+class ButtonsWhilePausing(ui.View):
+    def __init__(self, user):
+        super().__init__(timeout=86400.0)
+        self.user = user
+
+    async def interaction_check(self, interaction: Interaction, /) -> bool:
+        if self.user:
+            if interaction.user != self.user:
+                await interaction.response.send_message('This session is not yours...', ephemeral=True)
+                return False
+        return True
+
+    @ui.button(label='Resume', style=ButtonStyle.green)
+    async def button_resume(self, interaction, button):
+        await resume_study(interaction)
+
+    @ui.button(label='Stop (record results)', style=ButtonStyle.red)
+    async def button_stop1(self, interaction, button):
+        await stop_study(interaction, True)
+
+    @ui.button(label='Stop (do not record results)', style=ButtonStyle.red)
+    async def button_stop2(self, interaction, button):
+        await stop_study(interaction, False)
+
+    @ui.button(label='Abort', style=ButtonStyle.red)
+    async def button_stop3(self, interaction, button):
+        await force_stop_study(interaction)
+
+
+def to_visual_elapsed(elapsed):
+    visual_elapsed = ''
+    visual_elapsed += f'{elapsed // 3600}h '
+    visual_elapsed += f'{elapsed % 3600 // 60}m '
+    visual_elapsed += f'{elapsed % 60}s'
+    return visual_elapsed
+
+
+async def pause_study(interaction: Interaction):
+    uid = interaction.user.id
+    session = study_sessions.get(uid)
+    if not session:
+        await interaction.response.send_message('No active study session to pause.')
+        return
+
+    intervals = session["intervals"]
+
+    # intervals의 마지막 구간을 닫아서 (start, pause_ts) 꼴로 만든다
+    start_ts, _ = intervals[-1]
+    pause_ts = datetime.now()
+    intervals[-1] = (start_ts, pause_ts)
+
+    await interaction.response.send_message('Study session paused.', ephemeral=True)
+    study_sessions[uid]["pausing"] = True
+
+
+async def resume_study(interaction: Interaction):
+    uid = interaction.user.id
+    session = study_sessions.get(uid)
+    if not session:
+        await interaction.response.send_message('No active study session to resume.')
+        return
+
+    intervals = session["intervals"]
+    intervals.append((datetime.now(), None))
+    await interaction.response.send_message('Study session resumed.', ephemeral=True)
+    study_sessions[uid]["pausing"] = False
+
+
+async def stop_study(interaction: Interaction, record_results: bool):
+    uid = interaction.user.id
+    session = study_sessions.get(uid)
+    if not session:
+        await interaction.response.send_message('No active study session to stop.')
+        return
+
+    # intervals 가져오기
+    intervals = session["intervals"]
+    node = session["node"]
+
+    # 아직 열려 있는 마지막 구간이 있다면 닫는다
+    if intervals and intervals[-1][1] is None:
+        start_ts, _ = intervals[-1]
+        intervals[-1] = (start_ts, datetime.now())
+
+    # 전체 세션 범위(RecordNode)
+    node.finished_at = datetime.now()
+
+    # 실제 공부 시간(초) 계산
+    actual_time = timedelta(seconds=0)
+    for (s, e) in intervals:
+        actual_time += (e - s)
+
+    # 성적 입력 처리 (옵션)
+    if record_results:
+        await interaction.channel.send("Please send your scores in **a/b** form. (`q` to cancel)")
+
+        def check_author(msg):
+            return msg.author.id == uid and msg.channel.id == interaction.channel.id
+
+        try:
+            msg = await interaction.client.wait_for("message", timeout=120, check=check_author)
+            txt = msg.content.strip().lower()
+            if txt != 'q' and '/' in txt:
+                got_str, full_str = txt.split('/')
+                node.grade_got = int(got_str)
+                node.grade_full = int(full_str)
+        except:
+            pass
+
+    # 메모리 정리
+    study_sessions[uid]["node"].insert_to_db(study_sessions[uid]["intervals"])
+    del study_sessions[uid]
+
+    # 결과 보여주기
+    actual_time = actual_time.total_seconds()
+    embed = Embed(title="Study Session Finished", color=0xffd6fe)
+    embed.add_field(name="Started at", value=node.started_at, inline=False)
+    embed.add_field(name="Finished at", value=node.finished_at, inline=False)
+    embed.add_field(name="Actual Study Time", value=to_visual_elapsed(actual_time), inline=False)
+
+    if node.grade_full and node.grade_full > 0:
+        embed.add_field(
+            name="Grade",
+            value=f"{node.grade_got}/{node.grade_full} = {round(node.grade_got / node.grade_full * 100, 2)}%",
+            inline=False
+        )
+
+    await interaction.response.send_message(embed=embed)
+
+
+async def force_stop_study(interaction):
+    uid = interaction.user.id
+    del study_sessions[uid]["node"]
+    del study_sessions[uid]
+    await interaction.response.send_message('Aborted study session.')
 
 
 class StudyNew(Cog):
@@ -381,6 +578,9 @@ class StudyNew(Cog):
         description='Begins a study session. '
                     'A record node will be created after the session.')
     async def start_study_command(self, interaction: Interaction, parent_name: str, study_name: str):
+        if interaction.user.id in study_sessions:
+            await interaction.response.send_message('You are already in a study session.', ephemeral=True)
+            return
         parents_tmp = find_node_by_name(parent_name, interaction.user.id)
         parents = []
         for path, p in parents_tmp:
