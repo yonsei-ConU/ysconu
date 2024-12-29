@@ -273,12 +273,12 @@ async def process_study(interaction, parent_node, study_name, user_id):
     embed = Embed(color=0xffd6fe, title='Study Info')
     embed.add_field(name='Study Name', value=study_name, inline=False)
     embed.add_field(name='Node Path', value=new_node.path, inline=False)
-    embed.add_field(name='Started At', value=new_node.started_at, inline=False)
+    embed.add_field(name='Started At', value=f"<t:{int(new_node.started_at.timestamp())}:F>", inline=False)
     embed.add_field(name='Time Elapsed', value='0h 0m 0s', inline=False)
     embed.add_field(name='Time Studied', value='0h 0m 0s', inline=False)
     study_sessions[user_id] = {"node": new_node, "intervals": [(new_node.started_at, None)], "pausing": False}
     await interaction.response.send_message(embed=embed, view=view)
-    await sleep(5)
+    await sleep(10)
     while user_id in study_sessions:
         elapsed = (datetime.now() - study_sessions[user_id]["node"].started_at).seconds
         studied = 0
@@ -287,7 +287,7 @@ async def process_study(interaction, parent_node, study_name, user_id):
         embed = Embed(color=0xffd6fe, title='Study Info')
         embed.add_field(name='Study Name', value=study_name, inline=False)
         embed.add_field(name='Node Path', value=new_node.path, inline=False)
-        embed.add_field(name='Started At', value=new_node.started_at, inline=False)
+        embed.add_field(name='Started At', value=f"<t:{int(new_node.started_at.timestamp())}:F>", inline=False)
         embed.add_field(name='Time Elapsed', value=to_visual_elapsed(elapsed), inline=False)
         embed.add_field(name='Time Studied', value=to_visual_elapsed(studied), inline=False)
         if study_sessions[user_id]["pausing"]:
@@ -315,14 +315,17 @@ class ButtonsWhileStudying(ui.View):
 
     @ui.button(label='Stop (record results)', style=ButtonStyle.red)
     async def button_stop1(self, interaction, button):
+        self.stop()
         await stop_study(interaction, True)
 
     @ui.button(label='Stop (do not record results)', style=ButtonStyle.red)
     async def button_stop2(self, interaction, button):
+        self.stop()
         await stop_study(interaction, False)
 
     @ui.button(label='Abort', style=ButtonStyle.red)
     async def button_stop3(self, interaction, button):
+        self.stop()
         await force_stop_study(interaction)
 
 
@@ -344,14 +347,17 @@ class ButtonsWhilePausing(ui.View):
 
     @ui.button(label='Stop (record results)', style=ButtonStyle.red)
     async def button_stop1(self, interaction, button):
+        self.stop()
         await stop_study(interaction, True)
 
     @ui.button(label='Stop (do not record results)', style=ButtonStyle.red)
     async def button_stop2(self, interaction, button):
+        self.stop()
         await stop_study(interaction, False)
 
     @ui.button(label='Abort', style=ButtonStyle.red)
     async def button_stop3(self, interaction, button):
+        self.stop()
         await force_stop_study(interaction)
 
 
@@ -442,8 +448,8 @@ async def stop_study(interaction: Interaction, record_results: bool):
     # 결과 보여주기
     actual_time = actual_time.total_seconds()
     embed = Embed(title="Study Session Finished", color=0xffd6fe)
-    embed.add_field(name="Started at", value=node.started_at, inline=False)
-    embed.add_field(name="Finished at", value=node.finished_at, inline=False)
+    embed.add_field(name="Started at", value=f"<t:{int(node.started_at.timestamp())}:F>", inline=False)
+    embed.add_field(name="Finished at", value=f"<t:{int(node.finished_at.timestamp())}:F>", inline=False)
     embed.add_field(name="Actual Study Time", value=to_visual_elapsed(actual_time), inline=False)
 
     if node.grade_full and node.grade_full > 0:
@@ -461,6 +467,33 @@ async def force_stop_study(interaction):
     del study_sessions[uid]["node"]
     del study_sessions[uid]
     await interaction.response.send_message('Aborted study session.')
+
+
+def find_closest_task(uid):
+    @bootstrap
+    def dfs(cur, parent):
+        nonlocal ret, tst
+        if cur.node_type == 1:
+            if len(ret) == 5:
+                ret.pop()
+            ret.append((cur.deadline, cur))
+            ret.sort()
+        elif cur.node_type == 2:
+            intervals = db.records("SELECT start_ts, end_ts FROM STUDY_INTERVALS WHERE record_id = ?", cur.id)
+            for s, t in intervals:
+                s = max(datetime.fromisoformat(s), datetime.now().replace(hour=0, minute=0, second=0, microsecond=0))
+                t = min(datetime.fromisoformat(t), (datetime.now() + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0))
+                tst += max(0, (t - s).seconds)
+        for nxt in cur.children:
+            if nxt == parent:
+                continue
+            yield dfs(nxt, cur)
+        yield
+
+    ret = []
+    tst = 0
+    dfs(root[uid], None)
+    return ret, tst
 
 
 class StudyNew(Cog):
@@ -602,6 +635,20 @@ class StudyNew(Cog):
                 f"There are {len(parents)} nodes with the name \"{parent_name}\". Please select the parent node:",
                 view=view
             )
+
+    @app_commands.command(
+        name='study_info',
+        description='Briefly shows your upcoming tasks and study progress.'
+    )
+    async def show_study_info(self, interaction: Interaction):
+        embed = Embed(color=0xffd6fe, title='Study Info')
+        closest_tasks, tst = find_closest_task(interaction.user.id)
+        cnt = 1
+        for closest_task_deadline, closest_task in closest_tasks:
+            embed.add_field(name=f"#{cnt} closest task", value=f"{closest_task.name} until {closest_task_deadline}")
+            cnt += 1
+        embed.add_field(name='Daily study time', value=to_visual_elapsed(int(tst)), inline=False)
+        await interaction.response.send_message(embed=embed)
 
     @Cog.listener()
     async def on_ready(self):
