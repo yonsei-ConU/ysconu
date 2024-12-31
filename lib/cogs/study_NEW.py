@@ -650,6 +650,22 @@ class StudyNew(Cog):
         embed.add_field(name='Daily study time', value=to_visual_elapsed(int(tst)), inline=False)
         await interaction.response.send_message(embed=embed)
 
+    @app_commands.command(
+        name='show_tree',
+        description='Shows current tree.'
+    )
+    async def show_tree(self, interaction: Interaction):
+        root_node = root[interaction.user.id]
+        ret = ''
+        stack = [(root_node, -1)]
+        while stack:
+            cur, depth = stack.pop()
+            if cur != root_node:
+                ret += f"{'-' * depth * 4}{cur.name}\n"
+            for child in cur.children:
+                stack.append((child, depth + 1))
+        await interaction.response.send_message(ret)
+
     @Cog.listener()
     async def on_ready(self):
         if not self.bot.ready:
